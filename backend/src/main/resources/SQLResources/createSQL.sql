@@ -2,6 +2,10 @@
 CREATE DATABASE IF NOT EXISTS mbti_test DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE mbti_test;
 
+-- 设置字符集
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+
 -- 用户表
 CREATE TABLE `user` (
   `user_id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -68,10 +72,14 @@ CREATE TABLE `answer_detail` (
 
 -- 插入示例数据
 -- 1. 创建管理员和普通用户
+-- 测试账号信息：
+-- 用户名: admin,  密码: password (BCrypt哈希)
+-- 用户名: user1,  密码: password (BCrypt哈希)  
+-- 用户名: user2,  密码: password (BCrypt哈希)
 INSERT INTO `user` (`username`, `password_hash`, `email`, `role`) VALUES
-('admin', '$2y$10$ExampleHashAdmin', 'admin@mbti.com', 'admin'),
-('user1', '$2y$10$ExampleHashUser1', 'user1@test.com', 'user'),
-('user2', '$2y$10$ExampleHashUser2', 'user2@test.com', 'user');
+('admin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@mbti.com', 'admin'),
+('user1', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'user1@test.com', 'user'),
+('user2', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'user2@test.com', 'user');
 
 -- 2. 创建问卷
 INSERT INTO `questionnaire` (`title`, `description`, `creator_id`) VALUES
@@ -118,4 +126,9 @@ INSERT INTO `answer_detail` (`answer_id`, `question_id`, `option_id`) VALUES
 
 -- 用户3的回答
 (2, 1, 2),  -- 选择"等待别人先打招呼"(I)
-(2, 2, 4);  -- 选择"总体的
+(2, 2, 4),  -- 选择"总体的概念和可能性"(N)
+(2, 3, 5),  -- 选择"逻辑分析和客观标准"(T)
+(2, 4, 8);  -- 选择"有计划有组织的方式"(J)
+
+-- 完成数据初始化
+COMMIT;

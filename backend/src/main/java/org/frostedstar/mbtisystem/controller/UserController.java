@@ -1,8 +1,8 @@
 package org.frostedstar.mbtisystem.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.frostedstar.mbtisystem.dto.UserDTO;
 import org.frostedstar.mbtisystem.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,13 +17,12 @@ import java.util.Map;
  * 用户管理控制器
  * 提供用户信息查询、更新、管理等功能
  */
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "*")
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
 
     /**
      * 获取当前用户信息

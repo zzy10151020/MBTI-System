@@ -1,7 +1,8 @@
 # MBTI系统后端完成报告
 
 ## 项目概览
-MBTI系统后端已全面完成，包含完整的分层架构和功能模块。
+MBTI系统后端已全面完成，基于Spring Boot 3.x框架，采用标准分层架构设计。
+**包名**: `org.frostedstar.mbtisystem`
 
 ## 已完成的模块
 
@@ -9,11 +10,13 @@ MBTI系统后端已全面完成，包含完整的分层架构和功能模块。
 - ✅ **User.java** - 用户实体，包含用户信息、角色、关联关系
 - ✅ **Questionnaire.java** - 问卷实体，包含问卷信息、发布状态
 - ✅ **Question.java** - 问题实体，包含问题内容、MBTI维度、顺序
-- ✅ **Option.java** - 选项实体，包含选项内容、分数
+- ✅ **Option.java** - 选项实体，包含选项内容、分数（处理MySQL关键字冲突）
 - ✅ **Answer.java** - 回答实体，记录用户答题记录
 - ✅ **AnswerDetail.java** - 回答详情实体，记录具体选择
 - ✅ **MbtiDimension.java** - MBTI维度枚举 (EI, SN, TF, JP)
+- ✅ **MbtiDimensionConverter.java** - MBTI维度JPA转换器
 - ✅ **UserRole.java** - 用户角色枚举 (USER, ADMIN)
+- ✅ **UserRoleConverter.java** - 用户角色JPA转换器
 
 ### 2. Repository层 (数据访问层)
 - ✅ **UserRepository.java** - 用户数据访问，支持按用户名、邮箱查询，用户搜索
@@ -28,9 +31,10 @@ MBTI系统后端已全面完成，包含完整的分层架构和功能模块。
 - ✅ **UserService.java** - 用户服务，用户管理、权限控制、DTO转换
 - ✅ **QuestionnaireService.java** - 问卷服务，问卷管理、发布控制、统计
 - ✅ **TestService.java** - 测试服务，答题处理、结果计算、MBTI分析
+- ✅ **UserDetailsServiceImpl.java** - Spring Security用户详情服务实现
 
 ### 4. Controller层 (控制器层)
-- ✅ **AuthController.java** - 认证控制器，登录/注册接口
+- ✅ **AuthController.java** - 认证控制器，登录/注册/健康检查接口
 - ✅ **UserController.java** - 用户控制器，用户管理接口
 - ✅ **QuestionnaireController.java** - 问卷控制器，问卷管理接口
 - ✅ **TestController.java** - 测试控制器，答题和结果接口
@@ -48,6 +52,15 @@ MBTI系统后端已全面完成，包含完整的分层架构和功能模块。
 - ✅ **JwtConfig.java** - JWT配置，密钥和过期时间
 - ✅ **WebConfig.java** - Web配置，CORS全局配置
 - ✅ **DataInitConfig.java** - 数据初始化配置，创建默认管理员
+- ✅ **GlobalExceptionHandler.java** - 全局异常处理器
+
+### 7. 安全模块 (Security层)
+- ✅ **JwtUtil.java** - JWT工具类，令牌生成和验证
+- ✅ **JwtAuthFilter.java** - JWT认证过滤器
+- ✅ **UserDetailsImpl.java** - Spring Security用户详情实现
+
+### 8. 工具类 (Util层)
+- ✅ **PasswordHashGenerator.java** - 密码哈希生成器
 - ✅ **GlobalExceptionHandler.java** - 全局异常处理，统一错误响应
 
 ### 7. 安全模块 (Security层)

@@ -1,8 +1,8 @@
 package org.frostedstar.mbtisystem.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.frostedstar.mbtisystem.dto.QuestionnaireDTO;
 import org.frostedstar.mbtisystem.service.QuestionnaireService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,13 +17,12 @@ import java.util.Map;
 /**
  * 问卷管理控制器
  */
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/questionnaires")
-@CrossOrigin(origins = "*")
 public class QuestionnaireController {
 
-    @Autowired
-    private QuestionnaireService questionnaireService;
+    private final QuestionnaireService questionnaireService;
 
     /**
      * 获取所有问卷列表
@@ -236,4 +235,5 @@ public class QuestionnaireController {
             ));
         }
     }
+
 }

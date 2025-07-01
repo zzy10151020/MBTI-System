@@ -274,9 +274,9 @@ public class UserService {
         
         UserRole role;
         try {
-            role = UserRole.valueOf(roleName.toUpperCase());
+            role = UserRole.fromValue(roleName);
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("无效的角色类型");
+            throw new RuntimeException("无效的角色类型: " + roleName);
         }
         
         user.setRole(role);

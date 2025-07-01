@@ -1,8 +1,8 @@
 package org.frostedstar.mbtisystem.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.frostedstar.mbtisystem.dto.AnswerSubmitDTO;
 import org.frostedstar.mbtisystem.service.TestService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -14,13 +14,12 @@ import java.util.Map;
  * 测试控制器
  * 处理问卷答题和结果相关功能
  */
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/test")
-@CrossOrigin(origins = "*")
 public class TestController {
 
-    @Autowired
-    private TestService testService;
+    private final TestService testService;
 
     /**
      * 提交问卷答案
@@ -209,4 +208,5 @@ public class TestController {
             ));
         }
     }
+
 }

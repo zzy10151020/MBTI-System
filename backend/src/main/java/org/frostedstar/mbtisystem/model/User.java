@@ -28,7 +28,7 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = UserRoleConverter.class)
     @Column(nullable = false)
     private UserRole role = UserRole.USER;
 

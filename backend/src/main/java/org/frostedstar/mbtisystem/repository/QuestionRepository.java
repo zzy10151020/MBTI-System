@@ -59,6 +59,6 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     /**
      * 自定义查询：获取问卷的完整问题信息（包含选项）
      */
-    @Query("SELECT q FROM Question q LEFT JOIN FETCH q.options WHERE q.questionnaireId = :questionnaireId ORDER BY q.questionOrder")
+    @Query("SELECT DISTINCT q FROM Question q LEFT JOIN FETCH q.options o WHERE q.questionnaireId = :questionnaireId ORDER BY q.questionOrder")
     List<Question> findQuestionsWithOptionsByQuestionnaireId(@Param("questionnaireId") Long questionnaireId);
 }

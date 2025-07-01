@@ -1,5 +1,7 @@
 package org.frostedstar.mbtisystem.config;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -134,7 +136,10 @@ public class GlobalExceptionHandler {
     /**
      * 错误响应类
      */
+    @Setter
+    @Getter
     public static class ErrorResponse {
+        // Getters and Setters
         private String code;
         private String message;
         private LocalDateTime timestamp;
@@ -153,17 +158,5 @@ public class GlobalExceptionHandler {
             this.details = details;
         }
 
-        // Getters and Setters
-        public String getCode() { return code; }
-        public void setCode(String code) { this.code = code; }
-        
-        public String getMessage() { return message; }
-        public void setMessage(String message) { this.message = message; }
-        
-        public LocalDateTime getTimestamp() { return timestamp; }
-        public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
-        
-        public Map<String, String> getDetails() { return details; }
-        public void setDetails(Map<String, String> details) { this.details = details; }
     }
 }

@@ -29,7 +29,7 @@ public class Question {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
     
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = MbtiDimensionConverter.class)
     @Column(nullable = false)
     private MbtiDimension dimension;
     

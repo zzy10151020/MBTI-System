@@ -1,53 +1,62 @@
 package org.frostedstar.mbtisystem.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.frostedstar.mbtisystem.dto.LoginRequest;
 import org.frostedstar.mbtisystem.dto.JwtResponse;
-import org.frostedstar.mbtisystem.security.JwtUtil;
-import org.frostedstar.mbtisystem.security.UserDetailsImpl;
+import org.frostedstar.mbtisystem.dto.RegisterDTO;
+import org.frostedstar.mbtisystem.service.AuthService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import jakarta.validation.Valid;
+import java.util.Map;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
-    private final JwtUtil jwtUtil;
-
-    public AuthController(AuthenticationManager authenticationManager,
-                          JwtUtil jwtUtil) {
-        this.authenticationManager = authenticationManager;
-        this.jwtUtil = jwtUtil;
-    }
+    private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<JwtResponse> authenticateUser(@RequestBody LoginRequest loginRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getUsername(),
-                        loginRequest.getPassword()));
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+        try {
+            JwtResponse response = authService.login(loginRequest);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "登录失败: " + e.getMessage()
+            ));
+        }
+    }
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+    @PostMapping("/register")
+    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterDTO registerRequest) {
+        try {
+            authService.register(registerRequest.getUsername(), registerRequest.getPassword(), registerRequest.getEmail());
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "注册成功"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "注册失败: " + e.getMessage()
+            ));
+        }
+    }
 
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        String jwt = jwtUtil.generateJwtToken(authentication);
-
-        List<String> roles = userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(new JwtResponse(
-                jwt,
-                userDetails.getUserId(),
-                userDetails.getUsername(),
-                roles));
+    /**
+     * 测试接口 - 检查服务器状态（无需认证）
+     */
+    @GetMapping("/status")
+    public ResponseEntity<?> getServerStatus() {
+        return ResponseEntity.ok(Map.of(
+            "success", true,
+            "message", "服务器运行正常",
+            "timestamp", System.currentTimeMillis(),
+            "version", "1.0.0"
+        ));
     }
 }

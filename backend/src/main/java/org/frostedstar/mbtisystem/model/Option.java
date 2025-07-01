@@ -12,7 +12,7 @@ import java.util.List;
  * 选项实体类
  */
 @Entity
-@Table(name = "option")
+@Table(name = "`option`")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
