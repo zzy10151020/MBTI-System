@@ -118,4 +118,4 @@ INSERT INTO `answer_detail` (`answer_id`, `question_id`, `option_id`) VALUES
 
 -- 用户3的回答
 (2, 1, 2),  -- 选择"等待别人先打招呼"(I)
-(2, 2, 4),  -- 选择"总体的
+(2, 2, 4);  -- 选择"总体的

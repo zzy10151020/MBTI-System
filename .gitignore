@@ -1,0 +1,26 @@
+# 前端忽略
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# 后端忽略
+backend/target/
+backend/.idea
+backend/*.iml
+backend/.settings/
+backend/.project
+backend/.classpath
+backend/.vscode/
+backend/bin/
+backend/*.log
+backend/.springBeans
+
+# 通用
+.DS_Store
+*.log
+*.tmp
+*.bak
