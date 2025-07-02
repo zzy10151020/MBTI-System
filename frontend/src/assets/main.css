@@ -1,0 +1,134 @@
+@import './base.css';
+
+/* 应用主容器 */
+#app {
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  font-weight: normal;
+  overflow-x: hidden;
+}
+
+/* 链接和交互元素样式 */
+a {
+  text-decoration: none;
+  color: var(--primary-teal);
+  transition: all 0.3s ease;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* 青绿色主题按钮/链接 */
+.btn-teal,
+.teal {
+  background-color: var(--primary-teal);
+  color: var(--color-text-primary);
+  border: 1px solid var(--primary-teal);
+  padding: 0.8rem 1.6rem;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-teal:hover,
+.teal:hover {
+  background-color: var(--primary-teal-dark);
+  border-color: var(--primary-teal-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(32, 178, 170, 0.3);
+}
+
+/* 响应式设计 */
+@media (hover: hover) {
+  a:hover {
+    background-color: var(--primary-teal-light);
+    color: var(--primary-teal-darker);
+  }
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+  #app {
+    padding: 0;
+    width: 100vw;
+  }
+  
+  .btn-teal,
+  .teal {
+    padding: 0.6rem 1.2rem;
+    font-size: 11px;
+  }
+}
+
+/* 桌面端布局 */
+@media (min-width: 1024px) {
+  #app {
+    padding: 0;
+  }
+  
+  .btn-teal,
+  .teal {
+    font-size: 13px;
+  }
+}
+
+/* 容器和布局工具类 */
+.container {
+  width: 100%;
+  max-width: 100vw;
+  margin: 0;
+  padding: 0;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.gap-4 {
+  gap: 1rem;
+}
+
+/* 轮播组件优化 */
+.el-carousel {
+  transition: all 0.2s ease !important;
+}
+
+.el-carousel__item {
+  transition: transform 0.3s ease !important;
+}
+
+.el-carousel__container {
+  transition: all 0.3s ease !important;
+}
+
+/* 确保轮播切换更流畅 */
+.el-carousel__arrow {
+  transition: all 0.2s ease !important;
+}
+
+.el-carousel__arrow:hover {
+  background-color: var(--primary-teal) !important;
+  border-color: var(--primary-teal) !important;
+}
+
+/* 优化轮播性能 */
+.el-carousel,
+.el-carousel__item,
+.el-carousel__container {
+  will-change: transform;
+}

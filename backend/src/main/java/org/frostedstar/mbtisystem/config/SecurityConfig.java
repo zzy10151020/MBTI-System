@@ -65,7 +65,13 @@ public class SecurityConfig {
                         
                         // 问卷相关端点
                         .requestMatchers("/api/questionnaires/public/**").permitAll()
+                        .requestMatchers("/api/questionnaires/active").permitAll()
+                        .requestMatchers("/api/questionnaires/*/questions").permitAll()
                         .requestMatchers("/api/questionnaires/admin/**").hasRole("ADMIN")
+                        
+                        // 问题相关端点
+                        .requestMatchers("/api/questions/questionnaire/*").permitAll()
+                        .requestMatchers("/api/questions/*/public").permitAll()
                         
                         // 用户管理端点
                         .requestMatchers("/api/users/admin/**").hasRole("ADMIN")

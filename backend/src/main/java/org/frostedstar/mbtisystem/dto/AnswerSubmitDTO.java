@@ -8,6 +8,7 @@ import org.frostedstar.mbtisystem.model.MbtiDimension;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotEmpty;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -27,9 +28,46 @@ public class AnswerSubmitDTO {
     
     /**
      * 问题答案映射 (问题ID -> 选项ID)
+     * 支持字符串键的自动转换
      */
     @NotEmpty(message = "答案不能为空")
-    private Map<Long, Long> questionAnswers;
+    private Map<Long, Long> questionAnswers = new HashMap<>();
+    
+    /**
+     * 设置问题答案，支持字符串键的自动转换
+     */
+    public void setQuestionAnswers(Map<?, ?> answers) {
+        this.questionAnswers = new HashMap<>();
+        if (answers != null) {
+            for (Map.Entry<?, ?> entry : answers.entrySet()) {
+                Long questionId = convertToLong(entry.getKey());
+                Long optionId = convertToLong(entry.getValue());
+                this.questionAnswers.put(questionId, optionId);
+            }
+        }
+    }
+    
+    /**
+     * 将对象转换为Long类型
+     */
+    private Long convertToLong(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Long) {
+            return (Long) value;
+        }
+        if (value instanceof Integer) {
+            return ((Integer) value).longValue();
+        }
+        if (value instanceof String) {
+            return Long.parseLong((String) value);
+        }
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        throw new IllegalArgumentException("无法将 " + value.getClass().getSimpleName() + " 转换为 Long");
+    }
 }
 
 /**

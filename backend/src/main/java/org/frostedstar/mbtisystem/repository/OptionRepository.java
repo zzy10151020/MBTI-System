@@ -53,6 +53,11 @@ public interface OptionRepository extends JpaRepository<Option, Long> {
     List<Option> findOptionsByQuestionnaireId(@Param("questionnaireId") Long questionnaireId);
 
     /**
+     * 根据问题ID删除所有选项
+     */
+    void deleteByQuestionId(Long questionId);
+
+    /**
      * 检查选项是否被引用（在回答详情中）
      */
     @Query("SELECT CASE WHEN COUNT(ad) > 0 THEN true ELSE false END " +

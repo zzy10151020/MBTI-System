@@ -493,6 +493,282 @@ Content-Type: application/json
 
 ---
 
+### 3.6 问题管理接口
+
+#### 3.6.1 获取问卷的所有问题
+
+**接口地址：** `GET /api/questions/questionnaire/{questionnaireId}`
+
+**接口说明：** 获取指定问卷的所有问题和选项
+
+**请求头：**
+```
+Authorization: Bearer {jwt_token}
+```
+
+**路径参数：**
+- `questionnaireId`: 问卷ID
+
+**响应体：**
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "questionId": 1,
+            "questionnaireId": 1,
+            "content": "你更喜欢与人交往还是独自思考？",
+            "dimension": "EI",
+            "questionOrder": 1,
+            "options": [
+                {
+                    "optionId": 1,
+                    "questionId": 1,
+                    "content": "更喜欢与人交往",
+                    "score": 1
+                },
+                {
+                    "optionId": 2,
+                    "questionId": 1,
+                    "content": "更喜欢独自思考",
+                    "score": -1
+                }
+            ]
+        }
+    ],
+    "message": "获取问题列表成功"
+}
+```
+
+---
+
+#### 3.6.2 创建新问题（管理员）
+
+**接口地址：** `POST /api/questions/questionnaire/{questionnaireId}`
+
+**接口说明：** 为指定问卷创建新问题（仅管理员可访问）
+
+**权限要求：** ADMIN
+
+**请求头：**
+```
+Authorization: Bearer {jwt_token}
+Content-Type: application/json
+```
+
+**路径参数：**
+- `questionnaireId`: 问卷ID
+
+**请求体：**
+```json
+{
+    "content": "新的问题内容",
+    "dimension": "EI",
+    "questionOrder": 5,
+    "options": [
+        {
+            "content": "选项A",
+            "score": 1
+        },
+        {
+            "content": "选项B",
+            "score": -1
+        }
+    ]
+}
+```
+
+**响应体：**
+```json
+{
+    "success": true,
+    "data": {
+        "questionId": 5,
+        "questionnaireId": 1,
+        "content": "新的问题内容",
+        "dimension": "EI",
+        "questionOrder": 5,
+        "options": [
+            {
+                "optionId": 9,
+                "questionId": 5,
+                "content": "选项A",
+                "score": 1
+            },
+            {
+                "optionId": 10,
+                "questionId": 5,
+                "content": "选项B",
+                "score": -1
+            }
+        ]
+    },
+    "message": "创建问题成功"
+}
+```
+
+---
+
+#### 3.6.3 批量创建问题（管理员）
+
+**接口地址：** `POST /api/questions/questionnaire/{questionnaireId}/batch`
+
+**接口说明：** 为指定问卷批量创建问题（仅管理员可访问）
+
+**权限要求：** ADMIN
+
+**请求头：**
+```
+Authorization: Bearer {jwt_token}
+Content-Type: application/json
+```
+
+**路径参数：**
+- `questionnaireId`: 问卷ID
+
+**请求体：**
+```json
+[
+    {
+        "content": "第一个问题",
+        "dimension": "EI",
+        "options": [
+            {
+                "content": "选项A",
+                "score": 1
+            },
+            {
+                "content": "选项B",
+                "score": -1
+            }
+        ]
+    },
+    {
+        "content": "第二个问题",
+        "dimension": "SN",
+        "options": [
+            {
+                "content": "选项A",
+                "score": 1
+            },
+            {
+                "content": "选项B",
+                "score": -1
+            }
+        ]
+    }
+]
+```
+
+**响应体：**
+```json
+{
+    "success": true,
+    "data": [
+        // 创建的问题列表
+    ],
+    "message": "批量创建问题成功"
+}
+```
+
+---
+
+#### 3.6.4 更新问题（管理员）
+
+**接口地址：** `PUT /api/questions/{questionId}`
+
+**接口说明：** 更新指定问题（仅管理员可访问）
+
+**权限要求：** ADMIN
+
+**请求头：**
+```
+Authorization: Bearer {jwt_token}
+Content-Type: application/json
+```
+
+**路径参数：**
+- `questionnaireId`: 问卷ID
+- `questionId`: 问题ID
+
+**请求体：**
+```json
+{
+    "content": "更新后的问题内容",
+    "dimension": "EI",
+    "questionOrder": 3,
+    "options": [
+        {
+            "content": "更新后的选项A",
+            "score": 2
+        },
+        {
+            "content": "更新后的选项B",
+            "score": -2
+        }
+    ]
+}
+```
+
+---
+
+#### 3.6.5 删除问题（管理员）
+
+**接口地址：** `DELETE /api/questions/{questionId}`
+
+**接口说明：** 删除指定问题（仅管理员可访问）
+
+**权限要求：** ADMIN
+
+**请求头：**
+```
+Authorization: Bearer {jwt_token}
+```
+
+**路径参数：**
+- `questionnaireId`: 问卷ID
+- `questionId`: 问题ID
+
+**响应体：**
+```json
+{
+    "success": true,
+    "message": "删除问题成功"
+}
+```
+
+---
+
+#### 3.6.6 更新问题顺序（管理员）
+
+**接口地址：** `PUT /api/questions/questionnaire/{questionnaireId}/reorder`
+
+**接口说明：** 批量更新问题顺序（仅管理员可访问）
+
+**权限要求：** ADMIN
+
+**请求头：**
+```
+Authorization: Bearer {jwt_token}
+Content-Type: application/json
+```
+
+**路径参数：**
+- `questionnaireId`: 问卷ID
+
+**请求体：**
+```json
+{
+    "1": 3,
+    "2": 1,
+    "3": 2
+}
+```
+
+**说明：** 键为问题ID，值为新的顺序号
+
+---
+
 ## 4. 测试接口
 
 ### 4.1 提交答案

@@ -1,0 +1,90 @@
+/* MBTI系统配色方案 */
+:root {
+  /* 青绿色主色调 */
+  --primary-teal: #20B2AA;
+  --primary-teal-light: #E0F7FA;
+  --primary-teal-dark: #008B8B;
+  --primary-teal-darker: #006666;
+
+  /* 背景色系 */
+  --color-background: #ffffff;
+  --color-background-soft: #fafafa;
+  --color-background-mute: #f5f5f5;
+
+  /* 文字色系 */
+  --color-text-primary: #000000;
+  --color-text-secondary: #333333;
+  --color-text-tertiary: #666666;
+  --color-text-quaternary: #999999;
+
+  /* 边框色系 */
+  --color-border: #e5e5e5;
+  --color-border-hover: #cccccc;
+
+  /* 语义化颜色 */
+  --color-heading: var(--color-text-primary);
+  --color-text: var(--color-text-secondary);
+  --color-accent: var(--primary-teal);
+
+  /* 间距 */
+  --section-gap: 80px;
+}
+
+/* 全局重置和基础样式 */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-weight: normal;
+}
+
+html {
+  /* 禁止横向滚动 */
+  overflow-x: hidden;
+  /* 允许纵向滚动 */
+  overflow-y: auto;
+}
+
+body {
+  min-height: 100vh;
+  width: 100%;
+  color: var(--color-text);
+  background: var(--color-background);
+  transition: color 0.3s, background-color 0.3s;
+  line-height: 1.6;
+  font-family:
+    'PingFang SC',
+    'Microsoft YaHei',
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
+  /* 默认字号设置为10px */
+  font-size: 10px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* 禁止横向滚动 */
+  overflow-x: hidden;
+}
+
+/* 文字大小工具类 */
+.text-xs { font-size: 8px; }
+.text-sm { font-size: 10px; }
+.text-base { font-size: 12px; }
+.text-lg { font-size: 14px; }
+.text-xl { font-size: 16px; }
+.text-2xl { font-size: 18px; }
+.text-3xl { font-size: 20px; }
+
+/* 文字颜色工具类 */
+.text-primary { color: var(--color-text-primary); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-tertiary { color: var(--color-text-tertiary); }
+.text-quaternary { color: var(--color-text-quaternary); }
+
+/* 青绿色主题色工具类 */
+.text-teal { color: var(--primary-teal); }
+.bg-teal { background-color: var(--primary-teal); }
+.border-teal { border-color: var(--primary-teal); }

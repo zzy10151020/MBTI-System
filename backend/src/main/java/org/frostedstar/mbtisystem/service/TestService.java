@@ -99,7 +99,23 @@ public class TestService {
         Set<Long> questionIds = questions.stream().map(Question::getQuestionId).collect(Collectors.toSet());
         
         if (!questionAnswers.keySet().equals(questionIds)) {
-            throw new RuntimeException("请回答所有问题");
+            // 找出缺失的问题
+            Set<Long> missingQuestions = new HashSet<>(questionIds);
+            missingQuestions.removeAll(questionAnswers.keySet());
+            
+            Set<Long> extraQuestions = new HashSet<>(questionAnswers.keySet());
+            extraQuestions.removeAll(questionIds);
+            
+            String errorMsg = "请回答所有问题";
+            if (!missingQuestions.isEmpty()) {
+                errorMsg += "，缺失问题ID: " + missingQuestions;
+            }
+            if (!extraQuestions.isEmpty()) {
+                errorMsg += "，多余问题ID: " + extraQuestions;
+            }
+            errorMsg += "。数据库问题ID: " + questionIds + "，提交问题ID: " + questionAnswers.keySet();
+            
+            throw new RuntimeException(errorMsg);
         }
 
         // 验证选项是否属于对应问题
@@ -227,11 +243,11 @@ public class TestService {
         // E/I
         mbtiType.append(scores.get(MbtiDimension.EI) >= 0 ? "E" : "I");
         // S/N
-        mbtiType.append(scores.get(MbtiDimension.SN) >= 0 ? "N" : "S");
+        mbtiType.append(scores.get(MbtiDimension.SN) >= 0 ? "S" : "N");
         // T/F
-        mbtiType.append(scores.get(MbtiDimension.TF) >= 0 ? "F" : "T");
+        mbtiType.append(scores.get(MbtiDimension.TF) >= 0 ? "T" : "F");
         // J/P
-        mbtiType.append(scores.get(MbtiDimension.JP) >= 0 ? "P" : "J");
+        mbtiType.append(scores.get(MbtiDimension.JP) >= 0 ? "J" : "P");
         
         return mbtiType.toString();
     }
