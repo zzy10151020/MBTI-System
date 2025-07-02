@@ -3,6 +3,7 @@ package org.frostedstar.mbtisystem.service;
 import org.frostedstar.mbtisystem.dto.UserDTO;
 import org.frostedstar.mbtisystem.model.User;
 import org.frostedstar.mbtisystem.model.UserRole;
+import org.frostedstar.mbtisystem.repository.AnswerRepository;
 import org.frostedstar.mbtisystem.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -27,10 +28,12 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final AnswerRepository answerRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, AnswerRepository answerRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.answerRepository = answerRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -351,9 +354,7 @@ public class UserService {
         dto.setEmail(user.getEmail());
         dto.setRole(user.getRole());
         dto.setCreatedAt(user.getCreatedAt());
-        
-        // 获取答题数量（这里简化，实际可能需要关联查询）
-        dto.setAnswerCount(0L); // 需要后续实现答题统计
+        dto.setAnswerCount(answerRepository.countByUserId(user.getUserId()));
         
         return dto;
     }

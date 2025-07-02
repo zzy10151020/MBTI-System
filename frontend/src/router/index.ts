@@ -9,6 +9,7 @@ import UserProfileView from '../views/UserProfileView.vue'
 import AdminQuestionnairesView from '../views/AdminQuestionnairesView.vue'
 import AdminQuestionsView from '../views/AdminQuestionsView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
+import ErrorView from '../views/ErrorView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -49,6 +50,11 @@ const router = createRouter({
       name: 'admin-questions',
       component: AdminQuestionsView,
       meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/error',
+      name: 'error',
+      component: ErrorView,
     },
     {
       path: '/:pathMatch(.*)*',
