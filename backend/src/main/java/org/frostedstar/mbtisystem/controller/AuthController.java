@@ -34,9 +34,12 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterDTO registerRequest) {
         try {
-            authService.register(registerRequest.getUsername(), registerRequest.getPassword(), registerRequest.getEmail());
+            if (!authService.register(registerRequest.getUsername(), registerRequest.getPassword(), registerRequest.getEmail())) {
+                throw new RuntimeException("用户名或邮箱已存在");
+            }
             return ResponseEntity.ok(Map.of(
                 "success", true,
+                "data", Map.of("username", registerRequest.getUsername()),
                 "message", "注册成功"
             ));
         } catch (Exception e) {

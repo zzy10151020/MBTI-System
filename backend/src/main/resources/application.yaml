@@ -1,12 +1,12 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/mbti_test?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true
+    url: jdbc:mysql://localhost:3306/mbti_test?allowPublicKeyRetrieval=true&useSSL=false
     username: root
     password: AbC/12321/AbC
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: update # 开发环境使用，生产环境改为 validate
+      ddl-auto: update # 开发环境使用
     show-sql: true
     properties:
       hibernate:

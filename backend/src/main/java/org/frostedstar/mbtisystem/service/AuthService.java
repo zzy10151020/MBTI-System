@@ -66,8 +66,8 @@ public class AuthService {
     /**
      * 用户注册
      */
-    public User register(String username, String password, String email) {
-        return userService.registerUser(username, password, email);
+    public boolean register(String username, String password, String email) {
+        return userService.registerUser(username, password, email) != null;
     }
 
     /**
