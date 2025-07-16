@@ -142,6 +142,28 @@ public class UserController extends BaseController {
                     user.setEmail(newEmail);
                     updated = true;
                 }
+
+                // 更新用户名
+                else if (updateRequest.getUsername() != null && !updateRequest.getUsername().trim().isEmpty()) {
+                    String newUsername = updateRequest.getUsername();
+                    
+                    // 检查用户名是否已存在（排除当前用户）
+                    Optional<User> existingUser = userService.findByUsername(newUsername);
+                    if (existingUser.isPresent() && !existingUser.get().getUserId().equals(userId)) {
+                        ApiResponse<Object> apiResponse = ApiResponse.error("用户名已存在");
+                        sendApiResponse(response, apiResponse);
+                        return;
+                    }
+                    
+                    user.setUsername(newUsername);
+                    updated = true;
+                }
+
+                // 更新权限
+                else if (updateRequest.getRole() != null) {
+                    user.setRole(updateRequest.getRole());
+                    updated = true;
+                }
                 
                 if (updated) {
                     boolean success = userService.update(user);

@@ -40,10 +40,8 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  token: string
-  userId: number
-  username: string
-  roles: string[]
+  user: User
+  sessionId: string
 }
 
 export interface RegisterRequest {
@@ -60,8 +58,24 @@ export interface RegisterResponse {
   createdAt: string
 }
 
-export interface UpdateProfileRequest {
+export interface UpdateUserRequest {
   email?: string
+}
+
+export interface ChangePasswordRequest {
+  oldPassword: string
+  newPassword: string
+}
+
+// 检查用户名/邮箱响应类型
+export interface CheckUsernameResponse {
+  exists: boolean
+  username: string
+}
+
+export interface CheckEmailResponse {
+  exists: boolean
+  email: string
 }
 
 // 问卷相关类型
@@ -84,12 +98,14 @@ export interface CreateQuestionnaireRequest {
 
 export interface QuestionOption {
   optionId: number
+  questionId?: number
   content: string
-  score: number
+  scoreValue: string
 }
 
 export interface Question {
   questionId: number
+  questionnaireId?: number
   content: string
   dimension: string
   questionOrder: number
@@ -103,10 +119,20 @@ export interface QuestionnaireDetail {
   questions: Question[]
 }
 
+export interface UpdateQuestionnaireRequest {
+  questionnaireId: number
+  title?: string
+  description?: string
+  isPublished?: boolean
+}
+
 // 测试相关类型
 export interface SubmitAnswersRequest {
   questionnaireId: number
-  questionAnswers: Record<string, number> // 问题ID: 选项ID
+  answerDetails: Array<{
+    questionId: number
+    optionId: number
+  }>
 }
 
 export interface DimensionScores {
@@ -118,6 +144,8 @@ export interface DimensionScores {
 
 export interface SubmitAnswersResponse {
   answerId: number
+  questionnaireId: number
+  userId: number
   mbtiType: string
   dimensionScores: DimensionScores
   submittedAt: string
@@ -126,38 +154,57 @@ export interface SubmitAnswersResponse {
 export interface TestResult {
   answerId: number
   questionnaireId: number
-  questionnaireTitle: string
+  userId: number
   mbtiType: string
   submittedAt: string
+  answerDetails: Array<{
+    questionId: number
+    optionId: number
+    selectedOption: string
+    score: number
+  }>
 }
 
-export interface TestResultsResponse {
-  results: TestResult[]
-  totalElements: number
-  totalPages: number
-  currentPage: number
-  pageSize: number
-}
-
-export interface MbtiReport {
+export interface TestResultDetail {
+  answerId: number
+  questionnaireId: number
+  userId: number
   mbtiType: string
   dimensionScores: DimensionScores
-  description: string
-  strengths: string[]
-  challenges: string[]
-  careers: string[]
-  generatedAt: string
-}
-
-export interface TestStatistics {
-  totalAnswers: number
-  totalQuestionnaires: number
-  publishedQuestionnaires: number
-  mbtiDistribution: Record<string, number>
+  submittedAt: string
+  answerDetails: Array<{
+    questionId: number
+    optionId: number
+    selectedOption: string
+    score: number
+  }>
 }
 
 // 分页查询参数
 export interface PageParams {
   page?: number
   size?: number
+}
+
+export interface CreateQuestionRequest {
+  questionnaireId: number
+  content: string
+  dimension: string
+  questionOrder: number
+  options: Array<{
+    content: string
+    scoreValue: string
+  }>
+}
+
+export interface UpdateQuestionRequest {
+  questionId: number
+  content?: string
+  dimension?: string
+  questionOrder?: number
+  options?: Array<{
+    optionId?: number
+    content: string
+    scoreValue: string
+  }>
 }

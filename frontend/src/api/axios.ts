@@ -4,8 +4,9 @@ import { useUiStateStore } from '@/stores/uiStateStore'
 
 // 创建 axios 实例
 const service: AxiosInstance = axios.create({
-  baseURL: 'http://localhost:8080', // API 的基础URL
+  baseURL: 'http://localhost:8080/mbti-system', // API 的基础URL
   timeout: 15000, // 请求超时时间
+  withCredentials: true, // 启用Session Cookie
   headers: {
     'Content-Type': 'application/json;charset=utf-8',
   },
@@ -24,12 +25,8 @@ service.interceptors.request.use(
       data: config.data
     })
     
-    // 从localStorage获取token
-    const token = localStorage.getItem('token')
-    // 根据接口文档，需要在请求头添加 Bearer Token
-    if (token && config.headers) {
-      config.headers['Authorization'] = `Bearer ${token}`
-    }
+    // Session认证不需要手动添加Authorization header
+    // Cookie会自动携带JSESSIONID
     return config
   },
   (error) => {
@@ -50,20 +47,9 @@ service.interceptors.response.use(
       data: response.data
     })
     
-    // 登录接口特殊处理 - 根据接口文档，登录成功直接返回token等字段
-    if (response.config.url?.includes('/api/auth/login')) {
-      if (response.data && response.data.token) {
-        console.log('登录成功，返回token数据')
-        return response.data
-      } else {
-        console.error('登录接口响应格式异常:', response.data)
-        // 继续往下处理
-      }
-    }
-    
-    // 标准API响应格式 {success: true, data: {}, message: ""}
+    // 标准API响应格式 {success: true, data: {}, message: "", timestamp: number}
     if (response.data && response.data.success === true) {
-      console.log('标准API响应，返回data字段')
+      console.log('标准API响应，返回整个响应对象')
       return response.data
     }
     
@@ -100,10 +86,11 @@ service.interceptors.response.use(
       
       switch (error.response.status) {
         case 401:
-          localStorage.removeItem('token')
+          // Session过期，清除本地存储并打开登录窗口
+          localStorage.removeItem('userInfo')
           const uiStateStore = useUiStateStore()
           uiStateStore.openLogin()
-          console.error('❌ 401: 认证失败，已清除token并打开登录窗口')
+          console.error('❌ 401: Session过期或未登录，已打开登录窗口')
           break
         case 403:
           console.error('❌ 403: 权限不足，无法执行此操作')

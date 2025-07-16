@@ -24,7 +24,7 @@ export const useQuestionnaireStore = defineStore('questionnaire', () => {
     try {
       loading.value = true
       error.value = null
-      questionnaires.value = await questionnaireApi.getActiveQuestionnaires()
+      questionnaires.value = await questionnaireApi.getQuestionnaireList()
     } catch (err: any) {
       console.warn('API获取问卷失败，使用模拟数据:', err)
       

@@ -2,9 +2,8 @@ import service from './axios'
 import type { 
   ApiResponse,
   User,
-  UpdateProfileRequest,
-  PageResponse,
-  PageParams
+  UpdateUserRequest,
+  ChangePasswordRequest
 } from './types'
 
 /**
@@ -15,7 +14,7 @@ export const userApi = {
    * 获取当前用户信息
    */
   async getProfile(): Promise<User> {
-    const response = await service.get<any, ApiResponse<User>>('/api/users/profile')
+    const response = await service.get<any, ApiResponse<User>>('/api/user/get')
     return response.data
   },
 
@@ -23,20 +22,32 @@ export const userApi = {
    * 更新当前用户信息
    * @param data 更新数据
    */
-  async updateProfile(data: UpdateProfileRequest): Promise<User> {
-    const response = await service.put<any, ApiResponse<User>>('/api/users/profile', data)
+  async updateProfile(data: UpdateUserRequest): Promise<User> {
+    const requestData = {
+      ...data,
+      operationType: 'UPDATE'
+    }
+    const response = await service.post<any, ApiResponse<User>>('/api/user/update', requestData)
     return response.data
   },
 
   /**
-   * 获取用户列表（管理员权限）
-   * @param params 分页参数
+   * 修改密码
+   * @param data 修改密码数据
    */
-  async getUserList(params: PageParams = {}): Promise<PageResponse<User>> {
-    const { page = 0, size = 10 } = params
-    const response = await service.get<any, ApiResponse<PageResponse<User>>>(
-      `/api/users?page=${page}&size=${size}`
-    )
+  async changePassword(data: ChangePasswordRequest): Promise<void> {
+    const requestData = {
+      ...data,
+      operationType: 'UPDATE'
+    }
+    await service.post<any, ApiResponse<void>>('/api/user/changePassword', requestData)
+  },
+
+  /**
+   * 获取用户列表（管理员权限）
+   */
+  async getUserList(): Promise<User[]> {
+    const response = await service.get<any, ApiResponse<User[]>>('/api/user/list')
     return response.data
   },
 
@@ -45,7 +56,11 @@ export const userApi = {
    * @param userId 用户ID
    */
   async deleteUser(userId: number): Promise<void> {
-    await service.delete<any, ApiResponse<void>>(`/api/users/${userId}`)
+    const requestData = {
+      userId,
+      operationType: 'DELETE'
+    }
+    await service.post<any, ApiResponse<void>>('/api/user/delete', requestData)
   }
 }
 

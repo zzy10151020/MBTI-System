@@ -4,7 +4,10 @@ import type {
   LoginRequest, 
   LoginResponse, 
   RegisterRequest, 
-  RegisterResponse 
+  RegisterResponse,
+  User,
+  CheckUsernameResponse,
+  CheckEmailResponse
 } from './types'
 
 /**
@@ -16,8 +19,12 @@ export const authApi = {
    * @param data 登录请求数据
    */
   async login(data: LoginRequest): Promise<LoginResponse> {
-    const response = await service.post<any, LoginResponse>('/api/auth/login', data)
-    return response // 登录接口直接返回数据，不需要解包
+    const response = await service.post<any, ApiResponse<LoginResponse>>('/api/auth/login', data)
+    // 登录成功后保存用户信息到localStorage
+    if (response.success && response.data) {
+      localStorage.setItem('userInfo', JSON.stringify(response.data.user))
+    }
+    return response.data
   },
 
   /**
@@ -30,33 +37,66 @@ export const authApi = {
   },
 
   /**
-   * 退出登录 (客户端清除token)
+   * 退出登录
    */
-  logout(): void {
-    localStorage.removeItem('token')
+  async logout(): Promise<void> {
+    try {
+      await service.post('/api/auth/logout')
+    } catch (error) {
+      console.error('注销请求失败:', error)
+    } finally {
+      // 无论请求是否成功，都清除本地数据
+      localStorage.removeItem('userInfo')
+    }
+  },
+
+  /**
+   * 检查用户名是否存在
+   * @param username 用户名
+   */
+  async checkUsername(username: string): Promise<CheckUsernameResponse> {
+    const response = await service.get<any, ApiResponse<CheckUsernameResponse>>(`/api/auth/checkUsername?username=${username}`)
+    return response.data
+  },
+
+  /**
+   * 检查邮箱是否存在
+   * @param email 邮箱
+   */
+  async checkEmail(email: string): Promise<CheckEmailResponse> {
+    const response = await service.get<any, ApiResponse<CheckEmailResponse>>(`/api/auth/checkEmail?email=${email}`)
+    return response.data
   },
 
   /**
    * 检查是否已登录
    */
   isLoggedIn(): boolean {
-    const token = localStorage.getItem('token')
-    return !!token
+    const userInfo = localStorage.getItem('userInfo')
+    return !!userInfo
   },
 
   /**
-   * 获取当前用户token
+   * 获取当前用户信息
    */
-  getToken(): string | null {
-    return localStorage.getItem('token')
+  getCurrentUser(): User | null {
+    const userInfo = localStorage.getItem('userInfo')
+    return userInfo ? JSON.parse(userInfo) : null
   },
 
   /**
-   * 设置token
-   * @param token JWT令牌
+   * 设置用户信息
+   * @param user 用户信息
    */
-  setToken(token: string): void {
-    localStorage.setItem('token', token)
+  setUserInfo(user: User): void {
+    localStorage.setItem('userInfo', JSON.stringify(user))
+  },
+
+  /**
+   * 清除用户信息
+   */
+  clearUserInfo(): void {
+    localStorage.removeItem('userInfo')
   }
 }
 
