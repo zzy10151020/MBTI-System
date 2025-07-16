@@ -1,47 +1,188 @@
 package org.frostedstar.mbtisystem.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.frostedstar.mbtisystem.model.UserRole;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import org.frostedstar.mbtisystem.entity.User;
 
 import java.time.LocalDateTime;
 
 /**
- * 用户数据传输对象
+ * 统一用户DTO
+ * 支持创建、更新、查询、删除等多种操作
+ * 替代原来的UserUpdateRequest、UserCreateRequest等多个DTO
  */
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserDTO {
     
-    /**
-     * 用户ID
-     */
-    private Long userId;
-    
-    /**
-     * 用户名
-     */
+    // 基本信息
+    private Integer userId;
     private String username;
-    
-    /**
-     * 邮箱
-     */
     private String email;
-    
-    /**
-     * 用户角色
-     */
-    private UserRole role;
-    
-    /**
-     * 创建时间
-     */
+    private String password;
+    private User.Role role;
     private LocalDateTime createdAt;
     
+    // 操作类型标识
+    private OperationType operationType;
+    
+    // 密码修改相关字段
+    private String currentPassword;
+    private String newPassword;
+    
     /**
-     * 回答问卷数量
+     * 创建请求验证
      */
-    private Long answerCount;
+    public boolean isValidForCreate() {
+        return operationType == OperationType.CREATE &&
+               username != null && !username.trim().isEmpty() &&
+               email != null && !email.trim().isEmpty() &&
+               password != null && !password.trim().isEmpty() &&
+               isValidEmail(email);
+    }
+    
+    /**
+     * 密码修改请求验证
+     */
+    public boolean isValidForPasswordChange() {
+        return operationType == OperationType.UPDATE &&
+               userId != null && userId > 0 &&
+               currentPassword != null && !currentPassword.trim().isEmpty() &&
+               newPassword != null && !newPassword.trim().isEmpty() &&
+               newPassword.length() >= 6;
+    }
+    
+    /**
+     * 更新请求验证
+     */
+    public boolean isValidForUpdate() {
+        return operationType == OperationType.UPDATE &&
+               userId != null && userId > 0 &&
+               ((username != null && !username.trim().isEmpty() ||
+                 email != null && !email.trim().isEmpty()) &&
+                (email == null || isValidEmail(email)) ||
+                isValidForPasswordChange());
+    }
+    
+    /**
+     * 删除请求验证
+     */
+    public boolean isValidForDelete() {
+        return operationType == OperationType.DELETE &&
+               userId != null && userId > 0;
+    }
+    
+    /**
+     * 查询请求验证
+     */
+    public boolean isValidForQuery() {
+        return operationType == OperationType.QUERY;
+    }
+    
+    /**
+     * 通用验证方法
+     */
+    public boolean isValid() {
+        if (operationType == null) {
+            return false;
+        }
+        
+        switch (operationType) {
+            case CREATE:
+                return isValidForCreate();
+            case UPDATE:
+                return isValidForUpdate();
+            case DELETE:
+                return isValidForDelete();
+            case QUERY:
+                return isValidForQuery();
+            default:
+                return false;
+        }
+    }
+    
+    /**
+     * 邮箱格式验证
+     */
+    private boolean isValidEmail(String email) {
+        return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    }
+    
+    /**
+     * 从User实体转换为UserDTO
+     */
+    public static UserDTO fromEntity(User user) {
+        if (user == null) {
+            return null;
+        }
+        
+        return UserDTO.builder()
+                .userId(user.getUserId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .createdAt(user.getCreatedAt())
+                .operationType(OperationType.QUERY)
+                .build();
+    }
+    
+    /**
+     * 创建用于创建操作的DTO
+     */
+    public static UserDTO forCreate(String username, String email, String password) {
+        return UserDTO.builder()
+                .username(username)
+                .email(email)
+                .password(password)
+                .role(User.Role.USER) // 默认角色
+                .operationType(OperationType.CREATE)
+                .build();
+    }
+    
+    /**
+     * 创建用于更新操作的DTO
+     */
+    public static UserDTO forUpdate(Integer userId, String username, String email) {
+        return UserDTO.builder()
+                .userId(userId)
+                .username(username)
+                .email(email)
+                .operationType(OperationType.UPDATE)
+                .build();
+    }
+    
+    /**
+     * 创建用于删除操作的DTO
+     */
+    public static UserDTO forDelete(Integer userId) {
+        return UserDTO.builder()
+                .userId(userId)
+                .operationType(OperationType.DELETE)
+                .build();
+    }
+    
+    /**
+     * 创建用于查询操作的DTO
+     */
+    public static UserDTO forQuery() {
+        return UserDTO.builder()
+                .operationType(OperationType.QUERY)
+                .build();
+    }
+    
+    /**
+     * 创建用于密码修改操作的DTO
+     */
+    public static UserDTO forPasswordChange(Integer userId, String currentPassword, String newPassword) {
+        return UserDTO.builder()
+                .userId(userId)
+                .currentPassword(currentPassword)
+                .newPassword(newPassword)
+                .operationType(OperationType.UPDATE)
+                .build();
+    }
 }

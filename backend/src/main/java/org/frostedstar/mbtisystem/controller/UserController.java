@@ -1,198 +1,316 @@
 package org.frostedstar.mbtisystem.controller;
 
-import lombok.RequiredArgsConstructor;
-import org.frostedstar.mbtisystem.dto.UserDTO;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import lombok.extern.slf4j.Slf4j;
+import org.frostedstar.mbtisystem.entity.User;
+import org.frostedstar.mbtisystem.service.ServiceFactory;
 import org.frostedstar.mbtisystem.service.UserService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.frostedstar.mbtisystem.dto.ApiResponse;
+import org.frostedstar.mbtisystem.dto.UserDTO;
+import org.frostedstar.mbtisystem.dto.OperationType;
+import org.frostedstar.mbtisystem.dto.ErrorResponse;
 
-import jakarta.validation.Valid;
+import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 
 /**
- * 用户管理控制器
- * 提供用户信息查询、更新、管理等功能
+ * 用户控制器
  */
-@RequiredArgsConstructor
-@RestController
-@RequestMapping("/api/users")
-public class UserController {
-
+@Slf4j
+public class UserController extends BaseController {
+    
     private final UserService userService;
-
+    
+    public UserController() {
+        this.userService = ServiceFactory.getUserService();
+    }
+    
     /**
      * 获取当前用户信息
      */
-    @GetMapping("/profile")
-    public ResponseEntity<?> getCurrentUser() {
+    public void get(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            UserDTO user = userService.getCurrentUser();
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "data", user,
-                "message", "获取用户信息成功"
-            ));
+            if (!"GET".equals(request.getMethod())) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("Method Not Allowed");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            // 检查用户是否已登录
+            HttpSession session = request.getSession(false);
+            if (session == null) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("用户未登录");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            Integer userId = (Integer) session.getAttribute("userId");
+            if (userId == null) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("用户未登录");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            // 获取用户信息
+            Optional<User> userOptional = userService.findById(userId);
+            
+            if (userOptional.isPresent()) {
+                User user = userOptional.get();
+                
+                // 使用DTO转换
+                UserDTO userDTO = UserDTO.fromEntity(user);
+                ApiResponse<UserDTO> apiResponse = ApiResponse.success(userDTO);
+                
+                sendApiResponse(response, apiResponse);
+            } else {
+                ApiResponse<Object> apiResponse = ApiResponse.error("用户不存在");
+                sendApiResponse(response, apiResponse);
+            }
+            
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", "获取用户信息失败: " + e.getMessage()
-            ));
+            log.error("获取用户信息失败", e);
+            ErrorResponse errorResponse = ErrorResponse.create(
+                e.getClass().getSimpleName(),
+                "获取用户信息失败: " + e.getMessage(),
+                500,
+                "/api/user"
+            );
+            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
+            sendApiResponse(response, apiResponse);
         }
     }
-
+    
     /**
-     * 更新当前用户信息
+     * 更新用户信息
      */
-    @PutMapping("/profile")
-    public ResponseEntity<?> updateCurrentUser(@Valid @RequestBody UserDTO userDTO) {
+    public void post(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            UserDTO updatedUser = userService.updateCurrentUser(userDTO);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "data", updatedUser,
-                "message", "更新用户信息成功"
-            ));
+            if (!"POST".equals(request.getMethod())) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("Method Not Allowed");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            // 检查用户是否已登录
+            HttpSession session = request.getSession(false);
+            if (session == null) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("用户未登录");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            Integer userId = (Integer) session.getAttribute("userId");
+            if (userId == null) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("用户未登录");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            // 解析请求体到DTO
+            UserDTO updateRequest = parseRequestBody(request, UserDTO.class);
+            updateRequest.setOperationType(OperationType.UPDATE);
+            
+            // 验证请求数据
+            if (!updateRequest.isValid()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("请求数据不完整");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            // 获取当前用户信息
+            Optional<User> userOptional = userService.findById(userId);
+            
+            if (userOptional.isPresent()) {
+                User user = userOptional.get();
+                boolean updated = false;
+                
+                // 更新邮箱
+                if (updateRequest.getEmail() != null && !updateRequest.getEmail().trim().isEmpty()) {
+                    String newEmail = updateRequest.getEmail();
+                    
+                    // 检查邮箱是否已存在（排除当前用户）
+                    Optional<User> existingUser = userService.findByEmail(newEmail);
+                    if (existingUser.isPresent() && !existingUser.get().getUserId().equals(userId)) {
+                        ApiResponse<Object> apiResponse = ApiResponse.error("邮箱已存在");
+                        sendApiResponse(response, apiResponse);
+                        return;
+                    }
+                    
+                    user.setEmail(newEmail);
+                    updated = true;
+                }
+                
+                if (updated) {
+                    boolean success = userService.update(user);
+                    if (success) {
+                        // 返回更新后的用户信息
+                        UserDTO userDTO = UserDTO.fromEntity(user);
+                        ApiResponse<UserDTO> apiResponse = ApiResponse.success("用户信息更新成功", userDTO);
+                        
+                        sendApiResponse(response, apiResponse);
+                        log.info("用户信息更新成功: {}", user.getUsername());
+                    } else {
+                        ApiResponse<Object> apiResponse = ApiResponse.error("更新用户信息失败");
+                        sendApiResponse(response, apiResponse);
+                    }
+                } else {
+                    ApiResponse<Object> apiResponse = ApiResponse.error("没有可更新的内容");
+                    sendApiResponse(response, apiResponse);
+                }
+            } else {
+                ApiResponse<Object> apiResponse = ApiResponse.error("用户不存在");
+                sendApiResponse(response, apiResponse);
+            }
+            
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", "更新用户信息失败: " + e.getMessage()
-            ));
+            log.error("更新用户信息失败", e);
+            ErrorResponse errorResponse = ErrorResponse.create(
+                e.getClass().getSimpleName(),
+                "更新用户信息失败: " + e.getMessage(),
+                500,
+                "/api/user"
+            );
+            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
+            sendApiResponse(response, apiResponse);
         }
     }
-
+    
     /**
-     * 获取所有用户列表（管理员权限）
+     * 修改密码
      */
-    @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getAllUsers(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+    public void changePassword(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            Pageable pageable = PageRequest.of(page, size);
-            Page<UserDTO> users = userService.getAllUsers(pageable);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "data", users,
-                "message", "获取用户列表成功"
-            ));
+            if (!"POST".equals(request.getMethod())) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("Method Not Allowed");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            // 检查用户是否已登录
+            HttpSession session = request.getSession(false);
+            if (session == null) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("用户未登录");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            Integer userId = (Integer) session.getAttribute("userId");
+            if (userId == null) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("用户未登录");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            // 解析请求体
+            @SuppressWarnings("unchecked")
+            Map<String, Object> passwordData = parseRequestBody(request, Map.class);
+            
+            String oldPassword = (String) passwordData.get("oldPassword");
+            String newPassword = (String) passwordData.get("newPassword");
+            
+            // 验证参数
+            if (oldPassword == null || oldPassword.trim().isEmpty()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("原密码不能为空");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            if (newPassword == null || newPassword.trim().isEmpty()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("新密码不能为空");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            if (newPassword.length() < 6) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("新密码长度不能少于6位");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            // 修改密码
+            boolean success = userService.changePassword(userId, oldPassword, newPassword);
+            
+            if (success) {
+                ApiResponse<String> apiResponse = ApiResponse.success("密码修改成功", "密码修改成功");
+                sendApiResponse(response, apiResponse);
+                log.info("用户密码修改成功: {}", session.getAttribute("username"));
+            } else {
+                ApiResponse<Object> apiResponse = ApiResponse.error("原密码错误");
+                sendApiResponse(response, apiResponse);
+            }
+            
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", "获取用户列表失败: " + e.getMessage()
-            ));
+            log.error("修改密码失败", e);
+            ErrorResponse errorResponse = ErrorResponse.create(
+                e.getClass().getSimpleName(),
+                "修改密码失败: " + e.getMessage(),
+                500,
+                "/api/user/changePassword"
+            );
+            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
+            sendApiResponse(response, apiResponse);
         }
     }
-
+    
     /**
-     * 根据ID获取用户信息（管理员权限）
+     * 获取用户详情（根据用户ID）
      */
-    @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getUserById(@PathVariable Long id) {
+    public void profile(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            UserDTO user = userService.getUserById(id);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "data", user,
-                "message", "获取用户信息成功"
-            ));
+            if (!"GET".equals(request.getMethod())) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("Method Not Allowed");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            String userIdStr = request.getParameter("userId");
+            if (userIdStr == null || userIdStr.trim().isEmpty()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("用户ID不能为空");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            Integer userId;
+            try {
+                userId = Integer.parseInt(userIdStr);
+            } catch (NumberFormatException e) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("用户ID格式不正确");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            // 获取用户信息
+            Optional<User> userOptional = userService.findById(userId);
+            
+            if (userOptional.isPresent()) {
+                User user = userOptional.get();
+                
+                // 使用DTO转换（不包含密码和邮箱）
+                UserDTO userDTO = UserDTO.fromEntity(user);
+                // 移除敏感信息
+                userDTO.setPassword(null);
+                userDTO.setEmail(null);
+                
+                ApiResponse<UserDTO> apiResponse = ApiResponse.success(userDTO);
+                sendApiResponse(response, apiResponse);
+            } else {
+                ApiResponse<Object> apiResponse = ApiResponse.error("用户不存在");
+                sendApiResponse(response, apiResponse);
+            }
+            
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", "获取用户信息失败: " + e.getMessage()
-            ));
-        }
-    }
-
-    /**
-     * 更新用户信息（管理员权限）
-     */
-    @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> updateUser(@PathVariable Long id, @Valid @RequestBody UserDTO userDTO) {
-        try {
-            UserDTO updatedUser = userService.updateUser(id, userDTO);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "data", updatedUser,
-                "message", "更新用户信息成功"
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", "更新用户信息失败: " + e.getMessage()
-            ));
-        }
-    }
-
-    /**
-     * 删除用户（管理员权限）
-     */
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
-        try {
-            userService.deleteUser(id);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "删除用户成功"
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", "删除用户失败: " + e.getMessage()
-            ));
-        }
-    }
-
-    /**
-     * 修改用户角色（管理员权限）
-     */
-    @PutMapping("/{id}/role")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> updateUserRole(@PathVariable Long id, @RequestParam String role) {
-        try {
-            UserDTO updatedUser = userService.updateUserRole(id, role);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "data", updatedUser,
-                "message", "修改用户角色成功"
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", "修改用户角色失败: " + e.getMessage()
-            ));
-        }
-    }
-
-    /**
-     * 搜索用户（管理员权限）
-     */
-    @GetMapping("/search")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> searchUsers(
-            @RequestParam String keyword,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        try {
-            Pageable pageable = PageRequest.of(page, size);
-            Page<UserDTO> users = userService.searchUsers(keyword, pageable);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "data", users,
-                "message", "搜索用户成功"
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", "搜索用户失败: " + e.getMessage()
-            ));
+            log.error("获取用户详情失败", e);
+            ErrorResponse errorResponse = ErrorResponse.create(
+                e.getClass().getSimpleName(),
+                "获取用户详情失败: " + e.getMessage(),
+                500,
+                "/api/user/profile"
+            );
+            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
+            sendApiResponse(response, apiResponse);
         }
     }
 }

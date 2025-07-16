@@ -1,212 +1,192 @@
 package org.frostedstar.mbtisystem.controller;
 
-import lombok.RequiredArgsConstructor;
-import org.frostedstar.mbtisystem.dto.AnswerSubmitDTO;
+import lombok.extern.slf4j.Slf4j;
+import org.frostedstar.mbtisystem.dto.TestDTO;
+import org.frostedstar.mbtisystem.dto.OperationType;
+import org.frostedstar.mbtisystem.entity.Answer;
+import org.frostedstar.mbtisystem.entity.AnswerDetail;
+import org.frostedstar.mbtisystem.entity.User;
 import org.frostedstar.mbtisystem.service.TestService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.frostedstar.mbtisystem.service.ServiceFactory;
+import org.frostedstar.mbtisystem.service.UserService;
+import org.frostedstar.mbtisystem.dto.ApiResponse;
+import org.frostedstar.mbtisystem.dto.ErrorResponse;
 
-import jakarta.validation.Valid;
-import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 测试控制器
- * 处理问卷答题和结果相关功能
  */
-@RequiredArgsConstructor
-@RestController
-@RequestMapping("/api/test")
-public class TestController {
-
+@Slf4j
+public class TestController extends BaseController {
+    
     private final TestService testService;
-
+    private final UserService userService;
+    
+    public TestController() {
+        this.testService = ServiceFactory.getTestService();
+        this.userService = ServiceFactory.getUserService();
+    }
+    
     /**
-     * 提交问卷答案
+     * 开始测试/获取测试结果
      */
-    @PostMapping("/submit")
-    public ResponseEntity<?> submitAnswers(@Valid @RequestBody AnswerSubmitDTO answerSubmitDTO) {
+    public void get(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            Map<String, Object> result = testService.submitAnswers(answerSubmitDTO);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "data", result,
-                "message", "答案提交成功"
-            ));
+            if (!"GET".equals(request.getMethod())) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("Method Not Allowed");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            // 检查用户是否已登录
+            User user = getCurrentUser(request);
+            if (user == null) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("用户未登录");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            String pathInfo = request.getPathInfo();
+            if (pathInfo == null || pathInfo.equals("/test") || pathInfo.equals("/test/")) {
+                // 获取用户的测试结果列表
+                List<Answer> answers = testService.getUserAllTestResults(user.getUserId());
+                List<TestDTO> testDTOs = answers.stream()
+                    .map(TestDTO::fromEntity)
+                    .collect(Collectors.toList());
+                
+                ApiResponse<List<TestDTO>> apiResponse = ApiResponse.success("获取测试结果成功", testDTOs);
+                sendApiResponse(response, apiResponse);
+            } else {
+                // 尝试解析测试ID
+                String[] pathParts = pathInfo.split("/");
+                if (pathParts.length >= 3 && "test".equals(pathParts[2])) {
+                    if (pathParts.length >= 4) {
+                        try {
+                            Integer answerId = Integer.parseInt(pathParts[3]);
+                            Optional<Answer> answer = testService.getTestResultDetail(answerId);
+                            if (answer.isPresent() && answer.get().getUserId().equals(user.getUserId())) {
+                                TestDTO testDTO = TestDTO.fromEntity(answer.get());
+                                ApiResponse<TestDTO> apiResponse = ApiResponse.success("获取测试详情成功", testDTO);
+                                sendApiResponse(response, apiResponse);
+                            } else {
+                                ApiResponse<Object> apiResponse = ApiResponse.error("测试结果不存在");
+                                sendApiResponse(response, apiResponse);
+                            }
+                        } catch (NumberFormatException e) {
+                            ApiResponse<Object> apiResponse = ApiResponse.error("无效的测试ID");
+                            sendApiResponse(response, apiResponse);
+                        }
+                    } else {
+                        List<Answer> answers = testService.getUserAllTestResults(user.getUserId());
+                        List<TestDTO> testDTOs = answers.stream()
+                            .map(TestDTO::fromEntity)
+                            .collect(Collectors.toList());
+                        
+                        ApiResponse<List<TestDTO>> apiResponse = ApiResponse.success("获取测试结果成功", testDTOs);
+                        sendApiResponse(response, apiResponse);
+                    }
+                } else {
+                    ApiResponse<Object> apiResponse = ApiResponse.error("接口不存在");
+                    sendApiResponse(response, apiResponse);
+                }
+            }
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", "答案提交失败: " + e.getMessage()
-            ));
+            log.error("获取测试结果失败", e);
+            ErrorResponse errorResponse = ErrorResponse.create(
+                e.getClass().getSimpleName(),
+                "获取测试结果失败: " + e.getMessage(),
+                500,
+                "/api/test"
+            );
+            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
+            sendApiResponse(response, apiResponse);
         }
     }
-
+    
     /**
-     * 获取用户的测试结果
+     * 提交测试结果
      */
-    @GetMapping("/results")
-    public ResponseEntity<?> getUserTestResults(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+    public void post(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            Map<String, Object> results = testService.getUserTestResults(page, size);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "data", results,
-                "message", "获取测试结果成功"
-            ));
+            if (!"POST".equals(request.getMethod())) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("Method Not Allowed");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            // 检查用户是否已登录
+            User user = getCurrentUser(request);
+            if (user == null) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("用户未登录");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            // 解析请求体
+            TestDTO testRequest = parseRequestBody(request, TestDTO.class);
+            testRequest.setOperationType(OperationType.CREATE);
+            testRequest.setUserId(user.getUserId());
+            
+            // 验证请求数据
+            if (!testRequest.isValid()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("请求数据不完整");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            // 转换为AnswerDetail对象
+            List<AnswerDetail> answerDetails = new ArrayList<>();
+            for (TestDTO.AnswerDetailDTO answerDetailDTO : testRequest.getAnswerDetails()) {
+                AnswerDetail detail = AnswerDetail.builder()
+                    .questionId(answerDetailDTO.getQuestionId())
+                    .optionId(answerDetailDTO.getOptionId())
+                    .build();
+                answerDetails.add(detail);
+            }
+            
+            // 提交测试结果
+            Answer answer = testService.submitTest(user.getUserId(), testRequest.getQuestionnaireId(), answerDetails);
+            
+            TestDTO testDTO = TestDTO.fromEntity(answer);
+            ApiResponse<TestDTO> apiResponse = ApiResponse.success("测试提交成功", testDTO);
+            sendApiResponse(response, apiResponse);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", "获取测试结果失败: " + e.getMessage()
-            ));
+            log.error("提交测试结果失败", e);
+            ErrorResponse errorResponse = ErrorResponse.create(
+                e.getClass().getSimpleName(),
+                "提交测试结果失败: " + e.getMessage(),
+                500,
+                "/api/test"
+            );
+            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
+            sendApiResponse(response, apiResponse);
         }
     }
-
+    
     /**
-     * 获取指定问卷的测试结果
+     * 获取当前用户
      */
-    @GetMapping("/results/{questionnaireId}")
-    public ResponseEntity<?> getQuestionnaireResult(@PathVariable Long questionnaireId) {
-        try {
-            Map<String, Object> result = testService.getQuestionnaireResult(questionnaireId);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "data", result,
-                "message", "获取测试结果成功"
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", "获取测试结果失败: " + e.getMessage()
-            ));
+    private User getCurrentUser(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return null;
         }
-    }
-
-    /**
-     * 获取MBTI测试报告
-     */
-    @GetMapping("/report/{answerId}")
-    public ResponseEntity<?> getMbtiReport(@PathVariable Long answerId) {
-        try {
-            Map<String, Object> report = testService.generateMbtiReport(answerId);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "data", report,
-                "message", "获取MBTI报告成功"
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", "获取MBTI报告失败: " + e.getMessage()
-            ));
+        
+        Integer userId = (Integer) session.getAttribute("userId");
+        if (userId == null) {
+            return null;
         }
+        
+        Optional<User> userOpt = userService.findById(userId);
+        return userOpt.orElse(null);
     }
-
-    /**
-     * 重新计算测试结果
-     */
-    @PutMapping("/recalculate/{answerId}")
-    public ResponseEntity<?> recalculateResult(@PathVariable Long answerId) {
-        try {
-            Map<String, Object> result = testService.recalculateResult(answerId);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "data", result,
-                "message", "重新计算结果成功"
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", "重新计算结果失败: " + e.getMessage()
-            ));
-        }
-    }
-
-    /**
-     * 获取测试统计（管理员权限）
-     */
-    @GetMapping("/statistics")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getTestStatistics() {
-        try {
-            Map<String, Object> statistics = testService.getTestStatistics();
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "data", statistics,
-                "message", "获取测试统计成功"
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", "获取测试统计失败: " + e.getMessage()
-            ));
-        }
-    }
-
-    /**
-     * 获取问卷答题统计（管理员权限）
-     */
-    @GetMapping("/statistics/{questionnaireId}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getQuestionnaireStatistics(@PathVariable Long questionnaireId) {
-        try {
-            Map<String, Object> statistics = testService.getQuestionnaireTestStatistics(questionnaireId);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "data", statistics,
-                "message", "获取问卷统计成功"
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", "获取问卷统计失败: " + e.getMessage()
-            ));
-        }
-    }
-
-    /**
-     * 删除测试记录（管理员权限）
-     */
-    @DeleteMapping("/answers/{answerId}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> deleteTestRecord(@PathVariable Long answerId) {
-        try {
-            testService.deleteTestRecord(answerId);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "删除测试记录成功"
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", "删除测试记录失败: " + e.getMessage()
-            ));
-        }
-    }
-
-    /**
-     * 获取用户答题历史（管理员权限）
-     */
-    @GetMapping("/history/{userId}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getUserTestHistory(
-            @PathVariable Long userId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        try {
-            Map<String, Object> history = testService.getUserTestHistory(userId, page, size);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "data", history,
-                "message", "获取用户答题历史成功"
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", "获取用户答题历史失败: " + e.getMessage()
-            ));
-        }
-    }
-
 }

@@ -3,35 +3,170 @@ package org.frostedstar.mbtisystem.dto;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
+import lombok.Builder;
+import org.frostedstar.mbtisystem.entity.Question;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * 问题DTO类
+ * 统一问题DTO
+ * 支持创建、更新、查询等多种操作
  */
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class QuestionDTO {
     
-    private Long questionId;
-    
-    private Long questionnaireId;
-    
-    @NotBlank(message = "问题内容不能为空")
-    @Size(max = 1000, message = "问题内容不能超过1000字符")
+    // 基本信息
+    private Integer questionId;
+    private Integer questionnaireId;
     private String content;
-    
-    @NotBlank(message = "MBTI维度不能为空")
     private String dimension; // EI, SN, TF, JP
-    
-    @NotNull(message = "问题顺序不能为空")
-    @Positive(message = "问题顺序必须为正数")
     private Short questionOrder;
+    private LocalDateTime createdAt;
     
+    // 关联信息（仅查询时使用）
     private List<OptionDTO> options;
+    
+    // 操作类型标识
+    private OperationType operationType;
+    
+    /**
+     * 创建请求验证
+     */
+    public boolean isValidForCreate() {
+        return operationType == OperationType.CREATE &&
+               questionnaireId != null && questionnaireId > 0 &&
+               content != null && !content.trim().isEmpty() &&
+               dimension != null && !dimension.trim().isEmpty() &&
+               isValidDimension(dimension);
+    }
+    
+    /**
+     * 更新请求验证
+     */
+    public boolean isValidForUpdate() {
+        return operationType == OperationType.UPDATE &&
+               questionId != null && questionId > 0 &&
+               content != null && !content.trim().isEmpty() &&
+               dimension != null && !dimension.trim().isEmpty() &&
+               isValidDimension(dimension);
+    }
+    
+    /**
+     * 删除请求验证
+     */
+    public boolean isValidForDelete() {
+        return operationType == OperationType.DELETE &&
+               questionId != null && questionId > 0;
+    }
+    
+    /**
+     * 通用验证方法
+     */
+    public boolean isValid() {
+        if (operationType == null) {
+            return false;
+        }
+        
+        switch (operationType) {
+            case CREATE:
+                return isValidForCreate();
+            case UPDATE:
+                return isValidForUpdate();
+            case DELETE:
+                return isValidForDelete();
+            case QUERY:
+                return true; // 查询操作不需要特殊验证
+            default:
+                return false;
+        }
+    }
+    
+    /**
+     * 验证MBTI维度
+     */
+    private boolean isValidDimension(String dimension) {
+        return "EI".equals(dimension) || "SN".equals(dimension) || 
+               "TF".equals(dimension) || "JP".equals(dimension);
+    }
+    
+    /**
+     * 从Question实体转换为QuestionDTO（完整版）
+     */
+    public static QuestionDTO fromEntity(Question question) {
+        if (question == null) {
+            return null;
+        }
+        
+        return QuestionDTO.builder()
+                .questionId(question.getQuestionId())
+                .questionnaireId(question.getQuestionnaireId())
+                .content(question.getContent())
+                .dimension(question.getDimension() != null ? question.getDimension().name() : null)
+                .questionOrder(question.getQuestionOrder())
+                .options(question.getOptions() != null ? 
+                    question.getOptions().stream()
+                        .map(OptionDTO::fromEntity)
+                        .collect(Collectors.toList()) : null)
+                .operationType(OperationType.QUERY)
+                .build();
+    }
+    
+    /**
+     * 从Question实体转换为QuestionDTO（简化版）
+     */
+    public static QuestionDTO fromEntitySimple(Question question) {
+        if (question == null) {
+            return null;
+        }
+        
+        return QuestionDTO.builder()
+                .questionId(question.getQuestionId())
+                .questionnaireId(question.getQuestionnaireId())
+                .content(question.getContent())
+                .dimension(question.getDimension() != null ? question.getDimension().name() : null)
+                .questionOrder(question.getQuestionOrder())
+                .operationType(OperationType.QUERY)
+                .build();
+    }
+    
+    /**
+     * 创建用于创建操作的DTO
+     */
+    public static QuestionDTO forCreate(Integer questionnaireId, String content, String dimension, Short questionOrder) {
+        return QuestionDTO.builder()
+                .questionnaireId(questionnaireId)
+                .content(content)
+                .dimension(dimension)
+                .questionOrder(questionOrder)
+                .operationType(OperationType.CREATE)
+                .build();
+    }
+    
+    /**
+     * 创建用于更新操作的DTO
+     */
+    public static QuestionDTO forUpdate(Integer questionId, String content, String dimension, Short questionOrder) {
+        return QuestionDTO.builder()
+                .questionId(questionId)
+                .content(content)
+                .dimension(dimension)
+                .questionOrder(questionOrder)
+                .operationType(OperationType.UPDATE)
+                .build();
+    }
+    
+    /**
+     * 创建用于删除操作的DTO
+     */
+    public static QuestionDTO forDelete(Integer questionId) {
+        return QuestionDTO.builder()
+                .questionId(questionId)
+                .operationType(OperationType.DELETE)
+                .build();
+    }
 }
