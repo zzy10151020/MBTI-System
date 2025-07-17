@@ -47,13 +47,7 @@ public class QuestionController extends BaseController {
             String pathInfo = request.getPathInfo();
             if (pathInfo == null || pathInfo.equals("/question") || pathInfo.equals("/question/")) {
                 // 获取所有问题
-                List<Question> questions = questionService.findAll();
-                List<QuestionDTO> questionDTOs = questions.stream()
-                    .map(QuestionDTO::fromEntity)
-                    .collect(Collectors.toList());
-                
-                ApiResponse<List<QuestionDTO>> apiResponse = ApiResponse.success("获取问题列表成功", questionDTOs);
-                sendApiResponse(response, apiResponse);
+                fetchAllQuestions(response);
             } else {
                 // 尝试解析问题ID
                 String[] pathParts = pathInfo.split("/");
@@ -75,13 +69,8 @@ public class QuestionController extends BaseController {
                             sendApiResponse(response, apiResponse);
                         }
                     } else {
-                        List<Question> questions = questionService.findAll();
-                        List<QuestionDTO> questionDTOs = questions.stream()
-                            .map(QuestionDTO::fromEntity)
-                            .collect(Collectors.toList());
-                        
-                        ApiResponse<List<QuestionDTO>> apiResponse = ApiResponse.success("获取问题列表成功", questionDTOs);
-                        sendApiResponse(response, apiResponse);
+                        // 如果没有提供ID，则返回所有问题
+                        fetchAllQuestions(response);
                     }
                 } else {
                     ApiResponse<Object> apiResponse = ApiResponse.error("接口不存在");
@@ -100,7 +89,17 @@ public class QuestionController extends BaseController {
             sendApiResponse(response, apiResponse);
         }
     }
-    
+
+    private void fetchAllQuestions(HttpServletResponse response) throws IOException {
+        List<Question> questions = questionService.findAll();
+        List<QuestionDTO> questionDTOs = questions.stream()
+            .map(QuestionDTO::fromEntity)
+            .collect(Collectors.toList());
+
+        ApiResponse<List<QuestionDTO>> apiResponse = ApiResponse.success("获取问题列表成功", questionDTOs);
+        sendApiResponse(response, apiResponse);
+    }
+
     /**
      * 创建问题
      */
@@ -181,7 +180,7 @@ public class QuestionController extends BaseController {
             
             // 获取现有问题
             Optional<Question> existingQuestionOpt = questionService.findById(updateRequest.getQuestionId());
-            if (!existingQuestionOpt.isPresent()) {
+            if (existingQuestionOpt.isEmpty()) {
                 ApiResponse<Object> apiResponse = ApiResponse.error("问题不存在");
                 sendApiResponse(response, apiResponse);
                 return;
@@ -233,7 +232,7 @@ public class QuestionController extends BaseController {
             
             // 从URL参数或请求体获取ID
             String idParam = request.getParameter("id");
-            Integer id = null;
+            Integer id;
             
             if (idParam != null) {
                 try {
@@ -259,7 +258,7 @@ public class QuestionController extends BaseController {
             
             // 检查问题是否存在
             Optional<Question> questionOpt = questionService.findById(id);
-            if (!questionOpt.isPresent()) {
+            if (questionOpt.isEmpty()) {
                 ApiResponse<Object> apiResponse = ApiResponse.error("问题不存在");
                 sendApiResponse(response, apiResponse);
                 return;
@@ -304,7 +303,7 @@ public class QuestionController extends BaseController {
         
         // 获取用户信息
         Optional<User> userOpt = userService.findById(userId);
-        if (!userOpt.isPresent()) {
+        if (userOpt.isEmpty()) {
             ApiResponse<Object> apiResponse = ApiResponse.error("用户不存在");
             sendApiResponse(response, apiResponse);
             return null;

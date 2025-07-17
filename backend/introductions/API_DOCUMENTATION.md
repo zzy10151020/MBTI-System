@@ -299,7 +299,7 @@ Cookie: JSESSIONID=xxxxx
 
 ### 2.3 修改密码
 
-**接口地址：** `POST /mbti-system/api/user/changePassword`
+**接口地址：** `POST /mbti-system/api/user`
 
 **接口说明：** 修改当前用户密码
 
@@ -312,8 +312,8 @@ Cookie: JSESSIONID=xxxxx
 **请求体：**
 ```json
 {
-    "oldPassword": "123456",      // 旧密码
-    "newPassword": "newpass123",  // 新密码
+    "currentPassword": "123456",      // 旧密码
+    "newPassword": "newpass123",      // 新密码
     "operationType": "UPDATE"
 }
 ```
@@ -372,7 +372,7 @@ Cookie: JSESSIONID=xxxxx
 
 ### 2.5 删除用户（管理员）
 
-**接口地址：** `POST /mbti-system/api/user/delete`
+**接口地址：** `DELETE /mbti-system/api/user`
 
 **接口说明：** 删除指定用户（仅管理员可访问）
 
@@ -439,7 +439,7 @@ Cookie: JSESSIONID=xxxxx
 
 ### 3.2 获取问卷详情
 
-**接口地址：** `GET /mbti-system/api/questionnaire/get/{id}`
+**接口地址：** `GET /mbti-system/api/questionnaire/{id}`
 
 **接口说明：** 获取指定问卷的详细信息
 
@@ -491,7 +491,7 @@ Cookie: JSESSIONID=xxxxx
 
 ### 3.3 创建问卷（管理员）
 
-**接口地址：** `POST /mbti-system/api/questionnaire/create`
+**接口地址：** `POST /mbti-system/api/questionnaire`
 
 **接口说明：** 创建新问卷（仅管理员可访问）
 
@@ -533,7 +533,7 @@ Cookie: JSESSIONID=xxxxx
 
 ### 3.4 更新问卷（管理员）
 
-**接口地址：** `POST /mbti-system/api/questionnaire/update`
+**接口地址：** `PUT /mbti-system/api/questionnaire`
 
 **接口说明：** 更新问卷信息（仅管理员可访问）
 
@@ -577,7 +577,7 @@ Cookie: JSESSIONID=xxxxx
 
 ### 3.5 删除问卷（管理员）
 
-**接口地址：** `POST /mbti-system/api/questionnaire/delete`
+**接口地址：** `DELETE /mbti-system/api/questionnaire`
 
 **接口说明：** 删除问卷（仅管理员可访问）
 
@@ -613,7 +613,7 @@ Cookie: JSESSIONID=xxxxx
 
 ### 4.1 获取问卷的所有问题
 
-**接口地址：** `GET /mbti-system/api/question/questionnaire/{questionnaireId}`
+**接口地址：** `GET /mbti-system/api/question/{questionnaireId}`
 
 **接口说明：** 获取指定问卷的所有问题和选项
 
@@ -660,7 +660,7 @@ Cookie: JSESSIONID=xxxxx
 
 ### 4.2 创建问题（管理员）
 
-**接口地址：** `POST /mbti-system/api/question/create`
+**接口地址：** `POST /mbti-system/api/question`
 
 **接口说明：** 为指定问卷创建新问题（仅管理员可访问）
 
@@ -727,7 +727,7 @@ Cookie: JSESSIONID=xxxxx
 
 ### 4.3 更新问题（管理员）
 
-**接口地址：** `POST /mbti-system/api/question/update`
+**接口地址：** `PUT /mbti-system/api/question`
 
 **接口说明：** 更新指定问题（仅管理员可访问）
 
@@ -793,7 +793,7 @@ Cookie: JSESSIONID=xxxxx
 
 ### 4.4 删除问题（管理员）
 
-**接口地址：** `POST /mbti-system/api/question/delete`
+**接口地址：** `DELETE /mbti-system/api/question`
 
 **接口说明：** 删除指定问题（仅管理员可访问）
 
@@ -829,7 +829,7 @@ Cookie: JSESSIONID=xxxxx
 
 ### 5.1 提交答案
 
-**接口地址：** `POST /mbti-system/api/test/submit`
+**接口地址：** `POST /mbti-system/api/test`
 
 **接口说明：** 提交问卷答案
 
@@ -887,7 +887,7 @@ Cookie: JSESSIONID=xxxxx
 
 ### 5.2 获取测试结果
 
-**接口地址：** `GET /mbti-system/api/test/get`
+**接口地址：** `GET /mbti-system/api/test`
 
 **接口说明：** 获取当前用户的所有测试结果
 
@@ -926,7 +926,7 @@ Cookie: JSESSIONID=xxxxx
 
 ### 5.3 获取测试详情
 
-**接口地址：** `GET /mbti-system/api/test/get/{answerId}`
+**接口地址：** `GET /mbti-system/api/test/{answerId}`
 
 **接口说明：** 获取指定测试的详细结果
 
@@ -1066,7 +1066,7 @@ const loginResponse = await fetch('/mbti-system/api/auth/login', {
 });
 
 // 后续请求自动携带Session Cookie
-const userInfo = await fetch('/mbti-system/api/user/get', {
+const userInfo = await fetch('/mbti-system/api/user', {
     method: 'GET',
     credentials: 'include'  // 重要：包含Cookie
 });
@@ -1242,11 +1242,11 @@ curl -X POST http://localhost:8080/mbti-system/api/auth/login \
   -d '{"username":"testuser","password":"123456"}'
 
 # 获取用户信息（使用保存的cookies）
-curl -X GET http://localhost:8080/mbti-system/api/user/get \
+curl -X GET http://localhost:8080/mbti-system/api/user \
   -b cookies.txt
 
 # 提交答案
-curl -X POST http://localhost:8080/mbti-system/api/test/submit \
+curl -X POST http://localhost:8080/mbti-system/api/test \
   -H "Content-Type: application/json" \
   -b cookies.txt \
   -d '{
@@ -1259,7 +1259,7 @@ curl -X POST http://localhost:8080/mbti-system/api/test/submit \
   }'
 
 # 获取问卷列表
-curl -X GET http://localhost:8080/mbti-system/api/questionnaire/get \
+curl -X GET http://localhost:8080/mbti-system/api/questionnaire \
   -b cookies.txt
 ```
 
@@ -1279,13 +1279,13 @@ curl -X GET http://localhost:8080/mbti-system/api/questionnaire/get \
 **解决方案：**
 ```javascript
 // ✅ 正确配置 - 必须包含credentials
-fetch('/mbti-system/api/user/get', {
+fetch('/mbti-system/api/user', {
     method: 'GET',
     credentials: 'include'  // 关键配置
 });
 
 // ❌ 错误配置 - 缺少credentials
-fetch('/mbti-system/api/user/get', {
+fetch('/mbti-system/api/user', {
     method: 'GET'
 });
 ```
@@ -1842,7 +1842,7 @@ Content-Type: application/json
 
 ### 4.1 提交答案
 
-**接口地址：** `POST /api/test/submit`
+**接口地址：** `POST /api/test`
 
 **接口说明：** 提交问卷答案
 
@@ -2144,7 +2144,7 @@ const getUserProfile = async () => {
 const submitAnswers = async (questionnaireId, answers) => {
     try {
         const token = localStorage.getItem('token');
-        const response = await axios.post('/api/test/submit', {
+        const response = await axios.post('/api/test', {
             questionnaireId,
             questionAnswers: answers
         }, {
@@ -2172,7 +2172,7 @@ curl -X GET http://localhost:8080/api/users/profile \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 
 # 提交答案
-curl -X POST http://localhost:8080/api/test/submit \
+curl -X POST http://localhost:8080/api/test \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"questionnaireId":1,"questionAnswers":{"1":1,"2":4,"3":5,"4":8}}'
@@ -2386,7 +2386,7 @@ GET {{baseUrl}}/api/users/profile
 Authorization: Bearer {{token}}
 
 ### 提交答案
-POST {{baseUrl}}/api/test/submit
+POST {{baseUrl}}/api/test
 Authorization: Bearer {{token}}
 Content-Type: application/json
 

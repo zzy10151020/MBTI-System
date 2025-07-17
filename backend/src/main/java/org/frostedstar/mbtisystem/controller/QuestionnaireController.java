@@ -48,13 +48,7 @@ public class QuestionnaireController extends BaseController {
             String pathInfo = request.getPathInfo();
             if (pathInfo == null || pathInfo.equals("/questionnaire") || pathInfo.equals("/questionnaire/")) {
                 // 获取所有问卷
-                List<Questionnaire> questionnaires = questionnaireService.findAll();
-                List<QuestionnaireDTO> responses = questionnaires.stream()
-                    .map(QuestionnaireDTO::fromEntitySimple)
-                    .collect(Collectors.toList());
-                
-                ApiResponse<List<QuestionnaireDTO>> apiResponse = ApiResponse.success(responses);
-                sendApiResponse(response, apiResponse);
+                fetchAllQuestionnaires(response);
             } else {
                 // 尝试解析问卷ID
                 String[] pathParts = pathInfo.split("/");
@@ -76,13 +70,8 @@ public class QuestionnaireController extends BaseController {
                             sendApiResponse(response, apiResponse);
                         }
                     } else {
-                        List<Questionnaire> questionnaires = questionnaireService.findAll();
-                        List<QuestionnaireDTO> responses = questionnaires.stream()
-                            .map(QuestionnaireDTO::fromEntitySimple)
-                            .collect(Collectors.toList());
-                        
-                        ApiResponse<List<QuestionnaireDTO>> apiResponse = ApiResponse.success(responses);
-                        sendApiResponse(response, apiResponse);
+                        // 如果没有提供ID，则返回所有问卷
+                        fetchAllQuestionnaires(response);
                     }
                 } else {
                     ApiResponse<Object> apiResponse = ApiResponse.error("接口不存在");
@@ -101,7 +90,20 @@ public class QuestionnaireController extends BaseController {
             sendApiResponse(response, apiResponse);
         }
     }
-    
+
+    /**
+     * 获取所有问卷
+     */
+    private void fetchAllQuestionnaires(HttpServletResponse response) throws IOException {
+        List<Questionnaire> questionnaires = questionnaireService.findAll();
+        List<QuestionnaireDTO> responses = questionnaires.stream()
+            .map(QuestionnaireDTO::fromEntitySimple)
+            .collect(Collectors.toList());
+
+        ApiResponse<List<QuestionnaireDTO>> apiResponse = ApiResponse.success(responses);
+        sendApiResponse(response, apiResponse);
+    }
+
     /**
      * 创建问卷
      */
@@ -181,7 +183,7 @@ public class QuestionnaireController extends BaseController {
             
             // 获取现有问卷
             Optional<Questionnaire> existingQuestionnaireOpt = questionnaireService.findById(updateRequest.getQuestionnaireId());
-            if (!existingQuestionnaireOpt.isPresent()) {
+            if (existingQuestionnaireOpt.isEmpty()) {
                 ApiResponse<Object> apiResponse = ApiResponse.error("问卷不存在");
                 sendApiResponse(response, apiResponse);
                 return;
@@ -235,7 +237,7 @@ public class QuestionnaireController extends BaseController {
             
             // 从URL参数或请求体获取ID
             String idParam = request.getParameter("id");
-            Integer id = null;
+            Integer id;
             
             if (idParam != null) {
                 try {
@@ -261,7 +263,7 @@ public class QuestionnaireController extends BaseController {
             
             // 检查问卷是否存在
             Optional<Questionnaire> questionnaireOpt = questionnaireService.findById(id);
-            if (!questionnaireOpt.isPresent()) {
+            if (questionnaireOpt.isEmpty()) {
                 ApiResponse<Object> apiResponse = ApiResponse.error("问卷不存在");
                 sendApiResponse(response, apiResponse);
                 return;
@@ -307,7 +309,7 @@ public class QuestionnaireController extends BaseController {
         
         // 获取用户信息
         Optional<User> userOpt = userService.findById(userId);
-        if (!userOpt.isPresent()) {
+        if (userOpt.isEmpty()) {
             ApiResponse<Object> apiResponse = ApiResponse.error("用户不存在");
             sendApiResponse(response, apiResponse);
             return null;

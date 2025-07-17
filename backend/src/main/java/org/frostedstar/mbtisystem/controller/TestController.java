@@ -58,13 +58,7 @@ public class TestController extends BaseController {
             String pathInfo = request.getPathInfo();
             if (pathInfo == null || pathInfo.equals("/test") || pathInfo.equals("/test/")) {
                 // 获取用户的测试结果列表
-                List<Answer> answers = testService.getUserAllTestResults(user.getUserId());
-                List<TestDTO> testDTOs = answers.stream()
-                    .map(TestDTO::fromEntity)
-                    .collect(Collectors.toList());
-                
-                ApiResponse<List<TestDTO>> apiResponse = ApiResponse.success("获取测试结果成功", testDTOs);
-                sendApiResponse(response, apiResponse);
+                fetchUserTestResultList(response, user);
             } else {
                 // 尝试解析测试ID
                 String[] pathParts = pathInfo.split("/");
@@ -86,13 +80,8 @@ public class TestController extends BaseController {
                             sendApiResponse(response, apiResponse);
                         }
                     } else {
-                        List<Answer> answers = testService.getUserAllTestResults(user.getUserId());
-                        List<TestDTO> testDTOs = answers.stream()
-                            .map(TestDTO::fromEntity)
-                            .collect(Collectors.toList());
-                        
-                        ApiResponse<List<TestDTO>> apiResponse = ApiResponse.success("获取测试结果成功", testDTOs);
-                        sendApiResponse(response, apiResponse);
+                        // 没有提供测试ID，返回用户的所有测试结果
+                        fetchUserTestResultList(response, user);
                     }
                 } else {
                     ApiResponse<Object> apiResponse = ApiResponse.error("接口不存在");
@@ -111,7 +100,17 @@ public class TestController extends BaseController {
             sendApiResponse(response, apiResponse);
         }
     }
-    
+
+    private void fetchUserTestResultList(HttpServletResponse response, User user) throws IOException {
+        List<Answer> answers = testService.getUserAllTestResults(user.getUserId());
+        List<TestDTO> testDTOs = answers.stream()
+            .map(TestDTO::fromEntity)
+            .collect(Collectors.toList());
+
+        ApiResponse<List<TestDTO>> apiResponse = ApiResponse.success("获取测试结果成功", testDTOs);
+        sendApiResponse(response, apiResponse);
+    }
+
     /**
      * 提交测试结果
      */

@@ -13,7 +13,6 @@ import org.frostedstar.mbtisystem.dto.OperationType;
 import org.frostedstar.mbtisystem.dto.ErrorResponse;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -129,64 +128,7 @@ public class UserController extends BaseController {
             sendApiResponse(response, apiResponse);
         }
     }
-    
-    /**
-     * 修改密码（重定向到统一更新方法）
-     */
-    public void changePassword(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        try {
-            if (!"POST".equals(request.getMethod())) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("Method Not Allowed");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
-            
-            // 检查用户是否已登录
-            HttpSession session = request.getSession(false);
-            if (session == null) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("用户未登录");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
-            
-            Integer userId = (Integer) session.getAttribute("userId");
-            if (userId == null) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("用户未登录");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
-            
-            // 解析请求体
-            @SuppressWarnings("unchecked")
-            Map<String, Object> passwordData = parseRequestBody(request, Map.class);
-            
-            String oldPassword = (String) passwordData.get("oldPassword");
-            String newPassword = (String) passwordData.get("newPassword");
-            
-            // 创建UserDTO用于密码修改
-            UserDTO updateRequest = UserDTO.builder()
-                .userId(userId)
-                .currentPassword(oldPassword)
-                .newPassword(newPassword)
-                .operationType(OperationType.UPDATE)
-                .build();
-            
-            // 调用统一的更新方法
-            updateUserInfo(updateRequest, response, session);
-            
-        } catch (Exception e) {
-            log.error("修改密码失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "修改密码失败: " + e.getMessage(),
-                500,
-                "/api/user/changePassword"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
-        }
-    }
-    
+
     /**
      * 统一的用户信息更新方法
      */
@@ -196,7 +138,7 @@ public class UserController extends BaseController {
         // 获取当前用户信息
         Optional<User> userOptional = userService.findById(userId);
         
-        if (!userOptional.isPresent()) {
+        if (userOptional.isEmpty()) {
             ApiResponse<Object> apiResponse = ApiResponse.error("用户不存在");
             sendApiResponse(response, apiResponse);
             return;
@@ -329,7 +271,7 @@ public class UserController extends BaseController {
                 return;
             }
             
-            Integer userId;
+            int userId;
             try {
                 userId = Integer.parseInt(userIdStr);
             } catch (NumberFormatException e) {
