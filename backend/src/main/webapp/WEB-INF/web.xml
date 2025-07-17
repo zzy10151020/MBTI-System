@@ -45,7 +45,7 @@
 
     <!-- 会话配置 -->
     <session-config>
-        <session-timeout>30</session-timeout>
+        <session-timeout>1440</session-timeout>
         <cookie-config>
             <http-only>true</http-only>
             <secure>false</secure>
