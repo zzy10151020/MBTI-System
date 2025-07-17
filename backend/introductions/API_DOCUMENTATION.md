@@ -408,7 +408,7 @@ Cookie: JSESSIONID=xxxxx
 
 ### 3.1 获取问卷列表
 
-**接口地址：** `GET /mbti-system/api/questionnaire/get`
+**接口地址：** `GET /mbti-system/api/questionnaire`
 
 **接口说明：** 获取问卷列表
 

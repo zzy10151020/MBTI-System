@@ -18,15 +18,16 @@ import java.util.Properties;
 public class DatabaseUtil {
     
     private static HikariDataSource dataSource;
-    
-    static {
-        init();
-    }
+    private static boolean initialized = false;
     
     /**
      * 初始化数据源
      */
-    private static void init() {
+    private static synchronized void init() {
+        if (initialized) {
+            return;
+        }
+        
         try {
             Properties props = new Properties();
             InputStream inputStream = DatabaseUtil.class.getClassLoader()
@@ -37,8 +38,16 @@ public class DatabaseUtil {
                 inputStream.close();
             }
             
+            // 显式加载MySQL驱动
+            try {
+                Class.forName("com.mysql.cj.jdbc.Driver");
+            } catch (ClassNotFoundException e) {
+                log.error("MySQL驱动加载失败", e);
+                throw new RuntimeException("MySQL驱动加载失败", e);
+            }
+            
             HikariConfig config = new HikariConfig();
-            config.setDriverClassName(props.getProperty("db.driver"));
+            // 不再通过HikariConfig设置驱动类名，而是直接设置JDBC URL
             config.setJdbcUrl(props.getProperty("db.url"));
             config.setUsername(props.getProperty("db.username"));
             config.setPassword(props.getProperty("db.password"));
@@ -53,6 +62,7 @@ public class DatabaseUtil {
             config.setLeakDetectionThreshold(60000);
             
             dataSource = new HikariDataSource(config);
+            initialized = true;
             log.info("数据库连接池初始化成功");
             
         } catch (IOException e) {
@@ -65,6 +75,9 @@ public class DatabaseUtil {
      * 获取数据库连接
      */
     public static Connection getConnection() throws SQLException {
+        if (!initialized) {
+            init();
+        }
         return dataSource.getConnection();
     }
     

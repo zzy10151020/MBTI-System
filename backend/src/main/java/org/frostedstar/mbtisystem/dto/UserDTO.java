@@ -1,5 +1,6 @@
 package org.frostedstar.mbtisystem.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -25,6 +26,8 @@ public class UserDTO {
     private String email;
     private String password;
     private User.Role role;
+    
+    @JsonIgnore
     private LocalDateTime createdAt;
     
     // 操作类型标识
@@ -60,12 +63,43 @@ public class UserDTO {
      * 更新请求验证
      */
     public boolean isValidForUpdate() {
-        return operationType == OperationType.UPDATE &&
-               userId != null && userId > 0 &&
-               ((username != null && !username.trim().isEmpty() ||
-                 email != null && !email.trim().isEmpty()) &&
-                (email == null || isValidEmail(email)) ||
-                isValidForPasswordChange());
+        if (operationType != OperationType.UPDATE || userId == null || userId <= 0) {
+            return false;
+        }
+        
+        // 检查是否有至少一个可更新的字段
+        boolean hasUpdateField = false;
+        
+        // 检查用户名
+        if (username != null && !username.trim().isEmpty()) {
+            hasUpdateField = true;
+        }
+        
+        // 检查邮箱
+        if (email != null && !email.trim().isEmpty()) {
+            if (!isValidEmail(email)) {
+                return false; // 邮箱格式不正确
+            }
+            hasUpdateField = true;
+        }
+        
+        // 检查角色
+        if (role != null) {
+            hasUpdateField = true;
+        }
+        
+        // 检查密码修改
+        if (currentPassword != null && newPassword != null) {
+            if (currentPassword.trim().isEmpty() || newPassword.trim().isEmpty()) {
+                return false;
+            }
+            if (newPassword.length() < 6) {
+                return false;
+            }
+            hasUpdateField = true;
+        }
+        
+        return hasUpdateField;
     }
     
     /**

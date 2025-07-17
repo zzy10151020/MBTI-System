@@ -1,6 +1,7 @@
 package org.frostedstar.mbtisystem.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +18,8 @@ import java.util.Map;
 @Slf4j
 public abstract class BaseController {
     
-    protected final ObjectMapper objectMapper = new ObjectMapper();
+    protected final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
     
     /**
      * 发送成功响应

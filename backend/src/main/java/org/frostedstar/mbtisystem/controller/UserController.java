@@ -84,7 +84,7 @@ public class UserController extends BaseController {
     }
     
     /**
-     * 更新用户信息
+     * 更新用户信息（统一方法）
      */
     public void post(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
@@ -112,80 +112,10 @@ public class UserController extends BaseController {
             // 解析请求体到DTO
             UserDTO updateRequest = parseRequestBody(request, UserDTO.class);
             updateRequest.setOperationType(OperationType.UPDATE);
+            updateRequest.setUserId(userId); // 设置用户ID
             
-            // 验证请求数据
-            if (!updateRequest.isValid()) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("请求数据不完整");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
-            
-            // 获取当前用户信息
-            Optional<User> userOptional = userService.findById(userId);
-            
-            if (userOptional.isPresent()) {
-                User user = userOptional.get();
-                boolean updated = false;
-                
-                // 更新邮箱
-                if (updateRequest.getEmail() != null && !updateRequest.getEmail().trim().isEmpty()) {
-                    String newEmail = updateRequest.getEmail();
-                    
-                    // 检查邮箱是否已存在（排除当前用户）
-                    Optional<User> existingUser = userService.findByEmail(newEmail);
-                    if (existingUser.isPresent() && !existingUser.get().getUserId().equals(userId)) {
-                        ApiResponse<Object> apiResponse = ApiResponse.error("邮箱已存在");
-                        sendApiResponse(response, apiResponse);
-                        return;
-                    }
-                    
-                    user.setEmail(newEmail);
-                    updated = true;
-                }
-
-                // 更新用户名
-                else if (updateRequest.getUsername() != null && !updateRequest.getUsername().trim().isEmpty()) {
-                    String newUsername = updateRequest.getUsername();
-                    
-                    // 检查用户名是否已存在（排除当前用户）
-                    Optional<User> existingUser = userService.findByUsername(newUsername);
-                    if (existingUser.isPresent() && !existingUser.get().getUserId().equals(userId)) {
-                        ApiResponse<Object> apiResponse = ApiResponse.error("用户名已存在");
-                        sendApiResponse(response, apiResponse);
-                        return;
-                    }
-                    
-                    user.setUsername(newUsername);
-                    updated = true;
-                }
-
-                // 更新权限
-                else if (updateRequest.getRole() != null) {
-                    user.setRole(updateRequest.getRole());
-                    updated = true;
-                }
-                
-                if (updated) {
-                    boolean success = userService.update(user);
-                    if (success) {
-                        // 返回更新后的用户信息
-                        UserDTO userDTO = UserDTO.fromEntity(user);
-                        ApiResponse<UserDTO> apiResponse = ApiResponse.success("用户信息更新成功", userDTO);
-                        
-                        sendApiResponse(response, apiResponse);
-                        log.info("用户信息更新成功: {}", user.getUsername());
-                    } else {
-                        ApiResponse<Object> apiResponse = ApiResponse.error("更新用户信息失败");
-                        sendApiResponse(response, apiResponse);
-                    }
-                } else {
-                    ApiResponse<Object> apiResponse = ApiResponse.error("没有可更新的内容");
-                    sendApiResponse(response, apiResponse);
-                }
-            } else {
-                ApiResponse<Object> apiResponse = ApiResponse.error("用户不存在");
-                sendApiResponse(response, apiResponse);
-            }
+            // 调用统一的更新方法
+            updateUserInfo(updateRequest, response, session);
             
         } catch (Exception e) {
             log.error("更新用户信息失败", e);
@@ -201,7 +131,7 @@ public class UserController extends BaseController {
     }
     
     /**
-     * 修改密码
+     * 修改密码（重定向到统一更新方法）
      */
     public void changePassword(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
@@ -233,36 +163,16 @@ public class UserController extends BaseController {
             String oldPassword = (String) passwordData.get("oldPassword");
             String newPassword = (String) passwordData.get("newPassword");
             
-            // 验证参数
-            if (oldPassword == null || oldPassword.trim().isEmpty()) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("原密码不能为空");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
+            // 创建UserDTO用于密码修改
+            UserDTO updateRequest = UserDTO.builder()
+                .userId(userId)
+                .currentPassword(oldPassword)
+                .newPassword(newPassword)
+                .operationType(OperationType.UPDATE)
+                .build();
             
-            if (newPassword == null || newPassword.trim().isEmpty()) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("新密码不能为空");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
-            
-            if (newPassword.length() < 6) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("新密码长度不能少于6位");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
-            
-            // 修改密码
-            boolean success = userService.changePassword(userId, oldPassword, newPassword);
-            
-            if (success) {
-                ApiResponse<String> apiResponse = ApiResponse.success("密码修改成功", "密码修改成功");
-                sendApiResponse(response, apiResponse);
-                log.info("用户密码修改成功: {}", session.getAttribute("username"));
-            } else {
-                ApiResponse<Object> apiResponse = ApiResponse.error("原密码错误");
-                sendApiResponse(response, apiResponse);
-            }
+            // 调用统一的更新方法
+            updateUserInfo(updateRequest, response, session);
             
         } catch (Exception e) {
             log.error("修改密码失败", e);
@@ -273,6 +183,130 @@ public class UserController extends BaseController {
                 "/api/user/changePassword"
             );
             ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
+            sendApiResponse(response, apiResponse);
+        }
+    }
+    
+    /**
+     * 统一的用户信息更新方法
+     */
+    private void updateUserInfo(UserDTO updateRequest, HttpServletResponse response, HttpSession session) throws IOException {
+        Integer userId = updateRequest.getUserId();
+        
+        // 获取当前用户信息
+        Optional<User> userOptional = userService.findById(userId);
+        
+        if (!userOptional.isPresent()) {
+            ApiResponse<Object> apiResponse = ApiResponse.error("用户不存在");
+            sendApiResponse(response, apiResponse);
+            return;
+        }
+        
+        User user = userOptional.get();
+        boolean updated = false;
+        String successMessage = "更新成功";
+        
+        // 处理密码修改
+        if (updateRequest.getCurrentPassword() != null && updateRequest.getNewPassword() != null) {
+            // 验证密码修改参数
+            if (updateRequest.getCurrentPassword().trim().isEmpty()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("原密码不能为空");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            if (updateRequest.getNewPassword().trim().isEmpty()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("新密码不能为空");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            if (updateRequest.getNewPassword().length() < 6) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("新密码长度不能少于6位");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            // 修改密码
+            boolean passwordChanged = userService.changePassword(userId, updateRequest.getCurrentPassword(), updateRequest.getNewPassword());
+            
+            if (!passwordChanged) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("原密码错误");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            updated = true;
+            successMessage = "密码修改成功";
+            log.info("用户密码修改成功: {}", session.getAttribute("username"));
+        }
+        
+        // 处理邮箱更新
+        if (updateRequest.getEmail() != null && !updateRequest.getEmail().trim().isEmpty()) {
+            String newEmail = updateRequest.getEmail();
+            
+            // 检查邮箱是否已存在（排除当前用户）
+            Optional<User> existingUser = userService.findByEmail(newEmail);
+            if (existingUser.isPresent() && !existingUser.get().getUserId().equals(userId)) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("邮箱已存在");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            user.setEmail(newEmail);
+            updated = true;
+            successMessage = "用户信息更新成功";
+        }
+        
+        // 处理用户名更新
+        if (updateRequest.getUsername() != null && !updateRequest.getUsername().trim().isEmpty()) {
+            String newUsername = updateRequest.getUsername();
+            
+            // 检查用户名是否已存在（排除当前用户）
+            Optional<User> existingUser = userService.findByUsername(newUsername);
+            if (existingUser.isPresent() && !existingUser.get().getUserId().equals(userId)) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("用户名已存在");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            user.setUsername(newUsername);
+            updated = true;
+            successMessage = "用户信息更新成功";
+        }
+        
+        // 处理角色更新
+        if (updateRequest.getRole() != null) {
+            user.setRole(updateRequest.getRole());
+            updated = true;
+            successMessage = "用户信息更新成功";
+        }
+        
+        // 如果有非密码字段更新，保存到数据库
+        if (updated && (updateRequest.getEmail() != null || updateRequest.getUsername() != null || updateRequest.getRole() != null)) {
+            boolean success = userService.update(user);
+            if (!success) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("更新用户信息失败");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            log.info("用户信息更新成功: {}", user.getUsername());
+        }
+        
+        if (updated) {
+            // 根据更新类型返回相应的响应
+            if (updateRequest.getCurrentPassword() != null) {
+                // 密码修改成功，返回简单消息
+                ApiResponse<String> apiResponse = ApiResponse.success(successMessage, successMessage);
+                sendApiResponse(response, apiResponse);
+            } else {
+                // 用户信息更新成功，返回更新后的用户信息
+                UserDTO userDTO = UserDTO.fromEntity(user);
+                ApiResponse<UserDTO> apiResponse = ApiResponse.success(successMessage, userDTO);
+                sendApiResponse(response, apiResponse);
+            }
+        } else {
+            ApiResponse<Object> apiResponse = ApiResponse.error("没有可更新的内容");
             sendApiResponse(response, apiResponse);
         }
     }

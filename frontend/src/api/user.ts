@@ -14,7 +14,7 @@ export const userApi = {
    * 获取当前用户信息
    */
   async getProfile(): Promise<User> {
-    const response = await service.get<any, ApiResponse<User>>('/api/user/get')
+    const response = await service.get<any, ApiResponse<User>>('/api/user')
     return response.data
   },
 
@@ -27,7 +27,7 @@ export const userApi = {
       ...data,
       operationType: 'UPDATE'
     }
-    const response = await service.post<any, ApiResponse<User>>('/api/user/update', requestData)
+    const response = await service.post<any, ApiResponse<User>>('/api/user', requestData)
     return response.data
   },
 
@@ -60,7 +60,7 @@ export const userApi = {
       userId,
       operationType: 'DELETE'
     }
-    await service.post<any, ApiResponse<void>>('/api/user/delete', requestData)
+    await service.post<any, ApiResponse<void>>('/api/user', requestData)
   }
 }
 
