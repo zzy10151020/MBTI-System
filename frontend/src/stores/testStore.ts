@@ -5,9 +5,14 @@ import { testApi } from '@/api'
 import type { 
   TestResult, 
   TestResultDetail,
-  SubmitAnswersRequest,
   SubmitAnswersResponse
 } from '@/api/types'
+
+// API函数期望的参数类型
+interface SubmitAnswersParams {
+  questionnaireId: number
+  answers: Array<{ questionId: number; optionId: number }>
+}
 
 export const useTestStore = defineStore('test', () => {
   // 状态
@@ -65,17 +70,13 @@ export const useTestStore = defineStore('test', () => {
   }
 
   // 提交答案并保存结果
-  const submitTestAnswers = async (data: SubmitAnswersRequest) => {
+  const submitTestAnswers = async (data: SubmitAnswersParams) => {
     try {
       loading.value = true
       error.value = null
       
-      console.log('提交答案数据:', data)
-      
       // 调用API提交答案
       const result = await testApi.submitAnswers(data)
-      
-      console.log('提交成功，返回结果:', result)
       
       // 刷新测试结果列表
       await fetchTestResults()

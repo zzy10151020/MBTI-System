@@ -6,6 +6,8 @@ import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import App from './App.vue'
 import router from './router'
 import { useUserStore } from '@/stores/userStore'
+// 导入Cookie调试工具
+import '@/utils/cookieHelper'
 
 const app = createApp(App)
 
@@ -58,3 +60,6 @@ app.mount('#app')
 // 初始化用户store，检查登录状态
 const userStore = useUserStore()
 userStore.initialize()
+
+// 注册全局调试函数
+;(window as any).debugSession = userStore.debugSession

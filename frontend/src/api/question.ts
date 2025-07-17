@@ -15,7 +15,7 @@ export const questionApi = {
    * @param questionnaireId 问卷ID
    */
   async getQuestionsByQuestionnaireId(questionnaireId: number): Promise<Question[]> {
-    const response = await service.get<any, ApiResponse<Question[]>>(`/api/question/questionnaire/${questionnaireId}`)
+    const response = await service.get<any, ApiResponse<Question[]>>(`/api/question?questionnaireId=${questionnaireId}`)
     return response.data
   },
 
@@ -23,12 +23,12 @@ export const questionApi = {
    * 创建新问题（管理员权限）
    * @param data 创建问题数据
    */
-  async createQuestion(data: CreateQuestionRequest): Promise<Question> {
-    const requestData = {
+  async createQuestion(data: Omit<CreateQuestionRequest, 'operationType'>): Promise<Question> {
+    const requestData: CreateQuestionRequest = {
       ...data,
       operationType: 'CREATE'
     }
-    const response = await service.post<any, ApiResponse<Question>>('/api/question/create', requestData)
+    const response = await service.post<any, ApiResponse<Question>>('/api/question', requestData)
     return response.data
   },
 
@@ -36,12 +36,12 @@ export const questionApi = {
    * 更新问题（管理员权限）
    * @param data 更新问题数据
    */
-  async updateQuestion(data: UpdateQuestionRequest): Promise<Question> {
-    const requestData = {
+  async updateQuestion(data: Omit<UpdateQuestionRequest, 'operationType'>): Promise<Question> {
+    const requestData: UpdateQuestionRequest = {
       ...data,
       operationType: 'UPDATE'
     }
-    const response = await service.post<any, ApiResponse<Question>>('/api/question/update', requestData)
+    const response = await service.put<any, ApiResponse<Question>>('/api/question', requestData)
     return response.data
   },
 
@@ -54,7 +54,7 @@ export const questionApi = {
       questionId,
       operationType: 'DELETE'
     }
-    await service.post<any, ApiResponse<void>>('/api/question/delete', requestData)
+    await service.delete<any, ApiResponse<void>>('/api/question', { data: requestData })
   }
 }
 

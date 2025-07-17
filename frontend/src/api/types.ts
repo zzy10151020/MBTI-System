@@ -2,27 +2,33 @@
 export interface ApiResponse<T = any> {
   success: boolean
   data: T
-  message: string
+  message?: string
+  timestamp: number
 }
 
 export interface ApiError {
   success: false
   message: string
   error?: string
-  timestamp?: string
+  timestamp?: number
   path?: string
 }
 
 // 分页响应类型
 export interface PageResponse<T> {
   content: T[]
+  pageNumber: number
+  pageSize: number
   totalElements: number
   totalPages: number
-  number: number
-  size: number
   first: boolean
   last: boolean
+  hasNext: boolean
+  hasPrevious: boolean
 }
+
+// 操作类型枚举
+export type OperationType = 'CREATE' | 'UPDATE' | 'QUERY' | 'DELETE'
 
 // 用户相关类型
 export interface User {
@@ -31,12 +37,12 @@ export interface User {
   email: string
   role: 'USER' | 'ADMIN'
   createdAt: string
-  answerCount?: number
 }
 
 export interface LoginRequest {
   username: string
   password: string
+  operationType: 'QUERY'
 }
 
 export interface LoginResponse {
@@ -48,6 +54,7 @@ export interface RegisterRequest {
   username: string
   password: string
   email: string
+  operationType: 'CREATE'
 }
 
 export interface RegisterResponse {
@@ -59,12 +66,15 @@ export interface RegisterResponse {
 }
 
 export interface UpdateUserRequest {
+  userId: number
   email?: string
+  operationType: 'UPDATE'
 }
 
 export interface ChangePasswordRequest {
-  oldPassword: string
+  currentPassword: string
   newPassword: string
+  operationType: 'UPDATE'
 }
 
 // 检查用户名/邮箱响应类型
@@ -84,23 +94,32 @@ export interface Questionnaire {
   title: string
   description: string
   creatorId: number
-  creatorUsername: string
+  creatorName?: string
   createdAt: string
   isPublished: boolean
-  answerCount: number
-  hasAnswered: boolean
 }
 
 export interface CreateQuestionnaireRequest {
   title: string
   description: string
+  operationType: 'CREATE'
+}
+
+export interface UpdateQuestionnaireRequest {
+  questionnaireId: number
+  title?: string
+  description?: string
+  isPublished?: boolean
+  operationType: 'UPDATE'
 }
 
 export interface QuestionOption {
   optionId: number
   questionId?: number
   content: string
-  scoreValue: string
+  value: string  // A, B, C, D
+  optionOrder?: number
+  createdAt?: string
 }
 
 export interface Question {
@@ -109,6 +128,7 @@ export interface Question {
   content: string
   dimension: string
   questionOrder: number
+  createdAt?: string
   options: QuestionOption[]
 }
 
@@ -116,76 +136,14 @@ export interface QuestionnaireDetail {
   questionnaireId: number
   title: string
   description: string
+  creatorId: number
+  creatorName?: string
+  createdAt: string
+  isPublished: boolean
   questions: Question[]
 }
 
-export interface UpdateQuestionnaireRequest {
-  questionnaireId: number
-  title?: string
-  description?: string
-  isPublished?: boolean
-}
-
-// 测试相关类型
-export interface SubmitAnswersRequest {
-  questionnaireId: number
-  answerDetails: Array<{
-    questionId: number
-    optionId: number
-  }>
-}
-
-export interface DimensionScores {
-  EI: number
-  SN: number
-  TF: number
-  JP: number
-}
-
-export interface SubmitAnswersResponse {
-  answerId: number
-  questionnaireId: number
-  userId: number
-  mbtiType: string
-  dimensionScores: DimensionScores
-  submittedAt: string
-}
-
-export interface TestResult {
-  answerId: number
-  questionnaireId: number
-  userId: number
-  mbtiType: string
-  submittedAt: string
-  answerDetails: Array<{
-    questionId: number
-    optionId: number
-    selectedOption: string
-    score: number
-  }>
-}
-
-export interface TestResultDetail {
-  answerId: number
-  questionnaireId: number
-  userId: number
-  mbtiType: string
-  dimensionScores: DimensionScores
-  submittedAt: string
-  answerDetails: Array<{
-    questionId: number
-    optionId: number
-    selectedOption: string
-    score: number
-  }>
-}
-
-// 分页查询参数
-export interface PageParams {
-  page?: number
-  size?: number
-}
-
+// 问题管理相关类型
 export interface CreateQuestionRequest {
   questionnaireId: number
   content: string
@@ -193,8 +151,10 @@ export interface CreateQuestionRequest {
   questionOrder: number
   options: Array<{
     content: string
-    scoreValue: string
+    value: string
+    optionOrder?: number
   }>
+  operationType: 'CREATE'
 }
 
 export interface UpdateQuestionRequest {
@@ -205,6 +165,78 @@ export interface UpdateQuestionRequest {
   options?: Array<{
     optionId?: number
     content: string
-    scoreValue: string
+    value: string
+    optionOrder?: number
   }>
+  operationType: 'UPDATE'
+}
+
+// 测试相关类型
+export interface AnswerDetail {
+  detailId?: number
+  answerId?: number
+  questionId: number
+  questionContent?: string
+  optionId: number
+  optionContent?: string
+  optionScore?: number
+  selectedOption?: string
+  createdAt?: string
+}
+
+export interface SubmitAnswersRequest {
+  userId: number
+  questionnaireId: number
+  answerDetails: Array<{
+    questionId: number
+    optionId: number
+  }>
+  operationType: 'CREATE'
+}
+
+export interface SubmitAnswersResponse {
+  answerId: number
+  userId: number
+  questionnaireId: number
+  result: string
+  resultDescription?: string
+  mbtiType?: string
+  title?: string
+  description?: string
+  dimensions?: Record<string, string>
+  statistics?: Record<string, any>
+  createdAt: string
+  answerDetails?: AnswerDetail[]
+}
+
+export interface TestResult {
+  answerId: number
+  userId: number
+  questionnaireId: number
+  result: string
+  resultDescription?: string
+  mbtiType?: string
+  createdAt: string
+  answerDetails?: AnswerDetail[]
+}
+
+export interface TestResultDetail {
+  answerId: number
+  userId: number
+  questionnaireId: number
+  result: string
+  resultDescription?: string
+  mbtiType?: string
+  title?: string
+  description?: string
+  dimensions?: Record<string, string>
+  statistics?: Record<string, any>
+  createdAt: string
+  answerDetails?: AnswerDetail[]
+}
+
+// 分页查询参数
+export interface PageParams {
+  page?: number
+  size?: number
 }

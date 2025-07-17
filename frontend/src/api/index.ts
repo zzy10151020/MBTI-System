@@ -11,14 +11,5 @@ export type * from './types'
 // 导出axios实例（如果需要直接使用）
 export { default as request } from './axios'
 
-// API基础配置
-export const API_CONFIG = {
-  BASE_URL: 'http://localhost:8080',
-  TIMEOUT: 15000,
-  // 可以根据环境动态配置
-  get baseURL() {
-    return process.env.NODE_ENV === 'development' 
-      ? 'http://localhost:8080' 
-      : 'https://your-production-api.com'
-  }
-}
+// 导出API配置
+export { API_CONFIG } from './config'

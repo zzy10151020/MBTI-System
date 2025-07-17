@@ -1,11 +1,12 @@
 import axios from 'axios'
 import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import { useUiStateStore } from '@/stores/uiStateStore'
+import { API_CONFIG } from './config'
 
 // 创建 axios 实例
 const service: AxiosInstance = axios.create({
-  baseURL: 'http://localhost:8080/mbti-system', // API 的基础URL
-  timeout: 15000, // 请求超时时间
+  baseURL: API_CONFIG.baseURL, // 使用统一的API配置
+  timeout: API_CONFIG.TIMEOUT, // 使用统一的超时配置
   withCredentials: true, // 启用Session Cookie
   headers: {
     'Content-Type': 'application/json;charset=utf-8',
@@ -15,16 +16,6 @@ const service: AxiosInstance = axios.create({
 // 请求拦截器
 service.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // 添加请求日志
-    console.log('发送API请求:', {
-      url: config.url,
-      method: config.method,
-      baseURL: config.baseURL,
-      fullURL: `${config.baseURL}${config.url}`,
-      headers: config.headers,
-      data: config.data
-    })
-    
     // Session认证不需要手动添加Authorization header
     // Cookie会自动携带JSESSIONID
     return config
@@ -38,18 +29,8 @@ service.interceptors.request.use(
 // 响应拦截器
 service.interceptors.response.use(
   (response: AxiosResponse) => {
-    // 添加调试日志
-    console.log('API响应详情:', {
-      url: response.config.url,
-      method: response.config.method,
-      status: response.status,
-      headers: response.headers,
-      data: response.data
-    })
-    
     // 标准API响应格式 {success: true, data: {}, message: "", timestamp: number}
     if (response.data && response.data.success === true) {
-      console.log('标准API响应，返回整个响应对象')
       return response.data
     }
     
@@ -62,7 +43,6 @@ service.interceptors.response.use(
     
     // 如果是200状态码但格式不标准，尝试直接返回
     if (response.status >= 200 && response.status < 300) {
-      console.warn('非标准响应格式，直接返回原始数据:', response.data)
       return response.data
     }
     
@@ -72,18 +52,10 @@ service.interceptors.response.use(
     return Promise.reject(new Error(errorMsg))
   },
   (error) => {
-    console.error('========== Axios 响应错误详情 ==========')
-    console.error('错误对象:', error)
-    console.error('错误消息:', error.message)
+    console.error('网络请求错误:', error.message)
     
     if (error.response) {
       // 服务器响应了，但状态码不在 2xx 范围内
-      console.error('响应状态码:', error.response.status)
-      console.error('响应状态文本:', error.response.statusText)
-      console.error('响应头:', error.response.headers)
-      console.error('响应数据:', error.response.data)
-      console.error('请求配置:', error.config)
-      
       switch (error.response.status) {
         case 401:
           // Session过期，清除本地存储并打开登录窗口
@@ -107,15 +79,10 @@ service.interceptors.response.use(
     } else if (error.request) {
       // 请求已发送但没有收到响应
       console.error('❌ 网络错误: 请求已发送但服务器无响应')
-      console.error('请求对象:', error.request)
-      console.error('请求配置:', error.config)
     } else {
       // 请求配置出错
       console.error('❌ 请求配置错误:', error.message)
-      console.error('错误配置:', error.config)
     }
-    
-    console.error('========================================')
     
     return Promise.reject(error)
   }

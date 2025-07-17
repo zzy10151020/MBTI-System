@@ -27,8 +27,16 @@ public class CorsFilter implements Filter {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
         
-        // 设置 CORS 头
-        httpResponse.setHeader("Access-Control-Allow-Origin", "*");
+        // 获取请求来源
+        String origin = httpRequest.getHeader("Origin");
+        
+        // 设置 CORS 头 - 允许特定域名（开发环境）
+        if (origin != null && (origin.startsWith("http://localhost:") || 
+                              origin.startsWith("http://127.0.0.1:") ||
+                              origin.startsWith("https://example.com"))) {
+            httpResponse.setHeader("Access-Control-Allow-Origin", origin);
+        }
+        
         httpResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
         httpResponse.setHeader("Access-Control-Allow-Headers", 
                 "Content-Type, Authorization, X-Requested-With, Accept, Origin");

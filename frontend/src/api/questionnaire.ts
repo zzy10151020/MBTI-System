@@ -15,7 +15,7 @@ export const questionnaireApi = {
    * 获取问卷列表
    */
   async getQuestionnaireList(): Promise<Questionnaire[]> {
-    const response = await service.get<any, ApiResponse<Questionnaire[]>>('/api/questionnaire/get')
+    const response = await service.get<any, ApiResponse<Questionnaire[]>>('/api/questionnaire')
     return response.data
   },
 
@@ -24,7 +24,7 @@ export const questionnaireApi = {
    * @param id 问卷ID
    */
   async getQuestionnaireDetail(id: number): Promise<QuestionnaireDetail> {
-    const response = await service.get<any, ApiResponse<QuestionnaireDetail>>(`/api/questionnaire/get/${id}`)
+    const response = await service.get<any, ApiResponse<QuestionnaireDetail>>(`/api/questionnaire?id=${id}`)
     return response.data
   },
 
@@ -32,12 +32,12 @@ export const questionnaireApi = {
    * 创建问卷（管理员权限）
    * @param data 创建数据
    */
-  async createQuestionnaire(data: CreateQuestionnaireRequest): Promise<Questionnaire> {
-    const requestData = {
+  async createQuestionnaire(data: { title: string; description: string }): Promise<Questionnaire> {
+    const requestData: CreateQuestionnaireRequest = {
       ...data,
       operationType: 'CREATE'
     }
-    const response = await service.post<any, ApiResponse<Questionnaire>>('/api/questionnaire/create', requestData)
+    const response = await service.post<any, ApiResponse<Questionnaire>>('/api/questionnaire', requestData)
     return response.data
   },
 
@@ -46,11 +46,7 @@ export const questionnaireApi = {
    * @param data 更新数据
    */
   async updateQuestionnaire(data: UpdateQuestionnaireRequest): Promise<Questionnaire> {
-    const requestData = {
-      ...data,
-      operationType: 'UPDATE'
-    }
-    const response = await service.post<any, ApiResponse<Questionnaire>>('/api/questionnaire/update', requestData)
+    const response = await service.put<any, ApiResponse<Questionnaire>>('/api/questionnaire', data)
     return response.data
   },
 
@@ -63,7 +59,7 @@ export const questionnaireApi = {
       questionnaireId,
       operationType: 'DELETE'
     }
-    await service.post<any, ApiResponse<void>>('/api/questionnaire/delete', requestData)
+    await service.delete<any, ApiResponse<void>>('/api/questionnaire', { data: requestData })
   }
 }
 

@@ -1,26 +1,125 @@
-# 前端忽略
-frontend/node_modules/
+# IDE 配置文件
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+.springBeans
+.sts4-cache/
+
+# 子目录中的IDE配置文件（避免重复）
+backend/.idea/
+frontend/.vscode/
+
+# Maven/Gradle 生成的文件
+backend/*.iml
+backend/dependency-reduced-pom.xml
+
+# 编译输出
+backend/target/
 frontend/dist/
+frontend/build/
+backend/bin/
+backend/out/
+
+# 依赖文件
+frontend/node_modules/
+backend/.m2/
+
+# 日志文件
+logs/
+*.log
+backend/*.log
+frontend/*.log
+
+# 环境配置文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 frontend/.env.local
 frontend/.env.*.local
+
+# 调试文件
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 frontend/npm-debug.log*
 frontend/yarn-debug.log*
 frontend/yarn-error.log*
 
-# 后端忽略
-backend/target/
-backend/.idea
-backend/*.iml
-backend/.settings/
-backend/.project
-backend/.classpath
-backend/.vscode/
-backend/bin/
-backend/*.log
-backend/.springBeans
+# 缓存文件
+.cache/
+.npm/
+.yarn/
+frontend/.cache/
+backend/.gradle/
 
-# 通用
-.DS_Store
-*.log
+# 临时文件
 *.tmp
+*.temp
 *.bak
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# 密钥和敏感信息
+*.key
+*.pem
+*.p12
+*.jks
+.secret
+
+# 服务器和容器相关文件
+work/
+temp/
+tomcat*/
+tomcat.*/ 
+catalina*/
+.metadata/
+servers/
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# Maven wrapper
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# Gradle wrapper
+backend/gradle/
+backend/gradlew
+backend/gradlew.bat
+
+# 测试覆盖率报告
+coverage/
+frontend/coverage/
+backend/target/site/
+
+# 打包文件
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# 容器和部署相关
+docker-compose.override.yml
+.dockerignore
+Dockerfile.local

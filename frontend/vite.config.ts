@@ -30,7 +30,34 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080/mbti-system/',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        cookieDomainRewrite: {
+          '*': 'localhost'
+        },
+        configure: (proxy, options) => {
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            // 确保转发所有Cookie头
+            if (req.headers.cookie) {
+              proxyReq.setHeader('Cookie', req.headers.cookie);
+            }
+          });
+          
+          proxy.on('proxyRes', (proxyRes, req, res) => {
+            // 处理响应中的Set-Cookie头
+            const setCookieHeader = proxyRes.headers['set-cookie'];
+            if (setCookieHeader) {
+              // 修改cookie的domain、path和安全标志以适应代理
+              const modifiedCookies = setCookieHeader.map(cookie => {
+                return cookie
+                  .replace(/Domain=[^;]+;?/gi, 'Domain=localhost;')
+                  .replace(/Path=\/mbti-system/gi, 'Path=/')
+                  .replace(/;\s*HttpOnly/gi, '') // 移除HttpOnly以允许JavaScript访问
+                  .replace(/;\s*Secure/gi, ''); // 移除Secure标志（开发环境用HTTP）
+              });
+              proxyRes.headers['set-cookie'] = modifiedCookies;
+            }
+          });
+        }
       }
     }
   },

@@ -14,16 +14,44 @@ export const userApi = {
    * 获取当前用户信息
    */
   async getProfile(): Promise<User> {
-    const response = await service.get<any, ApiResponse<User>>('/api/user')
-    return response.data
+    // 从localStorage获取用户ID
+    const userInfo = localStorage.getItem('userInfo')
+    if (!userInfo) {
+      throw new Error('用户未登录，请先登录')
+    }
+    
+    try {
+      const user = JSON.parse(userInfo)
+      if (!user.userId) {
+        throw new Error('用户ID不存在，请重新登录')
+      }
+      
+      const response = await service.get<any, ApiResponse<User>>(`/api/user/profile?userId=${user.userId}`)
+      return response.data
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        // localStorage中的数据格式有问题
+        localStorage.removeItem('userInfo')
+        throw new Error('用户信息格式错误，请重新登录')
+      }
+      throw error
+    }
   },
 
   /**
    * 更新当前用户信息
    * @param data 更新数据
    */
-  async updateProfile(data: UpdateUserRequest): Promise<User> {
-    const requestData = {
+  async updateProfile(data: { email?: string }): Promise<User> {
+    // 获取当前用户ID
+    const userInfo = localStorage.getItem('userInfo')
+    if (!userInfo) {
+      throw new Error('用户未登录，请先登录')
+    }
+    
+    const user = JSON.parse(userInfo)
+    const requestData: UpdateUserRequest = {
+      userId: user.userId,
       ...data,
       operationType: 'UPDATE'
     }
@@ -35,19 +63,19 @@ export const userApi = {
    * 修改密码
    * @param data 修改密码数据
    */
-  async changePassword(data: ChangePasswordRequest): Promise<void> {
-    const requestData = {
+  async changePassword(data: { currentPassword: string; newPassword: string }): Promise<void> {
+    const requestData: ChangePasswordRequest = {
       ...data,
       operationType: 'UPDATE'
     }
-    await service.post<any, ApiResponse<void>>('/api/user/changePassword', requestData)
+    await service.post<any, ApiResponse<void>>('/api/user', requestData)
   },
 
   /**
    * 获取用户列表（管理员权限）
    */
   async getUserList(): Promise<User[]> {
-    const response = await service.get<any, ApiResponse<User[]>>('/api/user/list')
+    const response = await service.get<any, ApiResponse<User[]>>('/api/user')
     return response.data
   },
 

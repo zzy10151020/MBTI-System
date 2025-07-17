@@ -47,8 +47,9 @@
     <session-config>
         <session-timeout>1440</session-timeout>
         <cookie-config>
-            <http-only>true</http-only>
+            <http-only>false</http-only>
             <secure>false</secure>
+            <same-site>None</same-site>
         </cookie-config>
     </session-config>
 
