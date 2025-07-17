@@ -35,11 +35,7 @@ public class AuthController extends BaseController {
      */
     public void login(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            if (!"POST".equals(request.getMethod())) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("Method Not Allowed");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
+            if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
             
             AuthDTO loginRequest = parseRequestBody(request, AuthDTO.class);
             loginRequest.setOperationType(OperationType.QUERY);
@@ -96,11 +92,7 @@ public class AuthController extends BaseController {
      */
     public void register(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            if (!"POST".equals(request.getMethod())) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("Method Not Allowed");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
+            if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
             
             AuthDTO registerRequest = parseRequestBody(request, AuthDTO.class);
             registerRequest.setOperationType(OperationType.CREATE);
@@ -162,11 +154,7 @@ public class AuthController extends BaseController {
      */
     public void logout(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            if (!"POST".equals(request.getMethod())) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("Method Not Allowed");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
+            if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
             
             HttpSession session = request.getSession(false);
             if (session != null) {
@@ -196,11 +184,7 @@ public class AuthController extends BaseController {
      */
     public void checkUsername(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            if (!"GET".equals(request.getMethod())) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("Method Not Allowed");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
+            if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
             
             String username = request.getParameter("username");
             if (username == null || username.trim().isEmpty()) {
@@ -236,11 +220,7 @@ public class AuthController extends BaseController {
      */
     public void checkEmail(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            if (!"GET".equals(request.getMethod())) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("Method Not Allowed");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
+            if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
             
             String email = request.getParameter("email");
             if (email == null || email.trim().isEmpty()) {

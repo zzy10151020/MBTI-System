@@ -8,13 +8,11 @@ import org.frostedstar.mbtisystem.entity.AnswerDetail;
 import org.frostedstar.mbtisystem.entity.User;
 import org.frostedstar.mbtisystem.service.TestService;
 import org.frostedstar.mbtisystem.service.ServiceFactory;
-import org.frostedstar.mbtisystem.service.UserService;
 import org.frostedstar.mbtisystem.dto.ApiResponse;
 import org.frostedstar.mbtisystem.dto.ErrorResponse;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,11 +27,9 @@ import java.util.stream.Collectors;
 public class TestController extends BaseController {
     
     private final TestService testService;
-    private final UserService userService;
     
     public TestController() {
         this.testService = ServiceFactory.getTestService();
-        this.userService = ServiceFactory.getUserService();
     }
     
     /**
@@ -41,19 +37,11 @@ public class TestController extends BaseController {
      */
     public void get(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            if (!"GET".equals(request.getMethod())) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("Method Not Allowed");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
+            if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
             
             // 检查用户是否已登录
-            User user = getCurrentUser(request);
-            if (user == null) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("用户未登录");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
+            User user = AuthUtils.checkLogin(request, response, this);
+            if (user == null) return;
             
             String pathInfo = request.getPathInfo();
             if (pathInfo == null || pathInfo.equals("/test") || pathInfo.equals("/test/")) {
@@ -116,19 +104,11 @@ public class TestController extends BaseController {
      */
     public void post(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            if (!"POST".equals(request.getMethod())) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("Method Not Allowed");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
+            if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
             
             // 检查用户是否已登录
-            User user = getCurrentUser(request);
-            if (user == null) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("用户未登录");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
+            User user = AuthUtils.checkLogin(request, response, this);
+            if (user == null) return;
             
             // 解析请求体
             TestDTO testRequest = parseRequestBody(request, TestDTO.class);
@@ -169,23 +149,5 @@ public class TestController extends BaseController {
             ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
             sendApiResponse(response, apiResponse);
         }
-    }
-    
-    /**
-     * 获取当前用户
-     */
-    private User getCurrentUser(HttpServletRequest request) {
-        HttpSession session = request.getSession(false);
-        if (session == null) {
-            return null;
-        }
-        
-        Integer userId = (Integer) session.getAttribute("userId");
-        if (userId == null) {
-            return null;
-        }
-        
-        Optional<User> userOpt = userService.findById(userId);
-        return userOpt.orElse(null);
     }
 }

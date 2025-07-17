@@ -7,13 +7,11 @@ import org.frostedstar.mbtisystem.entity.Question;
 import org.frostedstar.mbtisystem.entity.User;
 import org.frostedstar.mbtisystem.service.QuestionService;
 import org.frostedstar.mbtisystem.service.ServiceFactory;
-import org.frostedstar.mbtisystem.service.UserService;
 import org.frostedstar.mbtisystem.dto.ApiResponse;
 import org.frostedstar.mbtisystem.dto.ErrorResponse;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -26,11 +24,9 @@ import java.util.stream.Collectors;
 public class QuestionController extends BaseController {
     
     private final QuestionService questionService;
-    private final UserService userService;
     
     public QuestionController() {
         this.questionService = ServiceFactory.getQuestionService();
-        this.userService = ServiceFactory.getUserService();
     }
     
     /**
@@ -38,9 +34,18 @@ public class QuestionController extends BaseController {
      */
     public void get(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            if (!"GET".equals(request.getMethod())) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("Method Not Allowed");
-                sendApiResponse(response, apiResponse);
+            if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
+            
+            // 检查是否有questionnaireId查询参数
+            String questionnaireIdParam = request.getParameter("questionnaireId");
+            if (questionnaireIdParam != null && !questionnaireIdParam.trim().isEmpty()) {
+                try {
+                    Integer questionnaireId = Integer.parseInt(questionnaireIdParam);
+                    fetchQuestionsByQuestionnaireId(questionnaireId, response);
+                } catch (NumberFormatException e) {
+                    ApiResponse<Object> apiResponse = ApiResponse.error("无效的问卷ID");
+                    sendApiResponse(response, apiResponse);
+                }
                 return;
             }
             
@@ -101,18 +106,27 @@ public class QuestionController extends BaseController {
     }
 
     /**
+     * 根据问卷ID获取问题列表
+     */
+    private void fetchQuestionsByQuestionnaireId(Integer questionnaireId, HttpServletResponse response) throws IOException {
+        List<Question> questions = questionService.findByQuestionnaireId(questionnaireId);
+        List<QuestionDTO> questionDTOs = questions.stream()
+            .map(QuestionDTO::fromEntity)
+            .collect(Collectors.toList());
+
+        ApiResponse<List<QuestionDTO>> apiResponse = ApiResponse.success("获取问卷问题列表成功", questionDTOs);
+        sendApiResponse(response, apiResponse);
+    }
+
+    /**
      * 创建问题
      */
     public void post(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            if (!"POST".equals(request.getMethod())) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("Method Not Allowed");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
+            if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
             
             // 检查管理员权限
-            User user = checkAdmin(request, response);
+            User user = AuthUtils.checkAdmin(request, response, this);
             if (user == null) return;
             
             // 解析请求体
@@ -157,14 +171,10 @@ public class QuestionController extends BaseController {
      */
     public void put(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            if (!"PUT".equals(request.getMethod())) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("Method Not Allowed");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
+            if (!AuthUtils.checkHttpMethod(request, response, this, "PUT")) return;
             
             // 检查管理员权限
-            User user = checkAdmin(request, response);
+            User user = AuthUtils.checkAdmin(request, response, this);
             if (user == null) return;
             
             // 解析请求体
@@ -220,14 +230,10 @@ public class QuestionController extends BaseController {
      */
     public void delete(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            if (!"DELETE".equals(request.getMethod())) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("Method Not Allowed");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
+            if (!AuthUtils.checkHttpMethod(request, response, this, "DELETE")) return;
             
             // 检查管理员权限
-            User user = checkAdmin(request, response);
+            User user = AuthUtils.checkAdmin(request, response, this);
             if (user == null) return;
             
             // 从URL参数或请求体获取ID
@@ -280,44 +286,5 @@ public class QuestionController extends BaseController {
             ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
             sendApiResponse(response, apiResponse);
         }
-    }
-    
-    /**
-     * 检查管理员权限
-     */
-    private User checkAdmin(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        // 检查用户是否已登录
-        HttpSession session = request.getSession(false);
-        if (session == null) {
-            ApiResponse<Object> apiResponse = ApiResponse.error("用户未登录");
-            sendApiResponse(response, apiResponse);
-            return null;
-        }
-        
-        Integer userId = (Integer) session.getAttribute("userId");
-        if (userId == null) {
-            ApiResponse<Object> apiResponse = ApiResponse.error("用户未登录");
-            sendApiResponse(response, apiResponse);
-            return null;
-        }
-        
-        // 获取用户信息
-        Optional<User> userOpt = userService.findById(userId);
-        if (userOpt.isEmpty()) {
-            ApiResponse<Object> apiResponse = ApiResponse.error("用户不存在");
-            sendApiResponse(response, apiResponse);
-            return null;
-        }
-        
-        User user = userOpt.get();
-        
-        // 检查管理员权限
-        if (!User.Role.ADMIN.equals(user.getRole())) {
-            ApiResponse<Object> apiResponse = ApiResponse.error("权限不足，需要管理员权限");
-            sendApiResponse(response, apiResponse);
-            return null;
-        }
-        
-        return user;
     }
 }

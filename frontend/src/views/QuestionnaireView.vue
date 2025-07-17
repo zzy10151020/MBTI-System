@@ -28,9 +28,10 @@
           :class="{ 'featured': index === 0 }"
           @click="selectQuestionnaire(questionnaire)"
         >
-          <div class="item-badge" v-if="questionnaire.hasAnswered">
+          <!-- 暂时移除已完成标记，因为后端DTO中没有hasAnswered字段 -->
+          <!-- <div class="item-badge" v-if="questionnaire.hasAnswered">
             <span>已完成</span>
-          </div>
+          </div> -->
           
           <div class="item-header">
             <div class="item-icon">
@@ -45,7 +46,8 @@
             <div class="item-stats">
               <div class="stat-item">
                 <el-icon><User /></el-icon>
-                <span>{{ questionnaire.answerCount }}人已测试</span>
+                <!-- 暂时显示固定数值，因为后端DTO中没有answerCount字段 -->
+                <span>0人已测试</span>
               </div>
               <div class="stat-item">
                 <el-icon><Clock /></el-icon>
@@ -58,10 +60,9 @@
             <el-button 
               type="primary" 
               size="default" 
-              :disabled="questionnaire.hasAnswered"
               @click.stop="startTest(questionnaire)"
             >
-              {{ questionnaire.hasAnswered ? '已完成' : '开始测试' }}
+              开始测试
             </el-button>
           </div>
         </div>
@@ -178,10 +179,11 @@ const startTest = async (questionnaire: Questionnaire) => {
     return
   }
 
-  if (questionnaire.hasAnswered) {
-    ElMessage.info('您已完成过该问卷')
-    return
-  }
+  // 暂时移除已完成检查，因为后端DTO中没有hasAnswered字段
+  // if (questionnaire.hasAnswered) {
+  //   ElMessage.info('您已完成过该问卷')
+  //   return
+  // }
 
   try {
     // 跳转到测试页面，保持uid参数并传递问卷ID
@@ -252,7 +254,7 @@ const checkCompletedTest = () => {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 2rem 4rem; /* 增加顶部和底部边距 */
+  padding: 2rem 8rem; /* 增加顶部和底部边距 */
   background-color: var(--color-background-soft);
 }
 
@@ -269,7 +271,7 @@ const checkCompletedTest = () => {
 /* 页面头部 */
 .page-header {
   text-align: center;
-  margin-bottom: 5rem;
+  margin-bottom: 2rem;
   padding: 0 2rem;
 }
 
@@ -278,7 +280,7 @@ const checkCompletedTest = () => {
   line-height: 1.5;
   color: var(--color-text-primary);
   font-weight: 600;
-  margin: 0 0 1rem 0;
+  margin: 0 0 0.8rem 0;
   letter-spacing: 0.05rem;
 }
 
@@ -362,7 +364,7 @@ const checkCompletedTest = () => {
   background-color: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: 1.6rem;
-  padding: 2rem;
+  padding: 0.5rem 2rem;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
@@ -392,7 +394,7 @@ const checkCompletedTest = () => {
   display: flex;
   justify-content: flex-start;
   align-items: flex-start;
-  margin-bottom: 1.5rem;
+  margin: 0.5rem 0;
 }
 
 .item-icon {
@@ -430,7 +432,7 @@ const checkCompletedTest = () => {
   font-size: 1.6rem;
   font-weight: 600;
   color: var(--color-text-primary);
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.2rem;
   line-height: 1.3;
 }
 
@@ -438,10 +440,11 @@ const checkCompletedTest = () => {
   font-size: 1.2rem;
   color: var(--color-text-secondary);
   line-height: 1.4;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  line-clamp: 2; /* 标准属性 */
   overflow: hidden;
 }
 

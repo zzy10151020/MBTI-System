@@ -1,5 +1,6 @@
 package org.frostedstar.mbtisystem.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -26,12 +27,14 @@ public class OptionDTO {
     private Short optionOrder;
     private LocalDateTime createdAt;
     
-    // 操作类型标识
+    // 操作类型标识 - 不序列化到JSON响应中
+    @JsonIgnore
     private OperationType operationType;
     
     /**
      * 创建请求验证
      */
+    @JsonIgnore
     public boolean isValidForCreate() {
         return operationType == OperationType.CREATE &&
                questionId != null && questionId > 0 &&
@@ -43,6 +46,7 @@ public class OptionDTO {
     /**
      * 更新请求验证
      */
+    @JsonIgnore
     public boolean isValidForUpdate() {
         return operationType == OperationType.UPDATE &&
                optionId != null && optionId > 0 &&
@@ -54,6 +58,7 @@ public class OptionDTO {
     /**
      * 删除请求验证
      */
+    @JsonIgnore
     public boolean isValidForDelete() {
         return operationType == OperationType.DELETE &&
                optionId != null && optionId > 0;
@@ -62,6 +67,7 @@ public class OptionDTO {
     /**
      * 通用验证方法
      */
+    @JsonIgnore
     public boolean isValid() {
         if (operationType == null) {
             return false;
@@ -84,6 +90,7 @@ public class OptionDTO {
     /**
      * 验证选项值
      */
+    @JsonIgnore
     private boolean isValidValue(String value) {
         return "A".equals(value) || "B".equals(value) || 
                "C".equals(value) || "D".equals(value);
@@ -119,6 +126,7 @@ public class OptionDTO {
     /**
      * 将value转换为score
      */
+    @JsonIgnore
     public Byte getScoreFromValue() {
         if (value == null) {
             return null;

@@ -1,8 +1,10 @@
 package org.frostedstar.mbtisystem.dao.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import org.frostedstar.mbtisystem.dao.OptionDAO;
 import org.frostedstar.mbtisystem.dao.QuestionDAO;
 import org.frostedstar.mbtisystem.entity.Question;
+import org.frostedstar.mbtisystem.entity.Option;
 import org.frostedstar.mbtisystem.util.DatabaseUtil;
 
 import java.sql.*;
@@ -15,6 +17,18 @@ import java.util.Optional;
  */
 @Slf4j
 public class QuestionDAOImpl implements QuestionDAO {
+    
+    private OptionDAO optionDAO;
+    
+    /**
+     * 延迟获取OptionDAO，避免循环依赖
+     */
+    private OptionDAO getOptionDAO() {
+        if (optionDAO == null) {
+            optionDAO = new org.frostedstar.mbtisystem.dao.impl.OptionDAOImpl();
+        }
+        return optionDAO;
+    }
     
     private static final String INSERT_SQL = 
         "INSERT INTO question (questionnaire_id, content, dimension, question_order) VALUES (?, ?, ?, ?)";
@@ -310,12 +324,18 @@ public class QuestionDAOImpl implements QuestionDAO {
      * 将 ResultSet 映射到 Question 对象
      */
     private Question mapResultSetToQuestion(ResultSet rs) throws SQLException {
-        return Question.builder()
+        Question question = Question.builder()
                 .questionId(rs.getInt("question_id"))
                 .questionnaireId(rs.getInt("questionnaire_id"))
                 .content(rs.getString("content"))
                 .dimension(Question.Dimension.fromValue(rs.getString("dimension")))
                 .questionOrder(rs.getShort("question_order"))
                 .build();
+        
+        // 加载该问题的选项数据
+        List<Option> options = getOptionDAO().findByQuestionId(question.getQuestionId());
+        question.setOptions(options);
+        
+        return question;
     }
 }

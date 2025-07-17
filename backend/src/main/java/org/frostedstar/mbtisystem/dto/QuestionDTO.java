@@ -1,5 +1,6 @@
 package org.frostedstar.mbtisystem.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -31,12 +32,14 @@ public class QuestionDTO {
     // 关联信息（仅查询时使用）
     private List<OptionDTO> options;
     
-    // 操作类型标识
+    // 操作类型标识 - 不序列化到JSON响应中
+    @JsonIgnore
     private OperationType operationType;
     
     /**
      * 创建请求验证
      */
+    @JsonIgnore
     public boolean isValidForCreate() {
         return operationType == OperationType.CREATE &&
                questionnaireId != null && questionnaireId > 0 &&
@@ -48,6 +51,7 @@ public class QuestionDTO {
     /**
      * 更新请求验证
      */
+    @JsonIgnore
     public boolean isValidForUpdate() {
         return operationType == OperationType.UPDATE &&
                questionId != null && questionId > 0 &&
@@ -59,6 +63,7 @@ public class QuestionDTO {
     /**
      * 删除请求验证
      */
+    @JsonIgnore
     public boolean isValidForDelete() {
         return operationType == OperationType.DELETE &&
                questionId != null && questionId > 0;
@@ -67,6 +72,7 @@ public class QuestionDTO {
     /**
      * 通用验证方法
      */
+    @JsonIgnore
     public boolean isValid() {
         if (operationType == null) {
             return false;
@@ -89,6 +95,7 @@ public class QuestionDTO {
     /**
      * 验证MBTI维度
      */
+    @JsonIgnore
     private boolean isValidDimension(String dimension) {
         return "EI".equals(dimension) || "SN".equals(dimension) || 
                "TF".equals(dimension) || "JP".equals(dimension);

@@ -312,6 +312,7 @@ Cookie: JSESSIONID=xxxxx
 **请求体：**
 ```json
 {
+    "userId": 1,
     "currentPassword": "123456",      // 旧密码
     "newPassword": "newpass123",      // 新密码
     "operationType": "UPDATE"
@@ -330,7 +331,35 @@ Cookie: JSESSIONID=xxxxx
 
 ---
 
-### 2.4 获取用户列表（管理员）
+### 2.4 根据ID获取用户详情
+
+**接口地址：** `POST /mbti-system/api/user/profile?userId={userId}`
+
+**接口说明：** 获取用户详情信息
+
+**请求头：**
+```
+Content-Type: application/json
+```
+
+**响应体：**
+```json
+{
+    "success": true,
+    "message": null,
+    "data": {
+        "userId": 1,
+        "username": "admin",
+        "email": null,
+        "role": "ADMIN"
+    },
+    "timestamp": 1752769103745
+}
+```
+
+---
+
+### 2.5 获取用户列表（管理员）
 
 **接口地址：** `GET /mbti-system/api/user/list`
 
@@ -387,7 +416,8 @@ Cookie: JSESSIONID=xxxxx
 **请求体：**
 ```json
 {
-    "userId": 2,
+    "userId": 5,
+    "deleteUserId": 9,
     "operationType": "DELETE"
 }
 ```
@@ -396,9 +426,9 @@ Cookie: JSESSIONID=xxxxx
 ```json
 {
     "success": true,
-    "message": "删除用户成功",
-    "data": "删除用户成功",
-    "timestamp": 1720762800000
+    "message": "用户删除成功",
+    "data": "用户 testuser 已被删除",
+    "timestamp": 1752771596371
 }
 ```
 

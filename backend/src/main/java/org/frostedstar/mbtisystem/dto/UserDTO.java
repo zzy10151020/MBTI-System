@@ -1,6 +1,7 @@
 package org.frostedstar.mbtisystem.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -24,22 +25,31 @@ public class UserDTO {
     private Integer userId;
     private String username;
     private String email;
+    @JsonIgnore
     private String password;
     private User.Role role;
     
     @JsonIgnore
     private LocalDateTime createdAt;
     
-    // 操作类型标识
+    // 删除操作专用字段 - 要删除的用户ID，只允许写入（接收请求），不允许读取（返回响应）
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private Integer deleteUserId;
+    
+    // 操作类型标识 - 不序列化到JSON响应中
+    @JsonIgnore
     private OperationType operationType;
     
-    // 密码修改相关字段
+    // 密码修改相关字段 - 只允许写入（接收请求），不允许读取（返回响应）
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String currentPassword;
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String newPassword;
     
     /**
-     * 创建请求验证
+     * 创建请求验证 - 不序列化到JSON响应中
      */
+    @JsonIgnore
     public boolean isValidForCreate() {
         return operationType == OperationType.CREATE &&
                username != null && !username.trim().isEmpty() &&
@@ -49,8 +59,9 @@ public class UserDTO {
     }
     
     /**
-     * 密码修改请求验证
+     * 密码修改请求验证 - 不序列化到JSON响应中
      */
+    @JsonIgnore
     public boolean isValidForPasswordChange() {
         return operationType == OperationType.UPDATE &&
                userId != null && userId > 0 &&
@@ -60,8 +71,9 @@ public class UserDTO {
     }
     
     /**
-     * 更新请求验证
+     * 更新请求验证 - 不序列化到JSON响应中
      */
+    @JsonIgnore
     public boolean isValidForUpdate() {
         if (operationType != OperationType.UPDATE || userId == null || userId <= 0) {
             return false;
@@ -103,23 +115,27 @@ public class UserDTO {
     }
     
     /**
-     * 删除请求验证
+     * 删除请求验证 - 不序列化到JSON响应中
      */
+    @JsonIgnore
     public boolean isValidForDelete() {
         return operationType == OperationType.DELETE &&
-               userId != null && userId > 0;
+               userId != null && userId > 0 &&        // 管理员ID
+               deleteUserId != null && deleteUserId > 0; // 要删除的用户ID
     }
     
     /**
-     * 查询请求验证
+     * 查询请求验证 - 不序列化到JSON响应中
      */
+    @JsonIgnore
     public boolean isValidForQuery() {
         return operationType == OperationType.QUERY;
     }
     
     /**
-     * 通用验证方法
+     * 通用验证方法 - 不序列化到JSON响应中
      */
+    @JsonIgnore
     public boolean isValid() {
         if (operationType == null) {
             return false;
@@ -145,7 +161,7 @@ public class UserDTO {
     private boolean isValidEmail(String email) {
         return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     }
-    
+
     /**
      * 从User实体转换为UserDTO
      */
@@ -192,9 +208,10 @@ public class UserDTO {
     /**
      * 创建用于删除操作的DTO
      */
-    public static UserDTO forDelete(Integer userId) {
+    public static UserDTO forDelete(Integer adminUserId, Integer deleteUserId) {
         return UserDTO.builder()
-                .userId(userId)
+                .userId(adminUserId)           // 管理员ID
+                .deleteUserId(deleteUserId)    // 要删除的用户ID
                 .operationType(OperationType.DELETE)
                 .build();
     }
