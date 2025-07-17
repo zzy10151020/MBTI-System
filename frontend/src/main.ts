@@ -59,7 +59,7 @@ app.mount('#app')
 
 // 初始化用户store，检查登录状态
 const userStore = useUserStore()
-userStore.initialize()
+userStore.initialize();
 
 // 注册全局调试函数
-;(window as any).debugSession = userStore.debugSession
+(window as any).debugSession = userStore.debugSession
