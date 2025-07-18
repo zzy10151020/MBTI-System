@@ -1,41 +1,39 @@
 <template>
-  <header class="header">
-    <div class="header-title" @click="goHome">
-      <span class="title-text primary">MBTI</span>
-      <span class="title-text">System</span>
-    </div>
+  <div class="header-container">
+    <header class="header">
+      <div class="header-title" @click="goHome">
+        <span class="title-text primary">MBTI</span>
+        <span class="title-text">System</span>
+      </div>
 
+      <div class="header-search">
+        <SearchBar />
+      </div>
+
+      <HeaderAvatar />
+    </header>
     <nav class="header-nav">
       <router-link 
         :to="homeRoute" 
         class="nav-link"
-        :class="{ active: $route.name === 'home' }"
-      >
+        :class="{ active: $route.name === 'home' }">
         首页
       </router-link>
       <router-link 
         :to="questionnaireRoute" 
         class="nav-link"
-        :class="{ active: $route.name === 'questionnaires' }"
-      >
+        :class="{ active: $route.name === 'questionnaires' }">
         问卷测试
       </router-link>
       <router-link 
         :to="resultsRoute" 
         class="nav-link"
         :class="{ active: $route.name === 'results' }"
-        v-if="userStore.isLoggedIn"
-      >
+        v-if="userStore.isLoggedIn">
         我的结果
       </router-link>
     </nav>
-
-    <div class="header-search">
-      <SearchBar />
-    </div>
-
-    <HeaderAvatar />
-  </header>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -79,6 +77,15 @@ const goHome = () => {
 </script>
 
 <style scoped>
+.header-container {
+  width: 100%;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
 .header {
   display: flex;
   align-items: center;
@@ -86,6 +93,7 @@ const goHome = () => {
   width: 100%;
   height: 100%;
   padding: 0;
+  margin-top: 0.4rem;
   background-color: var(--color-background);
 }
 
@@ -122,17 +130,16 @@ const goHome = () => {
 .header-nav {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-left: 2rem;
+  gap: 0.2rem;
 }
 
 .nav-link {
-  font-size: 1.4rem;
+  font-size: 1rem;
   font-weight: 500;
   color: var(--color-text-secondary);
   text-decoration: none;
-  padding: 0.8rem 1.6rem;
-  border-radius: 0.8rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.4rem;
   transition: all 0.3s ease;
   position: relative;
 }
@@ -150,7 +157,7 @@ const goHome = () => {
 .nav-link.active::after {
   content: '';
   position: absolute;
-  bottom: -0.2rem;
+  bottom: 0;
   left: 50%;
   transform: translateX(-50%);
   width: 2rem;

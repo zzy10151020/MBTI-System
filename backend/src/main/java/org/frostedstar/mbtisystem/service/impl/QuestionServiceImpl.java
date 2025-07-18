@@ -1,5 +1,7 @@
 package org.frostedstar.mbtisystem.service.impl;
 
+import lombok.extern.slf4j.Slf4j;
+import org.frostedstar.mbtisystem.dao.OptionDAO;
 import org.frostedstar.mbtisystem.dao.QuestionDAO;
 import org.frostedstar.mbtisystem.dao.DaoFactory;
 import org.frostedstar.mbtisystem.entity.Question;
@@ -12,12 +14,15 @@ import java.util.Optional;
 /**
  * 问题 Service 实现类
  */
+@Slf4j
 public class QuestionServiceImpl implements QuestionService {
     
     private final QuestionDAO questionDao;
+    private final OptionDAO optionDao;
     
     public QuestionServiceImpl() {
         this.questionDao = DaoFactory.getQuestionDao();
+        this.optionDao = DaoFactory.getOptionDao();
     }
     
     @Override
@@ -76,9 +81,31 @@ public class QuestionServiceImpl implements QuestionService {
         Optional<Question> question = questionDao.findById(questionId);
         return question.orElse(null);
     }
-    
+
     @Override
-    public boolean deleteByQuestionnaireId(Integer questionnaireId) {
-        return questionDao.deleteByQuestionnaireId(questionnaireId);
+    public boolean deleteQuestionWithCascade(Integer questionId) {
+        // 级联删除问题和选项
+        try {
+            // 删除所有选项
+            boolean deleted;
+            if (optionDao.deleteByQuestionId(questionId)) {
+                // 删除问题
+                deleted = questionDao.deleteById(questionId);
+                if (deleted) {
+                    log.info("选项和问题删除成功: 问题ID {}", questionId);
+                } else {
+                    log.warn("选项删除成功，但问题删除失败: 问题ID {}", questionId);
+                }
+                return deleted;
+            } else {
+                // 删除问题失败
+                log.warn("选项删除失败: 问题ID {}", questionId);
+                return false;
+            }
+
+        } catch (Exception e) {
+            log.error("级联删除问题下的所有选项失败", e);
+            throw new RuntimeException("级联删除问题下的所有选项失败", e);
+        }
     }
 }

@@ -188,7 +188,7 @@ const goToSlide = (index: number) => {
 }
 
 .welcome-card {
-  max-width: 80rem;
+  max-width: 65rem;
   width: 100%;
   background-color: var(--color-background);
   border-radius: 1.6rem;

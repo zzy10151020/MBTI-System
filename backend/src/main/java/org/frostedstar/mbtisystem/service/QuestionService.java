@@ -28,9 +28,9 @@ public interface QuestionService extends BaseService<Question, Integer> {
      * 获取问题详情（包含选项）
      */
     Question getQuestionDetail(Integer questionId);
-    
+
     /**
-     * 删除问卷下的所有问题
+     * 删除问题（级联删除选项）
      */
-    boolean deleteByQuestionnaireId(Integer questionnaireId);
+    boolean deleteQuestionWithCascade(Integer questionId);
 }

@@ -8,10 +8,10 @@ import org.frostedstar.mbtisystem.dto.AuthDTO;
 import org.frostedstar.mbtisystem.dto.OperationType;
 import org.frostedstar.mbtisystem.dto.ApiResponse;
 import org.frostedstar.mbtisystem.dto.UserDTO;
-import org.frostedstar.mbtisystem.dto.ErrorResponse;
 import org.frostedstar.mbtisystem.entity.User;
 import org.frostedstar.mbtisystem.service.ServiceFactory;
 import org.frostedstar.mbtisystem.service.UserService;
+import org.frostedstar.mbtisystem.servlet.Route;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -33,7 +33,8 @@ public class AuthController extends BaseController {
     /**
      * 用户登录
      */
-    public void login(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Route(value = "/login", method = "POST")
+    public void loginUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
             
@@ -42,8 +43,7 @@ public class AuthController extends BaseController {
             
             // 验证参数
             if (!loginRequest.isValid()) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("登录参数不完整或格式错误");
-                sendApiResponse(response, apiResponse);
+                sendErrorResponse(response, 400, "登录参数不完整或格式错误", "/api/auth/login");
                 return;
             }
             
@@ -70,27 +70,20 @@ public class AuthController extends BaseController {
                 sendApiResponse(response, apiResponse);
                 log.info("用户登录成功: {}", user.getUsername());
             } else {
-                ApiResponse<Object> apiResponse = ApiResponse.error("用户名或密码错误");
-                sendApiResponse(response, apiResponse);
+                sendErrorResponse(response, 401, "用户名或密码错误", "/api/auth/login");
             }
             
         } catch (Exception e) {
             log.error("用户登录失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "登录失败: " + e.getMessage(),
-                500,
-                "/api/auth/login"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 500, "登录失败: " + e.getMessage(), "/api/auth/login");
         }
     }
     
     /**
      * 用户注册
      */
-    public void register(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Route(value = "/register", method = "POST")
+    public void registerUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
             
@@ -99,22 +92,19 @@ public class AuthController extends BaseController {
             
             // 验证参数
             if (!registerRequest.isValid()) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("注册参数不完整或格式错误");
-                sendApiResponse(response, apiResponse);
+                sendErrorResponse(response, 400, "注册参数不完整或格式错误", "/api/auth/register");
                 return;
             }
             
             // 验证用户名长度
             if (registerRequest.getUsername().length() < 3 || registerRequest.getUsername().length() > 20) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("用户名长度必须在3-20个字符之间");
-                sendApiResponse(response, apiResponse);
+                sendErrorResponse(response, 400, "用户名长度必须在3-20个字符之间", "/api/auth/register");
                 return;
             }
             
             // 验证密码长度
             if (registerRequest.getPassword().length() < 6) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("密码长度不能少于6位");
-                sendApiResponse(response, apiResponse);
+                sendErrorResponse(response, 400, "密码长度不能少于6位", "/api/auth/register");
                 return;
             }
             
@@ -134,25 +124,18 @@ public class AuthController extends BaseController {
             
         } catch (RuntimeException e) {
             log.error("用户注册失败", e);
-            ApiResponse<Object> apiResponse = ApiResponse.error(e.getMessage());
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 400, e.getMessage(), "/api/auth/register");
         } catch (Exception e) {
             log.error("用户注册失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "注册失败: " + e.getMessage(),
-                500,
-                "/api/auth/register"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 500, "注册失败: " + e.getMessage(), "/api/auth/register");
         }
     }
     
     /**
      * 用户注销
      */
-    public void logout(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Route(value = "/logout", method = "POST")
+    public void logoutUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
             
@@ -168,28 +151,21 @@ public class AuthController extends BaseController {
             
         } catch (Exception e) {
             log.error("用户注销失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "注销失败: " + e.getMessage(),
-                500,
-                "/api/auth/logout"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 500, "注销失败: " + e.getMessage(), "/api/auth/logout");
         }
     }
     
     /**
      * 检查用户名是否存在
      */
+    @Route(value = "/checkUsername", method = "GET")
     public void checkUsername(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
             
             String username = request.getParameter("username");
             if (username == null || username.trim().isEmpty()) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("用户名不能为空");
-                sendApiResponse(response, apiResponse);
+                sendErrorResponse(response, 400, "用户名不能为空", "/api/auth/checkUsername");
                 return;
             }
             
@@ -204,28 +180,21 @@ public class AuthController extends BaseController {
             
         } catch (Exception e) {
             log.error("检查用户名失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "检查用户名失败: " + e.getMessage(),
-                500,
-                "/api/auth/checkUsername"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 500, "检查用户名失败: " + e.getMessage(), "/api/auth/checkUsername");
         }
     }
     
     /**
      * 检查邮箱是否存在
      */
+    @Route(value = "/checkEmail", method = "GET")
     public void checkEmail(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
             
             String email = request.getParameter("email");
             if (email == null || email.trim().isEmpty()) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("邮箱不能为空");
-                sendApiResponse(response, apiResponse);
+                sendErrorResponse(response, 400, "邮箱不能为空", "/api/auth/checkEmail");
                 return;
             }
             
@@ -240,14 +209,7 @@ public class AuthController extends BaseController {
             
         } catch (Exception e) {
             log.error("检查邮箱失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "检查邮箱失败: " + e.getMessage(),
-                500,
-                "/api/auth/checkEmail"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 500, "检查邮箱失败: " + e.getMessage(), "/api/auth/checkEmail");
         }
     }
 }

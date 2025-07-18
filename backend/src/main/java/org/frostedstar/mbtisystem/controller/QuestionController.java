@@ -8,7 +8,7 @@ import org.frostedstar.mbtisystem.entity.User;
 import org.frostedstar.mbtisystem.service.QuestionService;
 import org.frostedstar.mbtisystem.service.ServiceFactory;
 import org.frostedstar.mbtisystem.dto.ApiResponse;
-import org.frostedstar.mbtisystem.dto.ErrorResponse;
+import org.frostedstar.mbtisystem.servlet.Route;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -32,7 +32,8 @@ public class QuestionController extends BaseController {
     /**
      * 获取问题列表
      */
-    public void get(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Route(value = "", method = "GET")
+    public void getQuestions(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
             
@@ -84,14 +85,7 @@ public class QuestionController extends BaseController {
             }
         } catch (Exception e) {
             log.error("获取问题列表失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "获取问题列表失败: " + e.getMessage(),
-                500,
-                "/api/question"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 500, "获取问题列表失败: " + e.getMessage(), "/api/question");
         }
     }
 
@@ -121,7 +115,8 @@ public class QuestionController extends BaseController {
     /**
      * 创建问题
      */
-    public void post(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Route(value = "", method = "POST")
+    public void createQuestion(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
             
@@ -155,21 +150,15 @@ public class QuestionController extends BaseController {
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("创建问题失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "创建问题失败: " + e.getMessage(),
-                500,
-                "/api/question"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 500, "创建问题失败: " + e.getMessage(), "/api/question");
         }
     }
     
     /**
      * 更新问题
      */
-    public void put(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Route(value = "", method = "PUT")
+    public void updateQuestion(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "PUT")) return;
             
@@ -214,21 +203,15 @@ public class QuestionController extends BaseController {
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("更新问题失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "更新问题失败: " + e.getMessage(),
-                500,
-                "/api/question"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 500, "更新问题失败: " + e.getMessage(), "/api/question");
         }
     }
     
     /**
      * 删除问题
      */
-    public void delete(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Route(value = "", method = "DELETE")
+    public void deleteQuestion(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "DELETE")) return;
             
@@ -277,14 +260,7 @@ public class QuestionController extends BaseController {
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("删除问题失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "删除问题失败: " + e.getMessage(),
-                500,
-                "/api/question"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 500, "删除问题失败: " + e.getMessage(), "/api/question");
         }
     }
 }

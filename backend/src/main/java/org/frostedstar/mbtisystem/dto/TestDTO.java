@@ -7,6 +7,8 @@ import lombok.Builder;
 import org.frostedstar.mbtisystem.entity.Answer;
 import org.frostedstar.mbtisystem.entity.AnswerDetail;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +48,7 @@ public class TestDTO {
     /**
      * 创建请求验证
      */
+    @JsonIgnore
     public boolean isValidForCreate() {
         return operationType == OperationType.CREATE &&
                userId != null && userId > 0 &&
@@ -56,6 +59,7 @@ public class TestDTO {
     /**
      * 查询请求验证
      */
+    @JsonIgnore
     public boolean isValidForQuery() {
         return operationType == OperationType.QUERY &&
                (userId != null && userId > 0);
@@ -64,6 +68,7 @@ public class TestDTO {
     /**
      * 删除请求验证
      */
+    @JsonIgnore
     public boolean isValidForDelete() {
         return operationType == OperationType.DELETE &&
                answerId != null && answerId > 0;
@@ -72,6 +77,7 @@ public class TestDTO {
     /**
      * 通用验证方法
      */
+    @JsonIgnore
     public boolean isValid() {
         if (operationType == null) {
             return false;

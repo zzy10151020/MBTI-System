@@ -6,8 +6,7 @@
       class="user-avatar" 
       @click="toggleAvatarMenu"
       @mouseenter="isAvatarHover = true"
-      @mouseleave="isAvatarHover = false"
-    >
+      @mouseleave="isAvatarHover = false">
       <el-avatar :size="48" class="avatar">
         {{ userInitial }}
       </el-avatar>
@@ -250,13 +249,13 @@ const goToUserSpace = () => {
 /* 悬停信息提示 */
 .user-brief-info {
   position: absolute;
-  top: 4rem;
+  top: 3.5rem;
   left: 4rem;
-  width: 6rem;
+  width: fit-content;
   height: auto;
   padding: 0 1rem;
   background-color: var(--color-background);
-  border-radius: 0.8rem;
+  border-radius: 0.4rem;
   box-shadow: 0 0.2rem 0.5rem rgba(0, 0, 0, 0.1);
   border: 1px solid var(--color-border);
   z-index: 1000;
@@ -270,13 +269,15 @@ const goToUserSpace = () => {
 
 /* 用户菜单 */
 .user-profile-menu {
+  display: flex;
+  flex-direction: column;
   position: absolute;
-  top: 5rem;
+  top: 4rem;
   right: -1rem;
-  width: 24rem;
+  width: 20rem;
   height: auto;
   background-color: var(--color-background);
-  border-radius: 1rem;
+  border-radius: 0.6rem;
   box-shadow: 0 0.2rem 0.8rem rgba(0, 0, 0, 0.15);
   border: 1px solid var(--color-border);
   z-index: 1000;
@@ -291,7 +292,7 @@ const goToUserSpace = () => {
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  padding: 2rem 1.5rem 0 1.5rem;
+  padding: 1.2rem 1rem 0 1rem;
 }
 
 .menu-avatar-img {
@@ -302,8 +303,11 @@ const goToUserSpace = () => {
 
 .menu-header .user-info {
   display: flex;
+  position: relative;
   justify-content: center;
   align-items: baseline;
+  margin-top: 0.2rem;
+  left: 0.6rem;
 }
 
 .user-info .username {
@@ -320,8 +324,8 @@ const goToUserSpace = () => {
 
 .close-button {
   position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
+  top: 0.8rem;
+  right: 1rem;
   cursor: pointer;
   font-size: 1.8rem;
   color: var(--color-text-soft);
@@ -334,6 +338,7 @@ const goToUserSpace = () => {
 
 .menu-list {
   padding: 0;
+  margin: 0;
 }
 
 .menu-item.main-action {
@@ -345,7 +350,7 @@ const goToUserSpace = () => {
   cursor: pointer;
   border-radius: 2rem;
   border: 1px solid var(--color-border);
-  margin: 1rem auto;
+  margin: 0.6rem auto;
   background-color: transparent;
   transition: background-color 0.3s ease;
 }
@@ -364,7 +369,7 @@ const goToUserSpace = () => {
 
 .menu-actions {
   display: flex;
-  padding: 1.5rem 2rem;
+  padding: 1rem 2rem 0.5rem 2rem;
   gap: 1rem;
 }
 
@@ -376,7 +381,7 @@ const goToUserSpace = () => {
   justify-content: center;
   color: var(--color-text-primary);
   cursor: pointer;
-  padding-top: 1rem;
+  padding: 0.5rem 0;
   border-radius: 0.8rem;
   transition: background-color 0.3s ease;
 }
@@ -387,7 +392,7 @@ const goToUserSpace = () => {
 
 .action-icon {
   font-size: 1.2rem;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.2rem;
   color: var(--color-text-soft);
 }
 
@@ -407,8 +412,18 @@ const goToUserSpace = () => {
   display: flex;
   justify-content: center;
   padding-bottom: 1rem;
-  font-size: 1rem;
+  font-size: 0.8rem;
   color: var(--color-text-soft);
+}
+
+.menu-footer span {
+  margin: 0;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.menu-footer span:hover {
+  color: var(--primary-teal);
 }
 
 .menu-footer .dot {

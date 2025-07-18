@@ -6,8 +6,9 @@ import org.frostedstar.mbtisystem.service.QuestionnaireService;
 import org.frostedstar.mbtisystem.service.ServiceFactory;
 import org.frostedstar.mbtisystem.dto.ApiResponse;
 import org.frostedstar.mbtisystem.dto.QuestionnaireDTO;
+import org.frostedstar.mbtisystem.dto.QuestionDTO;
 import org.frostedstar.mbtisystem.dto.OperationType;
-import org.frostedstar.mbtisystem.dto.ErrorResponse;
+import org.frostedstar.mbtisystem.servlet.Route;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -33,7 +34,8 @@ public class QuestionnaireController extends BaseController {
     /**
      * 获取问卷列表
      */
-    public void get(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Route(value = "", method = "GET")
+    public void getQuestionnaires(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
             
@@ -72,14 +74,7 @@ public class QuestionnaireController extends BaseController {
             }
         } catch (Exception e) {
             log.error("获取问卷列表失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "获取问卷列表失败: " + e.getMessage(),
-                500,
-                "/api/questionnaire"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 500, "获取问卷列表失败: " + e.getMessage(), "/api/questionnaire");
         }
     }
 
@@ -99,7 +94,8 @@ public class QuestionnaireController extends BaseController {
     /**
      * 创建问卷
      */
-    public void post(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Route(value = "", method = "POST")
+    public void createQuestionnaire(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
             
@@ -123,30 +119,28 @@ public class QuestionnaireController extends BaseController {
                 .title(createRequest.getTitle())
                 .description(createRequest.getDescription())
                 .creatorId(user.getUserId())
+                .questions(createRequest.getQuestions() != null ?
+                    createRequest.getQuestions().stream()
+                        .map(QuestionDTO::toEntity)
+                        .collect(Collectors.toList()) : null)
                 .build();
+
+            Questionnaire createdQuestionnaire = questionnaireService.createQuestionnaire(questionnaire);
             
-            Questionnaire savedQuestionnaire = questionnaireService.save(questionnaire);
-            
-            QuestionnaireDTO questionnaireDTO = QuestionnaireDTO.fromEntity(savedQuestionnaire);
+            QuestionnaireDTO questionnaireDTO = QuestionnaireDTO.fromEntity(createdQuestionnaire);
             ApiResponse<QuestionnaireDTO> apiResponse = ApiResponse.success("问卷创建成功", questionnaireDTO);
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("创建问卷失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "创建问卷失败: " + e.getMessage(),
-                500,
-                "/api/questionnaire"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 500, "创建问卷失败: " + e.getMessage(), "/api/questionnaire");
         }
     }
     
     /**
      * 更新问卷
      */
-    public void put(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Route(value = "", method = "PUT")
+    public void updateQuestionnaire(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "PUT")) return;
             
@@ -193,21 +187,15 @@ public class QuestionnaireController extends BaseController {
             
         } catch (Exception e) {
             log.error("更新问卷失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "更新问卷失败: " + e.getMessage(),
-                500,
-                "/api/questionnaire"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 500, "更新问卷失败: " + e.getMessage(), "/api/questionnaire");
         }
     }
     
     /**
      * 删除问卷
      */
-    public void delete(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Route(value = "", method = "DELETE")
+    public void deleteQuestionnaire(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "DELETE")) return;
             
@@ -249,22 +237,17 @@ public class QuestionnaireController extends BaseController {
                 return;
             }
             
-            // 删除问卷
-            questionnaireService.deleteById(id);
+            // 级联删除问卷
+            if (!questionnaireService.deleteQuestionnaireWithCascade(id)) {
+                throw new RuntimeException("可能是数据库错误或级联删除失败");
+            }
             
             ApiResponse<String> apiResponse = ApiResponse.success("问卷删除成功", "问卷删除成功");
             sendApiResponse(response, apiResponse);
             
         } catch (Exception e) {
             log.error("删除问卷失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "删除问卷失败: " + e.getMessage(),
-                500,
-                "/api/questionnaire"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 500, "删除问卷失败: " + e.getMessage(), "/api/questionnaire");
         }
     }
 }

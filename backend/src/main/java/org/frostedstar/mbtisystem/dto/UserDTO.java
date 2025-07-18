@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import org.frostedstar.mbtisystem.entity.User;
+import org.frostedstar.mbtisystem.util.PasswordUtil;
 
 import java.time.LocalDateTime;
 
@@ -160,6 +161,26 @@ public class UserDTO {
      */
     private boolean isValidEmail(String email) {
         return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    }
+
+    /**
+     * 将UserDTO转换为User实体
+     */
+    public User toEntity(UserDTO userDTO) {
+        if (userDTO == null) {
+            return null;
+        }
+
+        User user = new User();
+        user.setUserId(userDTO.getUserId());
+        user.setUsername(userDTO.getUsername());
+        user.setEmail(userDTO.getEmail());
+        user.setPasswordHash(PasswordUtil.hashPassword(userDTO.getPassword()));
+        user.setRole(userDTO.getRole());
+        user.setCreatedAt(userDTO.getCreatedAt());
+
+        return user;
+
     }
 
     /**

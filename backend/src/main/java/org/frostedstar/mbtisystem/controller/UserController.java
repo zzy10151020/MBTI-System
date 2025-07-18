@@ -9,7 +9,7 @@ import org.frostedstar.mbtisystem.service.UserService;
 import org.frostedstar.mbtisystem.dto.ApiResponse;
 import org.frostedstar.mbtisystem.dto.UserDTO;
 import org.frostedstar.mbtisystem.dto.OperationType;
-import org.frostedstar.mbtisystem.dto.ErrorResponse;
+import org.frostedstar.mbtisystem.servlet.Route;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -29,7 +29,8 @@ public class UserController extends BaseController {
     /**
      * 获取当前用户信息
      */
-    public void get(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Route(value = "", method = "GET")
+    public void getCurrentUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
             
@@ -45,21 +46,15 @@ public class UserController extends BaseController {
             
         } catch (Exception e) {
             log.error("获取用户信息失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "获取用户信息失败: " + e.getMessage(),
-                500,
-                "/api/user"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 500, "获取用户信息失败: " + e.getMessage(), "/api/user");
         }
     }
     
     /**
      * 更新用户信息（统一方法）
      */
-    public void post(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Route(value = "", method = "POST")
+    public void updateUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
             
@@ -77,14 +72,7 @@ public class UserController extends BaseController {
             
         } catch (Exception e) {
             log.error("更新用户信息失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "更新用户信息失败: " + e.getMessage(),
-                500,
-                "/api/user"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 500, "更新用户信息失败: " + e.getMessage(), "/api/user");
         }
     }
 
@@ -218,7 +206,8 @@ public class UserController extends BaseController {
     /**
      * 获取用户详情（根据用户ID）
      */
-    public void profile(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Route(value = "/profile", method = "GET")
+    public void getUserProfile(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
             
@@ -249,8 +238,8 @@ public class UserController extends BaseController {
                 // 移除敏感信息
                 userDTO.setPassword(null);
                 userDTO.setEmail(null);
-                
-                ApiResponse<UserDTO> apiResponse = ApiResponse.success(userDTO);
+
+                ApiResponse<UserDTO> apiResponse = ApiResponse.success("获取用户信息成功", userDTO);
                 sendApiResponse(response, apiResponse);
             } else {
                 ApiResponse<Object> apiResponse = ApiResponse.error("用户不存在");
@@ -259,21 +248,15 @@ public class UserController extends BaseController {
             
         } catch (Exception e) {
             log.error("获取用户详情失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "获取用户详情失败: " + e.getMessage(),
-                500,
-                "/api/user/profile"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 500, "获取用户详情失败: " + e.getMessage(), "/api/user/profile");
         }
     }
 
     /**
      * 获取用户列表（仅管理员可用）
      */
-    public void list(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Route(value = "/list", method = "GET")
+    public void getUserList(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
             
@@ -289,21 +272,15 @@ public class UserController extends BaseController {
             
         } catch (Exception e) {
             log.error("获取用户列表失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "获取用户列表失败: " + e.getMessage(),
-                500,
-                "/api/user/list"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 500, "获取用户列表失败: " + e.getMessage(), "/api/user/list");
         }
     }
 
     /**
      * 删除用户（仅管理员可用）
      */
-    public void delete(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Route(value = "", method = "DELETE")
+    public void deleteUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "DELETE")) return;
             
@@ -359,14 +336,7 @@ public class UserController extends BaseController {
             
         } catch (Exception e) {
             log.error("删除用户失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "删除用户失败: " + e.getMessage(),
-                500,
-                "/api/user"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 500, "删除用户失败: " + e.getMessage(), "/api/user");
         }
     }
 }

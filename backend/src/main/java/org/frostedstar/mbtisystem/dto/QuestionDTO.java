@@ -100,7 +100,33 @@ public class QuestionDTO {
         return "EI".equals(dimension) || "SN".equals(dimension) || 
                "TF".equals(dimension) || "JP".equals(dimension);
     }
-    
+
+    /**
+     * 从QuestionDTO转换为Question实体
+     */
+    public static Question toEntity(QuestionDTO dto) {
+        if (dto == null) {
+            return null;
+        }
+
+        Question question = new Question();
+        question.setQuestionId(dto.getQuestionId());
+        question.setQuestionnaireId(dto.getQuestionnaireId());
+        question.setContent(dto.getContent());
+        question.setDimension(dto.getDimension() != null ?
+                Question.Dimension.valueOf(dto.getDimension()) : null);
+        question.setQuestionOrder(dto.getQuestionOrder());
+
+        // 选项转换
+        if (dto.getOptions() != null) {
+            question.setOptions(dto.getOptions().stream()
+                    .map(OptionDTO::toEntity)
+                    .collect(Collectors.toList()));
+        }
+
+        return question;
+    }
+
     /**
      * 从Question实体转换为QuestionDTO（完整版）
      */
@@ -124,7 +150,7 @@ public class QuestionDTO {
     }
     
     /**
-     * 从Question实体转换为QuestionDTO（简化版）
+     * 从Question实体转换为QuestionDTO（无选项）
      */
     public static QuestionDTO fromEntitySimple(Question question) {
         if (question == null) {
@@ -153,7 +179,7 @@ public class QuestionDTO {
                 .operationType(OperationType.CREATE)
                 .build();
     }
-    
+
     /**
      * 创建用于更新操作的DTO
      */

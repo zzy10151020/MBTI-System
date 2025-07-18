@@ -9,7 +9,7 @@ import org.frostedstar.mbtisystem.entity.User;
 import org.frostedstar.mbtisystem.service.TestService;
 import org.frostedstar.mbtisystem.service.ServiceFactory;
 import org.frostedstar.mbtisystem.dto.ApiResponse;
-import org.frostedstar.mbtisystem.dto.ErrorResponse;
+import org.frostedstar.mbtisystem.servlet.Route;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -35,7 +35,8 @@ public class TestController extends BaseController {
     /**
      * 开始测试/获取测试结果
      */
-    public void get(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Route(value = "", method = "GET")
+    public void getTestResults(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
             
@@ -78,14 +79,7 @@ public class TestController extends BaseController {
             }
         } catch (Exception e) {
             log.error("获取测试结果失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "获取测试结果失败: " + e.getMessage(),
-                500,
-                "/api/test"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 500, "获取测试结果失败: " + e.getMessage(), "/api/test");
         }
     }
 
@@ -102,7 +96,8 @@ public class TestController extends BaseController {
     /**
      * 提交测试结果
      */
-    public void post(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Route(value = "", method = "POST")
+    public void submitTest(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
             
@@ -140,14 +135,7 @@ public class TestController extends BaseController {
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("提交测试结果失败", e);
-            ErrorResponse errorResponse = ErrorResponse.create(
-                e.getClass().getSimpleName(),
-                "提交测试结果失败: " + e.getMessage(),
-                500,
-                "/api/test"
-            );
-            ApiResponse<ErrorResponse> apiResponse = ApiResponse.systemError(errorResponse);
-            sendApiResponse(response, apiResponse);
+            sendErrorResponse(response, 500, "提交测试结果失败: " + e.getMessage(), "/api/test");
         }
     }
 }

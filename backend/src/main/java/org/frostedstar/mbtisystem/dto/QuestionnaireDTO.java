@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import org.frostedstar.mbtisystem.entity.Questionnaire;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,11 +35,13 @@ public class QuestionnaireDTO {
     private List<QuestionDTO> questions;
     
     // 操作类型标识
+    @JsonIgnore
     private OperationType operationType;
     
     /**
      * 创建请求验证
      */
+    @JsonIgnore
     public boolean isValidForCreate() {
         return operationType == OperationType.CREATE &&
                title != null && !title.trim().isEmpty() &&
@@ -47,6 +51,7 @@ public class QuestionnaireDTO {
     /**
      * 更新请求验证
      */
+    @JsonIgnore
     public boolean isValidForUpdate() {
         return operationType == OperationType.UPDATE &&
                questionnaireId != null && questionnaireId > 0 &&
@@ -57,6 +62,7 @@ public class QuestionnaireDTO {
     /**
      * 删除请求验证
      */
+    @JsonIgnore
     public boolean isValidForDelete() {
         return operationType == OperationType.DELETE &&
                questionnaireId != null && questionnaireId > 0;
@@ -65,6 +71,7 @@ public class QuestionnaireDTO {
     /**
      * 通用验证方法
      */
+    @JsonIgnore
     public boolean isValid() {
         if (operationType == null) {
             return false;
@@ -82,6 +89,32 @@ public class QuestionnaireDTO {
             default:
                 return false;
         }
+    }
+
+    /**
+     * 从QuestionnaireDTO转换为Questionnaire实体
+     */
+    public static Questionnaire toEntity(QuestionnaireDTO dto) {
+        if (dto == null) {
+            return null;
+        }
+
+        Questionnaire questionnaire = new Questionnaire();
+        questionnaire.setQuestionnaireId(dto.getQuestionnaireId());
+        questionnaire.setTitle(dto.getTitle());
+        questionnaire.setDescription(dto.getDescription());
+        questionnaire.setCreatorId(dto.getCreatorId());
+        questionnaire.setCreatedAt(dto.getCreatedAt());
+        questionnaire.setIsPublished(dto.getIsPublished());
+
+        // 问题转换
+        if (dto.getQuestions() != null) {
+            questionnaire.setQuestions(dto.getQuestions().stream()
+                    .map(QuestionDTO::toEntity)
+                    .collect(Collectors.toList()));
+        }
+
+        return questionnaire;
     }
     
     /**
@@ -109,7 +142,7 @@ public class QuestionnaireDTO {
     }
     
     /**
-     * 从Questionnaire实体转换为QuestionnaireDTO（简化版）
+     * 从Questionnaire实体转换为QuestionnaireDTO（无问题）
      */
     public static QuestionnaireDTO fromEntitySimple(Questionnaire questionnaire) {
         if (questionnaire == null) {

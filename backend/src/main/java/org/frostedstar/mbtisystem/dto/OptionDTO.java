@@ -7,8 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import org.frostedstar.mbtisystem.entity.Option;
 
-import java.time.LocalDateTime;
-
 /**
  * 统一选项DTO
  * 支持创建、更新、查询等多种操作
@@ -24,8 +22,6 @@ public class OptionDTO {
     private Integer questionId;
     private String content;
     private String value; // A, B, C, D
-    private Short optionOrder;
-    private LocalDateTime createdAt;
     
     // 操作类型标识 - 不序列化到JSON响应中
     @JsonIgnore
@@ -95,6 +91,23 @@ public class OptionDTO {
         return "A".equals(value) || "B".equals(value) || 
                "C".equals(value) || "D".equals(value);
     }
+
+    /**
+     * 从OptionDTO转换为Option实体
+     */
+    public static Option toEntity(OptionDTO optionDTO) {
+        if (optionDTO == null) {
+            return null;
+        }
+
+        Option option = new Option();
+        option.setOptionId(optionDTO.getOptionId());
+        option.setQuestionId(optionDTO.getQuestionId());
+        option.setContent(optionDTO.getContent());
+        option.setScore(optionDTO.getScoreFromValue());
+
+        return option;
+    }
     
     /**
      * 从Option实体转换为OptionDTO
@@ -142,7 +155,6 @@ public class OptionDTO {
                 .questionId(questionId)
                 .content(content)
                 .value(value)
-                .optionOrder(optionOrder)
                 .operationType(OperationType.CREATE)
                 .build();
     }
@@ -155,7 +167,6 @@ public class OptionDTO {
                 .optionId(optionId)
                 .content(content)
                 .value(value)
-                .optionOrder(optionOrder)
                 .operationType(OperationType.UPDATE)
                 .build();
     }

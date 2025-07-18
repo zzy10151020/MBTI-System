@@ -37,21 +37,6 @@ public abstract class BaseController {
     }
     
     /**
-     * 发送错误响应
-     */
-    protected void sendError(HttpServletResponse response, int status, String message) throws IOException {
-        response.setStatus(status);
-        response.setContentType("application/json;charset=UTF-8");
-        
-        Map<String, Object> result = new HashMap<>();
-        result.put("success", false);
-        result.put("message", message);
-        result.put("timestamp", System.currentTimeMillis());
-        
-        objectMapper.writeValue(response.getWriter(), result);
-    }
-    
-    /**
      * 读取请求体
      */
     protected String readRequestBody(HttpServletRequest request) throws IOException {
@@ -72,7 +57,7 @@ public abstract class BaseController {
     }
     
     /**
-     * 发送 API 响应（使用 DTO）
+     * 发送 API 响应（使用标准 ApiResponse 格式）
      */
     protected void sendApiResponse(HttpServletResponse response, ApiResponse<?> apiResponse) throws IOException {
         response.setStatus(HttpServletResponse.SC_OK);
@@ -82,7 +67,7 @@ public abstract class BaseController {
     }
     
     /**
-     * 发送错误响应（使用 DTO）
+     * 发送错误响应（使用标准 ApiResponse 格式）
      */
     protected void sendErrorResponse(HttpServletResponse response, int status, String message, String path) throws IOException {
         response.setStatus(status);
