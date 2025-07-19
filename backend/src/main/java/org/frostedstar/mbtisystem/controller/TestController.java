@@ -44,36 +44,43 @@ public class TestController extends BaseController {
             User user = AuthUtils.checkLogin(request, response, this);
             if (user == null) return;
             
-            String pathInfo = request.getPathInfo();
-            if (pathInfo == null || pathInfo.equals("/test") || pathInfo.equals("/test/")) {
+            // 从完整的URI中提取路径信息
+            String requestURI = request.getRequestURI();
+            String contextPath = request.getContextPath();
+            String servletPath = request.getServletPath();
+            
+            // 计算实际的路径信息: requestURI - contextPath - servletPath - "/test"
+            String fullPath = requestURI.substring(contextPath.length() + servletPath.length());
+            String pathInfo = fullPath.substring("/test".length());
+            
+            log.debug("TestController.getTestResults - requestURI: {}, contextPath: {}, servletPath: {}, fullPath: {}, pathInfo: {}", 
+                requestURI, contextPath, servletPath, fullPath, pathInfo);
+            
+            if (pathInfo == null || pathInfo.equals("/") || pathInfo.isEmpty()) {
                 // 获取用户的测试结果列表
                 fetchUserTestResultList(response, user);
             } else {
-                // 尝试解析问卷ID
+                // 尝试解析问卷ID - pathInfo 应该是 "/1", "/2" 这样的格式
                 String[] pathParts = pathInfo.split("/");
-                if (pathParts.length >= 3 && "test".equals(pathParts[2])) {
-                    if (pathParts.length >= 4) {
-                        try {
-                            Integer questionnaireId = Integer.parseInt(pathParts[3]);
-                            Optional<Answer> answer = testService.getUserTestResult(user.getUserId(), questionnaireId);
-                            if (answer.isPresent()) {
-                                TestResponseDTO testDTO = TestResponseDTO.fromEntity(answer.get());
-                                ApiResponse<TestResponseDTO> apiResponse = ApiResponse.success("获取测试详情成功", testDTO);
-                                sendApiResponse(response, apiResponse);
-                            } else {
-                                ApiResponse<Object> apiResponse = ApiResponse.error("测试结果不存在");
-                                sendApiResponse(response, apiResponse);
-                            }
-                        } catch (NumberFormatException e) {
-                            ApiResponse<Object> apiResponse = ApiResponse.error("无效的问卷ID");
+                if (pathParts.length >= 2 && !pathParts[1].isEmpty()) {
+                    try {
+                        Integer questionnaireId = Integer.parseInt(pathParts[1]); // pathParts[0] 是空字符串
+                        Optional<Answer> answer = testService.getUserTestResult(user.getUserId(), questionnaireId);
+                        if (answer.isPresent()) {
+                            TestResponseDTO testDTO = TestResponseDTO.fromEntity(answer.get());
+                            ApiResponse<TestResponseDTO> apiResponse = ApiResponse.success("获取测试详情成功", testDTO);
+                            sendApiResponse(response, apiResponse);
+                        } else {
+                            ApiResponse<Object> apiResponse = ApiResponse.error("测试结果不存在");
                             sendApiResponse(response, apiResponse);
                         }
-                    } else {
-                        // 没有提供测试ID，返回用户的所有测试结果
-                        fetchUserTestResultList(response, user);
+                    } catch (NumberFormatException e) {
+                        ApiResponse<Object> apiResponse = ApiResponse.error("无效的问卷ID");
+                        sendApiResponse(response, apiResponse);
                     }
                 } else {
-                    ApiResponse<Object> apiResponse = ApiResponse.error("接口不存在");
+                    // 如果路径格式不正确
+                    ApiResponse<Object> apiResponse = ApiResponse.error("请提供有效的问卷ID");
                     sendApiResponse(response, apiResponse);
                 }
             }
