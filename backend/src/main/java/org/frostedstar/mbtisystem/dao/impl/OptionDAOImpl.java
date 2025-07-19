@@ -232,18 +232,11 @@ public class OptionDAOImpl implements OptionDAO {
             stmt = conn.prepareStatement(DELETE_BY_QUESTION_ID_SQL);
             stmt.setInt(1, questionId);
             
-            int rowsAffected = stmt.executeUpdate();
-            if (rowsAffected > 0) {
-                log.info("成功删除 {} 个选项，问题ID: {}", rowsAffected, questionId);
-                return true;
-            } else {
-                log.info("没有找到需要删除的选项，问题ID: {}", questionId);
-                return true; // 没有选项也认为是成功的
-            }
+            return stmt.executeUpdate() > 0;
             
         } catch (SQLException e) {
-            log.error("根据问题ID删除选项失败，问题ID: {}", questionId, e);
-            return false; // 返回false而不是抛出异常
+            log.error("根据问题ID删除选项失败", e);
+            throw new RuntimeException("根据问题ID删除选项失败", e);
         } finally {
             DatabaseUtil.closeQuietly(stmt, conn);
         }

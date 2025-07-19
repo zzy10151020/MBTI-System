@@ -33,4 +33,9 @@ public interface QuestionService extends BaseService<Question, Integer> {
      * 删除问题（级联删除选项）
      */
     boolean deleteQuestionWithCascade(Integer questionId);
+
+    /**
+     * 根据问卷ID统计问题数量
+     */
+    long countByQuestionnaireId(Integer questionnaireId);
 }

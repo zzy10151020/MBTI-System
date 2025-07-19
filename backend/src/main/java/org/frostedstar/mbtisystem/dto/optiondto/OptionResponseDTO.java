@@ -20,7 +20,7 @@ public class OptionResponseDTO {
     private Integer optionId;
     private Integer questionId;
     private String content;
-    private String value; // A, B, C, D
+    private Byte score; // -1 或 1，表示选项的分数
     
     /**
      * 从Option实体转换为OptionResponseDTO
@@ -34,17 +34,7 @@ public class OptionResponseDTO {
                 .optionId(option.getOptionId())
                 .questionId(option.getQuestionId())
                 .content(option.getContent())
-                .value(scoreToValue(option.getScore()))
+                .score(option.getScore())
                 .build();
-    }
-    
-    /**
-     * 将score转换为value
-     */
-    private static String scoreToValue(Byte score) {
-        if (score == null) {
-            return null;
-        }
-        return score > 0 ? "A" : "B";
     }
 }

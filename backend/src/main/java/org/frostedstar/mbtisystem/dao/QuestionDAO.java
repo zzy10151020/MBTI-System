@@ -28,4 +28,9 @@ public interface QuestionDAO extends BaseDAO<Question, Integer> {
      * 根据问卷ID删除所有问题
      */
     boolean deleteByQuestionnaireId(Integer questionnaireId);
+
+    /**
+     * 根据问卷ID统计问题数量
+     */
+    long countByQuestionnaireId(Integer questionnaireId);
 }

@@ -46,6 +46,12 @@ public class AnswerDAOImpl implements AnswerDAO {
     
     private static final String EXISTS_BY_USER_ID_AND_QUESTIONNAIRE_ID_SQL = 
         "SELECT 1 FROM answer WHERE user_id = ? AND questionnaire_id = ?";
+
+    private static final String DELETE_BY_USER_ID_AND_QUESTIONNAIRE_ID_SQL =
+        "DELETE FROM answer WHERE user_id = ? AND questionnaire_id = ?";
+
+    private static final String COUNT_BY_QUESTIONNAIRE_ID_SQL =
+        "SELECT COUNT(*) FROM answer WHERE questionnaire_id = ?";
     
     @Override
     public Answer save(Answer answer) {
@@ -303,6 +309,74 @@ public class AnswerDAOImpl implements AnswerDAO {
         } catch (SQLException e) {
             log.error("检查用户是否已回答问卷失败", e);
             throw new RuntimeException("检查用户是否已回答问卷失败", e);
+        } finally {
+            DatabaseUtil.closeQuietly(rs, stmt, conn);
+        }
+    }
+
+    @Override
+    public boolean deleteByUserIdAndQuestionnaireId(Integer userId, Integer questionnaireId) {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        
+        try {
+            conn = DatabaseUtil.getConnection();
+            stmt = conn.prepareStatement(DELETE_BY_USER_ID_AND_QUESTIONNAIRE_ID_SQL);
+            stmt.setInt(1, userId);
+            stmt.setInt(2, questionnaireId);
+            
+            return stmt.executeUpdate() > 0;
+            
+        } catch (SQLException e) {
+            log.error("删除用户的回答失败", e);
+            throw new RuntimeException("删除用户的回答失败", e);
+        } finally {
+            DatabaseUtil.closeQuietly(stmt, conn);
+        }
+    }
+
+    @Override
+    public boolean deleteByQuestionnaireId(Integer questionnaireId) {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        
+        try {
+            conn = DatabaseUtil.getConnection();
+            stmt = conn.prepareStatement("DELETE FROM answer WHERE questionnaire_id = ?");
+            stmt.setInt(1, questionnaireId);
+            
+            return stmt.executeUpdate() > 0;
+            
+        } catch (SQLException e) {
+            log.error("根据问卷ID删除所有回答失败", e);
+            throw new RuntimeException("根据问卷ID删除所有回答失败", e);
+        } finally {
+            DatabaseUtil.closeQuietly(stmt, conn);
+        }
+    }
+
+    @Override
+    public long countByQuestionnaireId(Integer questionnaireId) {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        
+        try {
+            conn = DatabaseUtil.getConnection();
+            stmt = conn.prepareStatement(COUNT_BY_QUESTIONNAIRE_ID_SQL);
+            stmt.setInt(1, questionnaireId);
+            
+            rs = stmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getLong(1);
+            }
+            
+            return 0;
+            
+        } catch (SQLException e) {
+            log.error("根据问卷ID统计回答数量失败", e);
+            throw new RuntimeException("根据问卷ID统计回答数量失败", e);
         } finally {
             DatabaseUtil.closeQuietly(rs, stmt, conn);
         }

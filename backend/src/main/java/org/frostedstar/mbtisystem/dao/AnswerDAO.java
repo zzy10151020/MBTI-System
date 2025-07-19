@@ -29,4 +29,19 @@ public interface AnswerDAO extends BaseDAO<Answer, Integer> {
      * 检查用户是否已经回答了某个问卷
      */
     boolean existsByUserIdAndQuestionnaireId(Integer userId, Integer questionnaireId);
+
+    /**
+     * 根据用户ID和问卷ID删除用户回答的问卷
+     */
+    boolean deleteByUserIdAndQuestionnaireId(Integer userId, Integer questionnaireId);
+
+    /**
+     * 根据问卷ID删除所有回答
+     */
+    boolean deleteByQuestionnaireId(Integer questionnaireId);
+
+    /**
+     * 根据问卷ID统计回答数量
+     */
+    long countByQuestionnaireId(Integer questionnaireId);
 }

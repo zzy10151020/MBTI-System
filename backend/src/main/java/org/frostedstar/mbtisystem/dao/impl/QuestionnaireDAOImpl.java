@@ -168,12 +168,11 @@ public class QuestionnaireDAOImpl implements QuestionnaireDAO {
             stmt = conn.prepareStatement(DELETE_SQL);
             stmt.setInt(1, id);
             
-            int rowsAffected = stmt.executeUpdate();
-            return rowsAffected > 0;
+            return stmt.executeUpdate() > 0;
             
         } catch (SQLException e) {
-            log.error("删除问卷失败，问卷ID: {}", id, e);
-            return false; // 返回false而不是抛出异常
+            log.error("删除问卷失败", e);
+            throw new RuntimeException("删除问卷失败", e);
         } finally {
             DatabaseUtil.closeQuietly(stmt, conn);
         }
