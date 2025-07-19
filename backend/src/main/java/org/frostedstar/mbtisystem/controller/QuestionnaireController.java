@@ -5,9 +5,8 @@ import org.frostedstar.mbtisystem.entity.User;
 import org.frostedstar.mbtisystem.service.QuestionnaireService;
 import org.frostedstar.mbtisystem.service.ServiceFactory;
 import org.frostedstar.mbtisystem.dto.ApiResponse;
-import org.frostedstar.mbtisystem.dto.QuestionnaireDTO;
-import org.frostedstar.mbtisystem.dto.QuestionDTO;
-import org.frostedstar.mbtisystem.dto.OperationType;
+import org.frostedstar.mbtisystem.dto.questionnairedto.*;
+import org.frostedstar.mbtisystem.dto.questiondto.QuestionRequestDTO;
 import org.frostedstar.mbtisystem.servlet.Route;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,43 +31,51 @@ public class QuestionnaireController extends BaseController {
     }
     
     /**
-     * 获取问卷列表
+     * 根据问卷ID查找
      */
     @Route(value = "", method = "GET")
     public void getQuestionnaires(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
             
-            String pathInfo = request.getPathInfo();
-            if (pathInfo == null || pathInfo.equals("/questionnaire") || pathInfo.equals("/questionnaire/")) {
-                // 获取所有问卷
-                fetchAllQuestionnaires(response);
+            // 从完整的URI中提取路径信息
+            String requestURI = request.getRequestURI();
+            String contextPath = request.getContextPath();
+            String servletPath = request.getServletPath();
+            
+            // 计算实际的路径信息: requestURI - contextPath - servletPath - "/questionnaire"
+            String fullPath = requestURI.substring(contextPath.length() + servletPath.length());
+            String pathInfo = fullPath.substring("/questionnaire".length());
+            
+            log.debug("QuestionnaireController.getQuestionnaires - requestURI: {}, contextPath: {}, servletPath: {}, fullPath: {}, pathInfo: {}", 
+                requestURI, contextPath, servletPath, fullPath, pathInfo);
+            
+            if (pathInfo == null || pathInfo.equals("/") || pathInfo.isEmpty()) {
+                // 根路径不支持，需要提供具体的问卷ID或使用其他端点
+                ApiResponse<Object> apiResponse = ApiResponse.error("请提供问卷ID，或使用 /api/questionnaire/all、/api/questionnaire/published 等端点");
+                sendApiResponse(response, apiResponse);
             } else {
-                // 尝试解析问卷ID
+                // 尝试解析问卷ID - pathInfo 应该是 "/1", "/2" 这样的格式
                 String[] pathParts = pathInfo.split("/");
-                if (pathParts.length >= 3 && "questionnaire".equals(pathParts[2])) {
-                    if (pathParts.length >= 4) {
-                        try {
-                            Integer id = Integer.parseInt(pathParts[3]);
-                            Optional<Questionnaire> questionnaire = questionnaireService.findById(id);
-                            if (questionnaire.isPresent()) {
-                                QuestionnaireDTO questionnaireDTO = QuestionnaireDTO.fromEntity(questionnaire.get());
-                                ApiResponse<QuestionnaireDTO> apiResponse = ApiResponse.success(questionnaireDTO);
-                                sendApiResponse(response, apiResponse);
-                            } else {
-                                ApiResponse<Object> apiResponse = ApiResponse.error("问卷不存在");
-                                sendApiResponse(response, apiResponse);
-                            }
-                        } catch (NumberFormatException e) {
-                            ApiResponse<Object> apiResponse = ApiResponse.error("无效的问卷ID");
+                if (pathParts.length >= 2 && !pathParts[1].isEmpty()) {
+                    try {
+                        Integer id = Integer.parseInt(pathParts[1]); // pathParts[0] 是空字符串
+                        Optional<Questionnaire> questionnaire = questionnaireService.findById(id);
+                        if (questionnaire.isPresent()) {
+                            QuestionnaireResponseDTO questionnaireDTO = QuestionnaireResponseDTO.fromEntity(questionnaire.get());
+                            ApiResponse<QuestionnaireResponseDTO> apiResponse = ApiResponse.success(questionnaireDTO);
+                            sendApiResponse(response, apiResponse);
+                        } else {
+                            ApiResponse<Object> apiResponse = ApiResponse.error("问卷不存在");
                             sendApiResponse(response, apiResponse);
                         }
-                    } else {
-                        // 如果没有提供ID，则返回所有问卷
-                        fetchAllQuestionnaires(response);
+                    } catch (NumberFormatException e) {
+                        ApiResponse<Object> apiResponse = ApiResponse.error("无效的问卷ID");
+                        sendApiResponse(response, apiResponse);
                     }
                 } else {
-                    ApiResponse<Object> apiResponse = ApiResponse.error("接口不存在");
+                    // 如果路径格式不正确
+                    ApiResponse<Object> apiResponse = ApiResponse.error("请提供有效的问卷ID");
                     sendApiResponse(response, apiResponse);
                 }
             }
@@ -79,16 +86,118 @@ public class QuestionnaireController extends BaseController {
     }
 
     /**
-     * 获取所有问卷
+     * 根据创建者ID查找问卷
      */
-    private void fetchAllQuestionnaires(HttpServletResponse response) throws IOException {
-        List<Questionnaire> questionnaires = questionnaireService.findAll();
-        List<QuestionnaireDTO> responses = questionnaires.stream()
-            .map(QuestionnaireDTO::fromEntitySimple)
-            .collect(Collectors.toList());
+    @Route(value = "/byCreator", method = "POST")
+    public void getQuestionnairesByCreator(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        try {
+            if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
 
-        ApiResponse<List<QuestionnaireDTO>> apiResponse = ApiResponse.success(responses);
-        sendApiResponse(response, apiResponse);
+            // 解析请求体中的创建者ID
+            QuestionnaireRequestDTO requestDTO = parseRequestBody(request, QuestionnaireRequestDTO.class);
+            if (requestDTO.getCreatorId() == null || requestDTO.getCreatorId() <= 0) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("缺少创建者ID");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            Integer creatorId = requestDTO.getCreatorId();
+            // 查找问卷
+            List<Questionnaire> questionnaires = questionnaireService.findByCreatorId(creatorId);
+            if (questionnaires.isEmpty()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("没有找到该创建者的问卷");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            List<QuestionnaireResponseDTO> responses = questionnaires.stream()
+                    .map(QuestionnaireResponseDTO::fromEntitySimple)
+                    .collect(Collectors.toList());
+            ApiResponse<List<QuestionnaireResponseDTO>> apiResponse = ApiResponse.success(responses);
+            sendApiResponse(response, apiResponse);
+        } catch (Exception e) {
+            log.error("根据创建者ID查找问卷失败", e);
+            sendErrorResponse(response, 500, "根据创建者ID查找问卷失败: " + e.getMessage(), "/api/questionnaire/creator");
+        }
+    }
+
+    /**
+     * 查找已发布的问卷
+     */
+    @Route(value = "/published", method = "GET")
+    public void getPublishedQuestionnaires(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        try {
+            if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
+
+            List<Questionnaire> publishedQuestionnaires = questionnaireService.findPublished();
+            List<QuestionnaireResponseDTO> responses = publishedQuestionnaires.stream()
+                    .map(QuestionnaireResponseDTO::fromEntitySimple)
+                    .collect(Collectors.toList());
+
+            ApiResponse<List<QuestionnaireResponseDTO>> apiResponse = ApiResponse.success(responses);
+            sendApiResponse(response, apiResponse);
+        } catch (Exception e) {
+            log.error("查找已发布的问卷失败", e);
+            sendErrorResponse(response, 500, "查找已发布的问卷失败: " + e.getMessage(), "/api/questionnaire/published");
+        }
+    }
+
+    /**
+     * 获取全部问卷（包括未发布，仅管理员）
+     */
+    @Route(value = "/all", method = "GET")
+    public void getAllQuestionnaires(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        try {
+            if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
+
+            // 检查管理员权限
+            User user = AuthUtils.checkAdmin(request, response, this);
+            if (user == null) return;
+
+            // 获取所有问卷
+            List<Questionnaire> questionnaires = questionnaireService.findAll();
+            List<QuestionnaireResponseDTO> responses = questionnaires.stream()
+                    .map(QuestionnaireResponseDTO::fromEntitySimple)
+                    .collect(Collectors.toList());
+
+            ApiResponse<List<QuestionnaireResponseDTO>> apiResponse = ApiResponse.success(responses);
+            sendApiResponse(response, apiResponse);
+        } catch (Exception e) {
+            log.error("获取所有问卷失败", e);
+            sendErrorResponse(response, 500, "获取所有问卷失败: " + e.getMessage(), "/api/questionnaire/all");
+        }
+    }
+
+    /**
+     * 根据标题模糊查找问卷
+     */
+    @Route(value = "/search", method = "POST")
+    public void searchQuestionnaires(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        try {
+            if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
+
+            // 解析请求体中的标题
+            QuestionnaireRequestDTO searchRequest = parseRequestBody(request, QuestionnaireRequestDTO.class);
+            if (searchRequest.getTitle() == null || searchRequest.getTitle().trim().isEmpty()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("缺少标题");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            String title = searchRequest.getTitle().trim();
+            // 查找问卷
+            List<Questionnaire> questionnaires = questionnaireService.findByTitleLike(title);
+            if (questionnaires.isEmpty()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("没有找到匹配的问卷");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            List<QuestionnaireResponseDTO> responses = questionnaires.stream()
+                    .map(QuestionnaireResponseDTO::fromEntitySimple)
+                    .collect(Collectors.toList());
+            ApiResponse<List<QuestionnaireResponseDTO>> apiResponse = ApiResponse.success(responses);
+            sendApiResponse(response, apiResponse);
+        } catch (Exception e) {
+            log.error("根据标题模糊查找问卷失败", e);
+            sendErrorResponse(response, 500, "根据标题模糊查找问卷失败: " + e.getMessage(), "/api/questionnaire/search");
+        }
     }
 
     /**
@@ -104,11 +213,10 @@ public class QuestionnaireController extends BaseController {
             if (user == null) return;
             
             // 解析请求体
-            QuestionnaireDTO createRequest = parseRequestBody(request, QuestionnaireDTO.class);
-            createRequest.setOperationType(OperationType.CREATE);
+            QuestionnaireRequestDTO createRequest = parseRequestBody(request, QuestionnaireRequestDTO.class);
             
             // 验证请求数据
-            if (!createRequest.isValid()) {
+            if (!createRequest.isValidForCreateQuestionnaire()) {
                 ApiResponse<Object> apiResponse = ApiResponse.error("请求数据不完整");
                 sendApiResponse(response, apiResponse);
                 return;
@@ -119,16 +227,17 @@ public class QuestionnaireController extends BaseController {
                 .title(createRequest.getTitle())
                 .description(createRequest.getDescription())
                 .creatorId(user.getUserId())
+                .isPublished(false)
                 .questions(createRequest.getQuestions() != null ?
                     createRequest.getQuestions().stream()
-                        .map(QuestionDTO::toEntity)
+                        .map((QuestionRequestDTO question) -> question.toEntity())
                         .collect(Collectors.toList()) : null)
                 .build();
 
             Questionnaire createdQuestionnaire = questionnaireService.createQuestionnaire(questionnaire);
             
-            QuestionnaireDTO questionnaireDTO = QuestionnaireDTO.fromEntity(createdQuestionnaire);
-            ApiResponse<QuestionnaireDTO> apiResponse = ApiResponse.success("问卷创建成功", questionnaireDTO);
+            QuestionnaireResponseDTO questionnaireDTO = QuestionnaireResponseDTO.fromEntity(createdQuestionnaire);
+            ApiResponse<QuestionnaireResponseDTO> apiResponse = ApiResponse.success("问卷创建成功", questionnaireDTO);
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("创建问卷失败", e);
@@ -149,11 +258,10 @@ public class QuestionnaireController extends BaseController {
             if (user == null) return;
             
             // 解析请求体
-            QuestionnaireDTO updateRequest = parseRequestBody(request, QuestionnaireDTO.class);
-            updateRequest.setOperationType(OperationType.UPDATE);
+            QuestionnaireRequestDTO updateRequest = parseRequestBody(request, QuestionnaireRequestDTO.class);
             
             // 验证请求数据
-            if (!updateRequest.isValid()) {
+            if (!updateRequest.isValidForUpdateQuestionnaire()) {
                 ApiResponse<Object> apiResponse = ApiResponse.error("请求数据不完整");
                 sendApiResponse(response, apiResponse);
                 return;
@@ -181,8 +289,8 @@ public class QuestionnaireController extends BaseController {
             
             questionnaireService.update(updatedQuestionnaire);
             
-            QuestionnaireDTO questionnaireDTO = QuestionnaireDTO.fromEntity(updatedQuestionnaire);
-            ApiResponse<QuestionnaireDTO> apiResponse = ApiResponse.success("问卷更新成功", questionnaireDTO);
+            QuestionnaireResponseDTO questionnaireDTO = QuestionnaireResponseDTO.fromEntity(updatedQuestionnaire);
+            ApiResponse<QuestionnaireResponseDTO> apiResponse = ApiResponse.success("问卷更新成功", questionnaireDTO);
             sendApiResponse(response, apiResponse);
             
         } catch (Exception e) {
@@ -203,31 +311,16 @@ public class QuestionnaireController extends BaseController {
             User user = AuthUtils.checkAdmin(request, response, this);
             if (user == null) return;
             
-            // 从URL参数或请求体获取ID
-            String idParam = request.getParameter("id");
-            Integer id;
+            // 只支持从请求体获取删除请求
+            QuestionnaireRequestDTO deleteRequest = parseRequestBody(request, QuestionnaireRequestDTO.class);
             
-            if (idParam != null) {
-                try {
-                    id = Integer.parseInt(idParam);
-                } catch (NumberFormatException e) {
-                    ApiResponse<Object> apiResponse = ApiResponse.error("无效的问卷ID");
-                    sendApiResponse(response, apiResponse);
-                    return;
-                }
-            } else {
-                // 从请求体获取删除请求
-                QuestionnaireDTO deleteRequest = parseRequestBody(request, QuestionnaireDTO.class);
-                deleteRequest.setOperationType(OperationType.DELETE);
-                
-                if (!deleteRequest.isValid()) {
-                    ApiResponse<Object> apiResponse = ApiResponse.error("缺少问卷ID");
-                    sendApiResponse(response, apiResponse);
-                    return;
-                }
-                
-                id = deleteRequest.getQuestionnaireId();
+            if (!deleteRequest.isValidForDeleteQuestionnaire()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("缺少问卷ID");
+                sendApiResponse(response, apiResponse);
+                return;
             }
+            
+            Integer id = deleteRequest.getQuestionnaireId();
             
             // 检查问卷是否存在
             Optional<Questionnaire> questionnaireOpt = questionnaireService.findById(id);
@@ -248,6 +341,110 @@ public class QuestionnaireController extends BaseController {
         } catch (Exception e) {
             log.error("删除问卷失败", e);
             sendErrorResponse(response, 500, "删除问卷失败: " + e.getMessage(), "/api/questionnaire");
+        }
+    }
+
+    /**
+     * 发布问卷
+     */
+    @Route(value = "/publish", method = "POST")
+    public void publishQuestionnaire(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        try {
+            int questionnaireId = getQuestionnaireId(request, response);
+            if (questionnaireId == -1) return;
+
+            // 发布问卷
+            boolean success = questionnaireService.publishQuestionnaire(questionnaireId);
+            if (!success) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("发布问卷失败");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+
+            ApiResponse<String> apiResponse = ApiResponse.success("问卷发布成功", "问卷发布成功");
+            sendApiResponse(response, apiResponse);
+        } catch (Exception e) {
+            log.error("发布问卷失败", e);
+            sendErrorResponse(response, 500, "发布问卷失败: " + e.getMessage(), "/api/questionnaire/publish");
+        }
+    }
+
+    /**
+     * 撤销发布问卷
+     */
+    @Route(value = "/unpublish", method = "POST")
+    public void unpublishQuestionnaire(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        try {
+            int questionnaireId = getQuestionnaireId(request, response);
+            if (questionnaireId == -1) return;
+
+            // 撤销发布问卷
+            boolean success = questionnaireService.unpublishQuestionnaire(questionnaireId);
+            if (!success) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("撤销发布问卷失败");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+
+            ApiResponse<String> apiResponse = ApiResponse.success("问卷撤销发布成功", "问卷撤销发布成功");
+            sendApiResponse(response, apiResponse);
+        } catch (Exception e) {
+            log.error("撤销发布问卷失败", e);
+            sendErrorResponse(response, 500, "撤销发布问卷失败: " + e.getMessage(), "/api/questionnaire/unpublish");
+        }
+    }
+
+    /**
+     * 辅助发法，获取问卷Id并验证管理员权限
+     */
+    private Integer getQuestionnaireId(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return -1;
+
+        // 检查管理员权限
+        User user = AuthUtils.checkAdmin(request, response, this);
+        if (user == null) return -1;
+
+        // 从请求体获取问卷ID
+        QuestionnaireRequestDTO unpublishRequest = parseRequestBody(request, QuestionnaireRequestDTO.class);
+
+        if (unpublishRequest.getQuestionnaireId() == null) {
+            ApiResponse<Object> apiResponse = ApiResponse.error("缺少问卷ID");
+            sendApiResponse(response, apiResponse);
+            return -1;
+        }
+        return unpublishRequest.getQuestionnaireId();
+    }
+
+    /**
+     * 获取问卷详情
+     */
+    @Route(value = "/detail", method = "POST")
+    public void getQuestionnaireDetail(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        try {
+            if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
+
+            // 从请求体获取问卷ID
+            QuestionnaireRequestDTO detailRequest = parseRequestBody(request, QuestionnaireRequestDTO.class);
+            if (detailRequest.getQuestionnaireId() == null) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("缺少问卷ID");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            Integer questionnaireId = detailRequest.getQuestionnaireId();
+            // 获取问卷详情
+            Optional<Questionnaire> questionnaireOpt = questionnaireService.getQuestionnaireDetail(questionnaireId);
+            if (questionnaireOpt.isEmpty()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("问卷不存在");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            Questionnaire questionnaire = questionnaireOpt.get();
+            QuestionnaireResponseDTO questionnaireDetailDTO = QuestionnaireResponseDTO.fromEntity(questionnaire);
+            ApiResponse<QuestionnaireResponseDTO> apiResponse = ApiResponse.success(questionnaireDetailDTO);
+            sendApiResponse(response, apiResponse);
+        } catch (Exception e) {
+            log.error("获取问卷详情失败", e);
+            sendErrorResponse(response, 500, "获取问卷详情失败: " + e.getMessage(), "/api/questionnaire/detail");
         }
     }
 }

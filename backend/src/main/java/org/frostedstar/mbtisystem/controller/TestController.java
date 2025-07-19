@@ -1,8 +1,8 @@
 package org.frostedstar.mbtisystem.controller;
 
 import lombok.extern.slf4j.Slf4j;
-import org.frostedstar.mbtisystem.dto.TestDTO;
-import org.frostedstar.mbtisystem.dto.OperationType;
+import org.frostedstar.mbtisystem.dto.testdto.TestRequestDTO;
+import org.frostedstar.mbtisystem.dto.testdto.TestResponseDTO;
 import org.frostedstar.mbtisystem.entity.Answer;
 import org.frostedstar.mbtisystem.entity.AnswerDetail;
 import org.frostedstar.mbtisystem.entity.User;
@@ -31,9 +31,9 @@ public class TestController extends BaseController {
     public TestController() {
         this.testService = ServiceFactory.getTestService();
     }
-    
+
     /**
-     * 开始测试/获取测试结果
+     * 获取测试结果
      */
     @Route(value = "", method = "GET")
     public void getTestResults(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -49,23 +49,23 @@ public class TestController extends BaseController {
                 // 获取用户的测试结果列表
                 fetchUserTestResultList(response, user);
             } else {
-                // 尝试解析测试ID
+                // 尝试解析问卷ID
                 String[] pathParts = pathInfo.split("/");
                 if (pathParts.length >= 3 && "test".equals(pathParts[2])) {
                     if (pathParts.length >= 4) {
                         try {
-                            Integer answerId = Integer.parseInt(pathParts[3]);
-                            Optional<Answer> answer = testService.getTestResultDetail(answerId);
-                            if (answer.isPresent() && answer.get().getUserId().equals(user.getUserId())) {
-                                TestDTO testDTO = TestDTO.fromEntity(answer.get());
-                                ApiResponse<TestDTO> apiResponse = ApiResponse.success("获取测试详情成功", testDTO);
+                            Integer questionnaireId = Integer.parseInt(pathParts[3]);
+                            Optional<Answer> answer = testService.getUserTestResult(user.getUserId(), questionnaireId);
+                            if (answer.isPresent()) {
+                                TestResponseDTO testDTO = TestResponseDTO.fromEntity(answer.get());
+                                ApiResponse<TestResponseDTO> apiResponse = ApiResponse.success("获取测试详情成功", testDTO);
                                 sendApiResponse(response, apiResponse);
                             } else {
                                 ApiResponse<Object> apiResponse = ApiResponse.error("测试结果不存在");
                                 sendApiResponse(response, apiResponse);
                             }
                         } catch (NumberFormatException e) {
-                            ApiResponse<Object> apiResponse = ApiResponse.error("无效的测试ID");
+                            ApiResponse<Object> apiResponse = ApiResponse.error("无效的问卷ID");
                             sendApiResponse(response, apiResponse);
                         }
                     } else {
@@ -85,11 +85,11 @@ public class TestController extends BaseController {
 
     private void fetchUserTestResultList(HttpServletResponse response, User user) throws IOException {
         List<Answer> answers = testService.getUserAllTestResults(user.getUserId());
-        List<TestDTO> testDTOs = answers.stream()
-            .map(TestDTO::fromEntity)
+        List<TestResponseDTO> testDTOs = answers.stream()
+            .map(TestResponseDTO::fromEntity)
             .collect(Collectors.toList());
 
-        ApiResponse<List<TestDTO>> apiResponse = ApiResponse.success("获取测试结果成功", testDTOs);
+        ApiResponse<List<TestResponseDTO>> apiResponse = ApiResponse.success("获取测试结果成功", testDTOs);
         sendApiResponse(response, apiResponse);
     }
 
@@ -106,12 +106,10 @@ public class TestController extends BaseController {
             if (user == null) return;
             
             // 解析请求体
-            TestDTO testRequest = parseRequestBody(request, TestDTO.class);
-            testRequest.setOperationType(OperationType.CREATE);
-            testRequest.setUserId(user.getUserId());
+            TestRequestDTO testRequest = parseRequestBody(request, TestRequestDTO.class);
             
             // 验证请求数据
-            if (!testRequest.isValid()) {
+            if (!testRequest.isValidForSubmitTest()) {
                 ApiResponse<Object> apiResponse = ApiResponse.error("请求数据不完整");
                 sendApiResponse(response, apiResponse);
                 return;
@@ -119,7 +117,7 @@ public class TestController extends BaseController {
             
             // 转换为AnswerDetail对象
             List<AnswerDetail> answerDetails = new ArrayList<>();
-            for (TestDTO.AnswerDetailDTO answerDetailDTO : testRequest.getAnswerDetails()) {
+            for (TestRequestDTO.AnswerDetailRequestDTO answerDetailDTO : testRequest.getAnswerDetails()) {
                 AnswerDetail detail = AnswerDetail.builder()
                     .questionId(answerDetailDTO.getQuestionId())
                     .optionId(answerDetailDTO.getOptionId())
@@ -130,12 +128,52 @@ public class TestController extends BaseController {
             // 提交测试结果
             Answer answer = testService.submitTest(user.getUserId(), testRequest.getQuestionnaireId(), answerDetails);
             
-            TestDTO testDTO = TestDTO.fromEntity(answer);
-            ApiResponse<TestDTO> apiResponse = ApiResponse.success("测试提交成功", testDTO);
+            TestResponseDTO testDTO = TestResponseDTO.fromEntity(answer);
+            ApiResponse<TestResponseDTO> apiResponse = ApiResponse.success("测试提交成功", testDTO);
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("提交测试结果失败", e);
             sendErrorResponse(response, 500, "提交测试结果失败: " + e.getMessage(), "/api/test");
+        }
+    }
+
+    /**
+     * 检查用户是否已完成测试
+     */
+    @Route(value = "/completed", method = "GET")
+    public void checkUserCompletedTest(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        try {
+            if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
+
+            // 检查用户是否已登录
+            User user = AuthUtils.checkLogin(request, response, this);
+            if (user == null) return;
+
+            ApiResponse<Object> apiResponse = ApiResponse.error("该功能已被禁用，请使用POST方式查询");
+            sendApiResponse(response, apiResponse);
+        } catch (Exception e) {
+            log.error("检查用户完成状态失败", e);
+            sendErrorResponse(response, 500, "检查用户完成状态失败: " + e.getMessage(), "/api/test/completed");
+        }
+    }
+
+    /**
+     * 获取问卷统计数据
+     */
+    @Route(value = "/statistics", method = "GET")
+    public void getQuestionnaireStatistics(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        try {
+            if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
+
+            // 检查是否为管理员（统计数据只有管理员能查看）
+            User user = AuthUtils.checkAdmin(request, response, this);
+            if (user == null) return;
+
+            ApiResponse<Object> apiResponse = ApiResponse.error("该功能已被禁用，请使用POST方式查询");
+            sendApiResponse(response, apiResponse);
+        } catch (Exception e) {
+            log.error("获取问卷统计数据失败", e);
+            sendErrorResponse(response, 500, "获取问卷统计数据失败: " + e.getMessage(), "/api/test/statistics");
         }
     }
 }

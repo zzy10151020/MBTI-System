@@ -4,18 +4,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
-import org.frostedstar.mbtisystem.dto.AuthDTO;
-import org.frostedstar.mbtisystem.dto.OperationType;
+import org.frostedstar.mbtisystem.dto.authdto.*;
 import org.frostedstar.mbtisystem.dto.ApiResponse;
-import org.frostedstar.mbtisystem.dto.UserDTO;
+import org.frostedstar.mbtisystem.dto.userdto.UserResponseDTO;
 import org.frostedstar.mbtisystem.entity.User;
 import org.frostedstar.mbtisystem.service.ServiceFactory;
 import org.frostedstar.mbtisystem.service.UserService;
 import org.frostedstar.mbtisystem.servlet.Route;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -38,12 +35,13 @@ public class AuthController extends BaseController {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
             
-            AuthDTO loginRequest = parseRequestBody(request, AuthDTO.class);
-            loginRequest.setOperationType(OperationType.QUERY);
+            AuthRequestDTO loginRequest = parseRequestBody(request, AuthRequestDTO.class);
             
             // 验证参数
-            if (!loginRequest.isValid()) {
-                sendErrorResponse(response, 400, "登录参数不完整或格式错误", "/api/auth/login");
+            if (!loginRequest.isValidForLogin()) {
+                AuthResponseDTO authResponse = AuthResponseDTO.loginFailure("登录参数不完整或格式错误");
+                ApiResponse<AuthResponseDTO> apiResponse = ApiResponse.success("登录参数不完整或格式错误", authResponse);
+                sendApiResponse(response, apiResponse);
                 return;
             }
             
@@ -59,23 +57,24 @@ public class AuthController extends BaseController {
                 session.setAttribute("username", user.getUsername());
                 session.setAttribute("role", user.getRole().name());
                 
-                // 使用DTO转换
-                UserDTO userDTO = UserDTO.fromEntity(user);
+                // 使用新的ResponseDTO转换
+                UserResponseDTO userDTO = UserResponseDTO.fromEntity(user);
+                AuthResponseDTO authResponse = AuthResponseDTO.loginSuccess(userDTO, session.getId());
                 
-                Map<String, Object> result = new HashMap<>();
-                result.put("user", userDTO);
-                result.put("sessionId", session.getId());
-                
-                ApiResponse<Map<String, Object>> apiResponse = ApiResponse.success("登录成功", result);
+                ApiResponse<AuthResponseDTO> apiResponse = ApiResponse.success("登录成功", authResponse);
                 sendApiResponse(response, apiResponse);
                 log.info("用户登录成功: {}", user.getUsername());
             } else {
-                sendErrorResponse(response, 401, "用户名或密码错误", "/api/auth/login");
+                AuthResponseDTO authResponse = AuthResponseDTO.loginFailure("用户名或密码错误");
+                ApiResponse<AuthResponseDTO> apiResponse = ApiResponse.success("用户名或密码错误", authResponse);
+                sendApiResponse(response, apiResponse);
             }
             
         } catch (Exception e) {
             log.error("用户登录失败", e);
-            sendErrorResponse(response, 500, "登录失败: " + e.getMessage(), "/api/auth/login");
+            AuthResponseDTO authResponse = AuthResponseDTO.loginFailure("登录失败: " + e.getMessage());
+            ApiResponse<AuthResponseDTO> apiResponse = ApiResponse.success("登录失败: " + e.getMessage(), authResponse);
+            sendApiResponse(response, apiResponse);
         }
     }
     
@@ -87,24 +86,29 @@ public class AuthController extends BaseController {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
             
-            AuthDTO registerRequest = parseRequestBody(request, AuthDTO.class);
-            registerRequest.setOperationType(OperationType.CREATE);
+            AuthRequestDTO registerRequest = parseRequestBody(request, AuthRequestDTO.class);
             
             // 验证参数
-            if (!registerRequest.isValid()) {
-                sendErrorResponse(response, 400, "注册参数不完整或格式错误", "/api/auth/register");
+            if (!registerRequest.isValidForRegister()) {
+                AuthResponseDTO authResponse = AuthResponseDTO.registerFailure("注册参数不完整或格式错误");
+                ApiResponse<AuthResponseDTO> apiResponse = ApiResponse.success("注册参数不完整或格式错误", authResponse);
+                sendApiResponse(response, apiResponse);
                 return;
             }
             
             // 验证用户名长度
             if (registerRequest.getUsername().length() < 3 || registerRequest.getUsername().length() > 20) {
-                sendErrorResponse(response, 400, "用户名长度必须在3-20个字符之间", "/api/auth/register");
+                AuthResponseDTO authResponse = AuthResponseDTO.registerFailure("用户名长度必须在3-20个字符之间");
+                ApiResponse<AuthResponseDTO> apiResponse = ApiResponse.success("用户名长度必须在3-20个字符之间", authResponse);
+                sendApiResponse(response, apiResponse);
                 return;
             }
             
             // 验证密码长度
             if (registerRequest.getPassword().length() < 6) {
-                sendErrorResponse(response, 400, "密码长度不能少于6位", "/api/auth/register");
+                AuthResponseDTO authResponse = AuthResponseDTO.registerFailure("密码长度不能少于6位");
+                ApiResponse<AuthResponseDTO> apiResponse = ApiResponse.success("密码长度不能少于6位", authResponse);
+                sendApiResponse(response, apiResponse);
                 return;
             }
             
@@ -115,19 +119,24 @@ public class AuthController extends BaseController {
                 registerRequest.getEmail()
             );
             
-            // 使用DTO转换
-            UserDTO userDTO = UserDTO.fromEntity(user);
+            // 使用新的ResponseDTO转换
+            UserResponseDTO userDTO = UserResponseDTO.fromEntity(user);
+            AuthResponseDTO authResponse = AuthResponseDTO.registerSuccess(userDTO, "注册成功");
             
-            ApiResponse<UserDTO> apiResponse = ApiResponse.success("注册成功", userDTO);
+            ApiResponse<AuthResponseDTO> apiResponse = ApiResponse.success("注册成功", authResponse);
             sendApiResponse(response, apiResponse);
             log.info("用户注册成功: {}", user.getUsername());
             
         } catch (RuntimeException e) {
             log.error("用户注册失败", e);
-            sendErrorResponse(response, 400, e.getMessage(), "/api/auth/register");
+            AuthResponseDTO authResponse = AuthResponseDTO.registerFailure(e.getMessage());
+            ApiResponse<AuthResponseDTO> apiResponse = ApiResponse.success(e.getMessage(), authResponse);
+            sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("用户注册失败", e);
-            sendErrorResponse(response, 500, "注册失败: " + e.getMessage(), "/api/auth/register");
+            AuthResponseDTO authResponse = AuthResponseDTO.registerFailure("注册失败: " + e.getMessage());
+            ApiResponse<AuthResponseDTO> apiResponse = ApiResponse.success("注册失败: " + e.getMessage(), authResponse);
+            sendApiResponse(response, apiResponse);
         }
     }
     
@@ -163,19 +172,7 @@ public class AuthController extends BaseController {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
             
-            String username = request.getParameter("username");
-            if (username == null || username.trim().isEmpty()) {
-                sendErrorResponse(response, 400, "用户名不能为空", "/api/auth/checkUsername");
-                return;
-            }
-            
-            boolean exists = userService.existsByUsername(username);
-            
-            Map<String, Object> result = new HashMap<>();
-            result.put("exists", exists);
-            result.put("username", username);
-            
-            ApiResponse<Map<String, Object>> apiResponse = ApiResponse.success(result);
+            ApiResponse<Object> apiResponse = ApiResponse.error("该功能已被禁用，请使用POST方式查询");
             sendApiResponse(response, apiResponse);
             
         } catch (Exception e) {
@@ -192,19 +189,7 @@ public class AuthController extends BaseController {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
             
-            String email = request.getParameter("email");
-            if (email == null || email.trim().isEmpty()) {
-                sendErrorResponse(response, 400, "邮箱不能为空", "/api/auth/checkEmail");
-                return;
-            }
-            
-            boolean exists = userService.existsByEmail(email);
-            
-            Map<String, Object> result = new HashMap<>();
-            result.put("exists", exists);
-            result.put("email", email);
-            
-            ApiResponse<Map<String, Object>> apiResponse = ApiResponse.success(result);
+            ApiResponse<Object> apiResponse = ApiResponse.error("该功能已被禁用，请使用POST方式查询");
             sendApiResponse(response, apiResponse);
             
         } catch (Exception e) {

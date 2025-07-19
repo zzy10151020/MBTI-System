@@ -7,8 +7,8 @@ import org.frostedstar.mbtisystem.entity.User;
 import org.frostedstar.mbtisystem.service.ServiceFactory;
 import org.frostedstar.mbtisystem.service.UserService;
 import org.frostedstar.mbtisystem.dto.ApiResponse;
-import org.frostedstar.mbtisystem.dto.UserDTO;
-import org.frostedstar.mbtisystem.dto.OperationType;
+import org.frostedstar.mbtisystem.dto.userdto.UserRequestDTO;
+import org.frostedstar.mbtisystem.dto.userdto.UserResponseDTO;
 import org.frostedstar.mbtisystem.servlet.Route;
 
 import java.io.IOException;
@@ -39,8 +39,8 @@ public class UserController extends BaseController {
             if (currentUser == null) return;
             
             // 获取用户信息
-            UserDTO userDTO = UserDTO.fromEntity(currentUser);
-            ApiResponse<UserDTO> apiResponse = ApiResponse.success(userDTO);
+            UserResponseDTO userDTO = UserResponseDTO.fromEntity(currentUser);
+            ApiResponse<UserResponseDTO> apiResponse = ApiResponse.success(userDTO);
             
             sendApiResponse(response, apiResponse);
             
@@ -63,12 +63,10 @@ public class UserController extends BaseController {
             if (currentUser == null) return;
             
             // 解析请求体到DTO
-            UserDTO updateRequest = parseRequestBody(request, UserDTO.class);
-            updateRequest.setOperationType(OperationType.UPDATE);
-            updateRequest.setUserId(currentUser.getUserId()); // 设置用户ID
+            UserRequestDTO updateRequest = parseRequestBody(request, UserRequestDTO.class);
             
-            // 调用统一的更新方法
-            updateUserInfo(updateRequest, response, currentUser.getUsername());
+            // 调用统一的更新方法，传递当前用户对象
+            updateUserInfo(updateRequest, response, currentUser);
             
         } catch (Exception e) {
             log.error("更新用户信息失败", e);
@@ -79,8 +77,8 @@ public class UserController extends BaseController {
     /**
      * 统一的用户信息更新方法
      */
-    private void updateUserInfo(UserDTO updateRequest, HttpServletResponse response, String username) throws IOException {
-        Integer userId = updateRequest.getUserId();
+    private void updateUserInfo(UserRequestDTO updateRequest, HttpServletResponse response, User currentUser) throws IOException {
+        Integer userId = currentUser.getUserId();
         
         // 获取当前用户信息
         Optional<User> userOptional = userService.findById(userId);
@@ -130,7 +128,7 @@ public class UserController extends BaseController {
             updated = true;
             System.out.println("密码修改成功");
             successMessage = "密码修改成功";
-            log.info("用户密码修改成功: {}", username);
+            log.info("用户密码修改成功: {}", currentUser.getUsername());
         }
         
         // 处理邮箱更新
@@ -193,8 +191,8 @@ public class UserController extends BaseController {
                 sendApiResponse(response, apiResponse);
             } else {
                 // 用户信息更新成功，返回更新后的用户信息
-                UserDTO userDTO = UserDTO.fromEntity(user);
-                ApiResponse<UserDTO> apiResponse = ApiResponse.success(successMessage, userDTO);
+                UserResponseDTO userDTO = UserResponseDTO.fromEntity(user);
+                ApiResponse<UserResponseDTO> apiResponse = ApiResponse.success(successMessage, userDTO);
                 sendApiResponse(response, apiResponse);
             }
         } else {
@@ -211,40 +209,12 @@ public class UserController extends BaseController {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
             
-            String userIdStr = request.getParameter("userId");
-            if (userIdStr == null || userIdStr.trim().isEmpty()) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("用户ID不能为空");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
+            // 首先检查是否已登录
+            User currentUser = AuthUtils.checkLogin(request, response, this);
+            if (currentUser == null) return;
             
-            int userId;
-            try {
-                userId = Integer.parseInt(userIdStr);
-            } catch (NumberFormatException e) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("用户ID格式不正确");
-                sendApiResponse(response, apiResponse);
-                return;
-            }
-            
-            // 获取用户信息
-            Optional<User> userOptional = userService.findById(userId);
-            
-            if (userOptional.isPresent()) {
-                User user = userOptional.get();
-                
-                // 使用DTO转换（不包含密码和邮箱）
-                UserDTO userDTO = UserDTO.fromEntity(user);
-                // 移除敏感信息
-                userDTO.setPassword(null);
-                userDTO.setEmail(null);
-
-                ApiResponse<UserDTO> apiResponse = ApiResponse.success("获取用户信息成功", userDTO);
-                sendApiResponse(response, apiResponse);
-            } else {
-                ApiResponse<Object> apiResponse = ApiResponse.error("用户不存在");
-                sendApiResponse(response, apiResponse);
-            }
+            ApiResponse<Object> apiResponse = ApiResponse.error("该功能已被禁用，请使用POST方式查询");
+            sendApiResponse(response, apiResponse);
             
         } catch (Exception e) {
             log.error("获取用户详情失败", e);
@@ -289,15 +259,11 @@ public class UserController extends BaseController {
             if (adminUser == null) return;
 
             // 解析请求体获取删除请求
-            UserDTO deleteRequest = parseRequestBody(request, UserDTO.class);
-            deleteRequest.setOperationType(OperationType.DELETE);
-            
-            // 设置管理员ID（用于验证权限）
-            deleteRequest.setUserId(adminUser.getUserId());
+            UserRequestDTO deleteRequest = parseRequestBody(request, UserRequestDTO.class);
             
             // 验证删除请求
-            if (!deleteRequest.isValid()) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("删除请求无效：管理员ID和要删除的用户ID都不能为空");
+            if (!deleteRequest.isValidForDeleteUser()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("删除请求无效：要删除的用户ID不能为空");
                 sendApiResponse(response, apiResponse);
                 return;
             }

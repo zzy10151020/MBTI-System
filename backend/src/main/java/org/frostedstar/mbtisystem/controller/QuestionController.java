@@ -1,13 +1,12 @@
 package org.frostedstar.mbtisystem.controller;
 
 import lombok.extern.slf4j.Slf4j;
-import org.frostedstar.mbtisystem.dto.QuestionDTO;
-import org.frostedstar.mbtisystem.dto.OperationType;
+import org.frostedstar.mbtisystem.dto.questiondto.*;
+import org.frostedstar.mbtisystem.dto.ApiResponse;
 import org.frostedstar.mbtisystem.entity.Question;
 import org.frostedstar.mbtisystem.entity.User;
 import org.frostedstar.mbtisystem.service.QuestionService;
 import org.frostedstar.mbtisystem.service.ServiceFactory;
-import org.frostedstar.mbtisystem.dto.ApiResponse;
 import org.frostedstar.mbtisystem.servlet.Route;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,52 +36,8 @@ public class QuestionController extends BaseController {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
             
-            // 检查是否有questionnaireId查询参数
-            String questionnaireIdParam = request.getParameter("questionnaireId");
-            if (questionnaireIdParam != null && !questionnaireIdParam.trim().isEmpty()) {
-                try {
-                    Integer questionnaireId = Integer.parseInt(questionnaireIdParam);
-                    fetchQuestionsByQuestionnaireId(questionnaireId, response);
-                } catch (NumberFormatException e) {
-                    ApiResponse<Object> apiResponse = ApiResponse.error("无效的问卷ID");
-                    sendApiResponse(response, apiResponse);
-                }
-                return;
-            }
-            
-            String pathInfo = request.getPathInfo();
-            if (pathInfo == null || pathInfo.equals("/question") || pathInfo.equals("/question/")) {
-                // 获取所有问题
-                fetchAllQuestions(response);
-            } else {
-                // 尝试解析问题ID
-                String[] pathParts = pathInfo.split("/");
-                if (pathParts.length >= 3 && "question".equals(pathParts[2])) {
-                    if (pathParts.length >= 4) {
-                        try {
-                            Integer id = Integer.parseInt(pathParts[3]);
-                            Optional<Question> question = questionService.findById(id);
-                            if (question.isPresent()) {
-                                QuestionDTO questionDTO = QuestionDTO.fromEntity(question.get());
-                                ApiResponse<QuestionDTO> apiResponse = ApiResponse.success("获取问题成功", questionDTO);
-                                sendApiResponse(response, apiResponse);
-                            } else {
-                                ApiResponse<Object> apiResponse = ApiResponse.error("问题不存在");
-                                sendApiResponse(response, apiResponse);
-                            }
-                        } catch (NumberFormatException e) {
-                            ApiResponse<Object> apiResponse = ApiResponse.error("无效的问题ID");
-                            sendApiResponse(response, apiResponse);
-                        }
-                    } else {
-                        // 如果没有提供ID，则返回所有问题
-                        fetchAllQuestions(response);
-                    }
-                } else {
-                    ApiResponse<Object> apiResponse = ApiResponse.error("接口不存在");
-                    sendApiResponse(response, apiResponse);
-                }
-            }
+            // 获取所有问题
+            fetchAllQuestions(response);
         } catch (Exception e) {
             log.error("获取问题列表失败", e);
             sendErrorResponse(response, 500, "获取问题列表失败: " + e.getMessage(), "/api/question");
@@ -91,11 +46,11 @@ public class QuestionController extends BaseController {
 
     private void fetchAllQuestions(HttpServletResponse response) throws IOException {
         List<Question> questions = questionService.findAll();
-        List<QuestionDTO> questionDTOs = questions.stream()
-            .map(QuestionDTO::fromEntity)
+        List<QuestionResponseDTO> questionResponseDTOS = questions.stream()
+            .map(QuestionResponseDTO::fromEntity)
             .collect(Collectors.toList());
 
-        ApiResponse<List<QuestionDTO>> apiResponse = ApiResponse.success("获取问题列表成功", questionDTOs);
+        ApiResponse<List<QuestionResponseDTO>> apiResponse = ApiResponse.success("获取问题列表成功", questionResponseDTOS);
         sendApiResponse(response, apiResponse);
     }
 
@@ -104,12 +59,111 @@ public class QuestionController extends BaseController {
      */
     private void fetchQuestionsByQuestionnaireId(Integer questionnaireId, HttpServletResponse response) throws IOException {
         List<Question> questions = questionService.findByQuestionnaireId(questionnaireId);
-        List<QuestionDTO> questionDTOs = questions.stream()
-            .map(QuestionDTO::fromEntity)
+        List<QuestionResponseDTO> questionResponseDTOS = questions.stream()
+            .map(QuestionResponseDTO::fromEntity)
             .collect(Collectors.toList());
 
-        ApiResponse<List<QuestionDTO>> apiResponse = ApiResponse.success("获取问卷问题列表成功", questionDTOs);
+        ApiResponse<List<QuestionResponseDTO>> apiResponse = ApiResponse.success("获取问卷问题列表成功", questionResponseDTOS);
         sendApiResponse(response, apiResponse);
+    }
+
+    /**
+     * 根据问卷ID获取问题列表
+     */
+    @Route(value = "/by-questionnaire", method = "POST")
+    public void getQuestionsByQuestionnaireId(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        try {
+            if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
+
+            // 解析请求体
+            QuestionRequestDTO queryRequest = parseRequestBody(request, QuestionRequestDTO.class);
+            
+            // 验证请求数据
+            if (!queryRequest.isValidForQuestionnaireQuery()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("缺少或无效的问卷ID");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+
+            fetchQuestionsByQuestionnaireId(queryRequest.getQuestionnaireId(), response);
+        } catch (Exception e) {
+            log.error("根据问卷ID获取问题列表失败", e);
+            sendErrorResponse(response, 500, "根据问卷ID获取问题列表失败: " + e.getMessage(), "/api/question/by-questionnaire");
+        }
+    }
+
+    /**
+     * 根据维度查找问题
+     */
+    @Route(value = "/by-dimension", method = "POST")
+    public void getQuestionsByDimension(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        try {
+            if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
+
+            // 解析请求体
+            QuestionRequestDTO queryRequest = parseRequestBody(request, QuestionRequestDTO.class);
+            
+            // 验证请求数据
+            if (!queryRequest.isValidForDimensionQuery()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("缺少或无效的维度参数");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+
+            Question.Dimension dimension;
+            try {
+                dimension = Question.Dimension.valueOf(queryRequest.getDimension().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("无效的维度参数");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+
+            List<Question> questions = questionService.findByDimension(dimension);
+            List<QuestionResponseDTO> questionResponseDTOS = questions.stream()
+                .map(QuestionResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+
+            ApiResponse<List<QuestionResponseDTO>> apiResponse = ApiResponse.success("获取维度问题列表成功", questionResponseDTOS);
+            sendApiResponse(response, apiResponse);
+        } catch (Exception e) {
+            log.error("根据维度获取问题列表失败", e);
+            sendErrorResponse(response, 500, "根据维度获取问题列表失败: " + e.getMessage(), "/api/question/by-dimension");
+        }
+    }
+
+    /**
+     * 获取问题详情
+     */
+    @Route(value = "/detail", method = "POST")
+    public void getQuestionDetail(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        try {
+            if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
+
+            // 解析请求体
+            QuestionRequestDTO queryRequest = parseRequestBody(request, QuestionRequestDTO.class);
+            
+            // 验证请求数据
+            if (!queryRequest.isValidForDetailQuery()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("缺少或无效的问题ID");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+
+            Question question = questionService.getQuestionDetail(queryRequest.getActualQuestionId());
+            if (question == null) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("问题不存在");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+
+            QuestionResponseDTO questionResponseDTO = QuestionResponseDTO.fromEntity(question);
+            ApiResponse<QuestionResponseDTO> apiResponse = ApiResponse.success("获取问题详情成功", questionResponseDTO);
+            sendApiResponse(response, apiResponse);
+        } catch (Exception e) {
+            log.error("获取问题详情失败", e);
+            sendErrorResponse(response, 500, "获取问题详情失败: " + e.getMessage(), "/api/question/detail");
+        }
     }
 
     /**
@@ -125,35 +179,83 @@ public class QuestionController extends BaseController {
             if (user == null) return;
             
             // 解析请求体
-            QuestionDTO createRequest = parseRequestBody(request, QuestionDTO.class);
-            createRequest.setOperationType(OperationType.CREATE);
+            QuestionRequestDTO createRequest = parseRequestBody(request, QuestionRequestDTO.class);
             
             // 验证请求数据
-            if (!createRequest.isValid()) {
+            if (!createRequest.isValidForCreateQuestion()) {
                 ApiResponse<Object> apiResponse = ApiResponse.error("请求数据不完整");
                 sendApiResponse(response, apiResponse);
                 return;
             }
-            
+
+            if (createRequest.getOptions() == null) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("选项列表不能为空");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+
             // 创建问题
-            Question question = Question.builder()
-                .questionnaireId(createRequest.getQuestionnaireId())
-                .content(createRequest.getContent())
-                .dimension(Question.Dimension.valueOf(createRequest.getDimension()))
-                .questionOrder(createRequest.getQuestionOrder())
-                .build();
+            Question question = createRequest.toEntity();
             
             Question savedQuestion = questionService.save(question);
             
-            QuestionDTO questionDTO = QuestionDTO.fromEntity(savedQuestion);
-            ApiResponse<QuestionDTO> apiResponse = ApiResponse.success("问题创建成功", questionDTO);
+            QuestionResponseDTO questionResponseDTO = QuestionResponseDTO.fromEntity(savedQuestion);
+            ApiResponse<QuestionResponseDTO> apiResponse = ApiResponse.success("问题创建成功", questionResponseDTO);
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("创建问题失败", e);
             sendErrorResponse(response, 500, "创建问题失败: " + e.getMessage(), "/api/question");
         }
     }
-    
+
+    /**
+     * 批量创建问题
+     */
+    @Route(value = "/batch", method = "POST")
+    public void createQuestionsBatch(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        try {
+            if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
+
+            // 检查管理员权限
+            User user = AuthUtils.checkAdmin(request, response, this);
+            if (user == null) return;
+
+            // 解析请求体
+            @SuppressWarnings("unchecked")
+            List<QuestionRequestDTO> createRequests = parseRequestBody(request, List.class);
+            if (createRequests == null || createRequests.isEmpty()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("请求数据不能为空");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+
+            // 验证每个请求数据
+            for (QuestionRequestDTO createRequest : createRequests) {
+                if (!createRequest.isValidForCreateQuestion()) {
+                    ApiResponse<Object> apiResponse = ApiResponse.error("请求数据不完整");
+                    sendApiResponse(response, apiResponse);
+                    return;
+                }
+            }
+
+            // 批量创建问题
+            List<Question> questions = createRequests.stream()
+                .map((QuestionRequestDTO question) -> question.toEntity())
+                .collect(Collectors.toList());
+
+            List<Question> savedQuestions = questionService.createQuestions(questions);
+            List<QuestionResponseDTO> questionResponseDTOS = savedQuestions.stream()
+                .map(QuestionResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+
+            ApiResponse<List<QuestionResponseDTO>> apiResponse = ApiResponse.success("批量创建问题成功", questionResponseDTOS);
+            sendApiResponse(response, apiResponse);
+        } catch (Exception e) {
+            log.error("批量创建问题失败", e);
+            sendErrorResponse(response, 500, "批量创建问题失败: " + e.getMessage(), "/api/question/batch");
+        }
+    }
+
     /**
      * 更新问题
      */
@@ -167,11 +269,10 @@ public class QuestionController extends BaseController {
             if (user == null) return;
             
             // 解析请求体
-            QuestionDTO updateRequest = parseRequestBody(request, QuestionDTO.class);
-            updateRequest.setOperationType(OperationType.UPDATE);
+            QuestionRequestDTO updateRequest = parseRequestBody(request, QuestionRequestDTO.class);
             
             // 验证请求数据
-            if (!updateRequest.isValid()) {
+            if (!updateRequest.isValidForUpdateQuestion()) {
                 ApiResponse<Object> apiResponse = ApiResponse.error("请求数据不完整");
                 sendApiResponse(response, apiResponse);
                 return;
@@ -198,8 +299,8 @@ public class QuestionController extends BaseController {
             
             questionService.update(updatedQuestion);
             
-            QuestionDTO questionDTO = QuestionDTO.fromEntity(updatedQuestion);
-            ApiResponse<QuestionDTO> apiResponse = ApiResponse.success("问题更新成功", questionDTO);
+            QuestionResponseDTO questionResponseDTO = QuestionResponseDTO.fromEntity(updatedQuestion);
+            ApiResponse<QuestionResponseDTO> apiResponse = ApiResponse.success("问题更新成功", questionResponseDTO);
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("更新问题失败", e);
@@ -208,7 +309,7 @@ public class QuestionController extends BaseController {
     }
     
     /**
-     * 删除问题
+     * 删除问题 - 使用请求体传参
      */
     @Route(value = "", method = "DELETE")
     public void deleteQuestion(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -219,31 +320,17 @@ public class QuestionController extends BaseController {
             User user = AuthUtils.checkAdmin(request, response, this);
             if (user == null) return;
             
-            // 从URL参数或请求体获取ID
-            String idParam = request.getParameter("id");
-            Integer id;
+            // 从请求体获取删除请求
+            QuestionRequestDTO deleteRequest = parseRequestBody(request, QuestionRequestDTO.class);
             
-            if (idParam != null) {
-                try {
-                    id = Integer.parseInt(idParam);
-                } catch (NumberFormatException e) {
-                    ApiResponse<Object> apiResponse = ApiResponse.error("无效的问题ID");
-                    sendApiResponse(response, apiResponse);
-                    return;
-                }
-            } else {
-                // 从请求体获取删除请求
-                QuestionDTO deleteRequest = parseRequestBody(request, QuestionDTO.class);
-                deleteRequest.setOperationType(OperationType.DELETE);
-                
-                if (!deleteRequest.isValid()) {
-                    ApiResponse<Object> apiResponse = ApiResponse.error("缺少问题ID");
-                    sendApiResponse(response, apiResponse);
-                    return;
-                }
-                
-                id = deleteRequest.getQuestionId();
+            // 验证请求数据
+            if (!deleteRequest.isValidForDeleteQuestion()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("缺少或无效的问题ID");
+                sendApiResponse(response, apiResponse);
+                return;
             }
+            
+            Integer id = deleteRequest.getActualId();
             
             // 检查问题是否存在
             Optional<Question> questionOpt = questionService.findById(id);
@@ -254,7 +341,11 @@ public class QuestionController extends BaseController {
             }
             
             // 删除问题
-            questionService.deleteById(id);
+            if (!questionService.deleteQuestionWithCascade(id)) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("可能存在关联数据");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
             
             ApiResponse<String> apiResponse = ApiResponse.success("问题删除成功", "问题删除成功");
             sendApiResponse(response, apiResponse);

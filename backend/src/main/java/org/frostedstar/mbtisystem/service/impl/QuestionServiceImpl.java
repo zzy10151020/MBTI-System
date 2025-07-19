@@ -5,6 +5,7 @@ import org.frostedstar.mbtisystem.dao.OptionDAO;
 import org.frostedstar.mbtisystem.dao.QuestionDAO;
 import org.frostedstar.mbtisystem.dao.DaoFactory;
 import org.frostedstar.mbtisystem.entity.Question;
+import org.frostedstar.mbtisystem.entity.Option;
 import org.frostedstar.mbtisystem.service.QuestionService;
 
 import java.util.ArrayList;
@@ -27,7 +28,25 @@ public class QuestionServiceImpl implements QuestionService {
     
     @Override
     public Question save(Question question) {
-        return questionDao.save(question);
+        // 先保存问题
+        Question savedQuestion = questionDao.save(question);
+        
+        // 如果问题有选项，则保存选项
+        if (question.getOptions() != null && !question.getOptions().isEmpty()) {
+            // 为选项设置问题ID
+            for (Option option : question.getOptions()) {
+                option.setQuestionId(savedQuestion.getQuestionId());
+            }
+            
+            // 批量保存选项
+            List<Option> savedOptions = optionDao.saveBatch(question.getOptions());
+            savedQuestion.setOptions(savedOptions);
+            
+            log.info("问题和选项保存成功: 问题ID {}, 选项数量 {}", 
+                savedQuestion.getQuestionId(), savedOptions.size());
+        }
+        
+        return savedQuestion;
     }
     
     @Override
@@ -67,10 +86,10 @@ public class QuestionServiceImpl implements QuestionService {
     
     @Override
     public List<Question> createQuestions(List<Question> questions) {
-        // 批量保存问题
+        // 批量保存问题，使用 this.save() 以确保选项也被保存
         List<Question> savedQuestions = new ArrayList<>();
         for (Question question : questions) {
-            savedQuestions.add(questionDao.save(question));
+            savedQuestions.add(this.save(question));  // 使用 this.save() 而不是 questionDao.save()
         }
         return savedQuestions;
     }

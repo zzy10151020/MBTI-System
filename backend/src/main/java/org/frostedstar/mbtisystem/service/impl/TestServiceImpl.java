@@ -34,20 +34,6 @@ public class TestServiceImpl implements TestService {
     }
     
     @Override
-    public List<Question> startTest(Integer questionnaireId) {
-        // 获取问卷的所有问题（按顺序）
-        List<Question> questions = questionDAO.findByQuestionnaireIdOrderByQuestionOrder(questionnaireId);
-        
-        // 为每个问题加载选项
-        for (Question question : questions) {
-            List<Option> options = optionDAO.findByQuestionId(question.getQuestionId());
-            question.setOptions(options);
-        }
-        
-        return questions;
-    }
-    
-    @Override
     public Answer submitTest(Integer userId, Integer questionnaireId, List<AnswerDetail> answerDetails) {
         // 检查用户是否已经完成了这个问卷
         if (hasUserCompletedTest(userId, questionnaireId)) {
@@ -209,83 +195,5 @@ public class TestServiceImpl implements TestService {
         }
         
         return statistics;
-    }
-    
-    @Override
-    public Map<String, String> getMBTIDescription(String mbtiType) {
-        Map<String, String> description = new HashMap<>();
-        
-        // 这里可以根据 MBTI 类型返回详细描述
-        switch (mbtiType) {
-            case "INTJ":
-                description.put("title", "建筑师");
-                description.put("description", "具有想象力和战略性的思想家，一切皆在计划之中。");
-                break;
-            case "INTP":
-                description.put("title", "思想家");
-                description.put("description", "具有创造性的思想家，对知识有着不可抑制的渴望。");
-                break;
-            case "ENTJ":
-                description.put("title", "指挥官");
-                description.put("description", "大胆，富有想象力，意志强烈的领导者。");
-                break;
-            case "ENTP":
-                description.put("title", "辩论家");
-                description.put("description", "聪明好奇的思想家，不会拒绝智力上的挑战。");
-                break;
-            case "INFJ":
-                description.put("title", "提倡者");
-                description.put("description", "安静而神秘，同时鼓舞人心且不知疲倦的理想主义者。");
-                break;
-            case "INFP":
-                description.put("title", "调停者");
-                description.put("description", "诗意，善良，利他主义，总是热情地为正义而战。");
-                break;
-            case "ENFJ":
-                description.put("title", "主人公");
-                description.put("description", "有魅力鼓舞人心的领导者，有着让听众着迷的能力。");
-                break;
-            case "ENFP":
-                description.put("title", "竞选者");
-                description.put("description", "热情，有创造力，社交能力强，总是能找到笑容的理由。");
-                break;
-            case "ISTJ":
-                description.put("title", "物流师");
-                description.put("description", "实际，注重事实的可靠性，可以信赖他们完成计划。");
-                break;
-            case "ISFJ":
-                description.put("title", "守护者");
-                description.put("description", "非常专注，温暖的守护者，时刻准备着保护爱着的人们。");
-                break;
-            case "ESTJ":
-                description.put("title", "总经理");
-                description.put("description", "出色的管理者，在管理事情或人的时候非常高效。");
-                break;
-            case "ESFJ":
-                description.put("title", "执政官");
-                description.put("description", "非常关心他人，社交能力强，在团体中备受欢迎。");
-                break;
-            case "ISTP":
-                description.put("title", "鉴赏家");
-                description.put("description", "大胆而实际的实验家，擅长使用各种工具。");
-                break;
-            case "ISFP":
-                description.put("title", "探险家");
-                description.put("description", "灵活有魅力的艺术家，时刻准备着探索新的可能性。");
-                break;
-            case "ESTP":
-                description.put("title", "企业家");
-                description.put("description", "聪明，精力充沛，非常善于感知，真正享受生活。");
-                break;
-            case "ESFP":
-                description.put("title", "娱乐家");
-                description.put("description", "自发的，精力充沛，热情的演艺人员，生活永远不会无聊。");
-                break;
-            default:
-                description.put("title", "未知类型");
-                description.put("description", "无法识别的 MBTI 类型。");
-        }
-        
-        return description;
     }
 }

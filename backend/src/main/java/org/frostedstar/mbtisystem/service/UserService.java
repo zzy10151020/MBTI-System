@@ -43,9 +43,4 @@ public interface UserService extends BaseService<User, Integer> {
      * 修改密码
      */
     boolean changePassword(Integer userId, String oldPassword, String newPassword);
-    
-    /**
-     * 验证密码
-     */
-    boolean verifyPassword(String rawPassword, String hashedPassword);
 }

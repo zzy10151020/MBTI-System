@@ -157,4 +157,88 @@ class AuthUtils {
         }
         return (String) session.getAttribute("username");
     }
+    
+    /**
+     * 验证请求中的用户ID是否与当前登录用户匹配
+     * 适用于需要验证用户只能操作自己数据的场景
+     * 
+     * @param request HTTP请求对象
+     * @param response HTTP响应对象
+     * @param baseController 基础控制器，用于发送响应
+     * @param requestUserId 请求中的用户ID（来自参数或请求体）
+     * @return 如果匹配或用户是管理员返回当前用户对象，否则返回null并发送错误响应
+     */
+    static User checkUserIdPermission(HttpServletRequest request, HttpServletResponse response, 
+                                     BaseController baseController, Integer requestUserId) throws IOException {
+        // 首先检查是否已登录
+        User currentUser = checkLogin(request, response, baseController);
+        if (currentUser == null) {
+            return null;
+        }
+        
+        // 如果是管理员，允许操作任何用户的数据
+        if (User.Role.ADMIN.equals(currentUser.getRole())) {
+            return currentUser;
+        }
+        
+        // 验证请求的用户ID是否与当前登录用户的ID匹配
+        if (requestUserId == null || !currentUser.getUserId().equals(requestUserId)) {
+            ApiResponse<Object> apiResponse = ApiResponse.error("权限不足，只能操作自己的数据");
+            baseController.sendApiResponse(response, apiResponse);
+            return null;
+        }
+        
+        return currentUser;
+    }
+    
+    /**
+     * 检查当前用户是否有权限访问指定用户ID的数据
+     * 返回权限级别信息，不发送错误响应
+     * 
+     * @param request HTTP请求对象
+     * @param targetUserId 目标用户ID
+     * @return 权限级别：ADMIN(管理员), SELF(本人), PUBLIC(公开访问), DENIED(拒绝访问)
+     */
+    static AccessLevel checkAccessLevel(HttpServletRequest request, Integer targetUserId) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return AccessLevel.DENIED;
+        }
+        
+        Integer currentUserId = (Integer) session.getAttribute("userId");
+        if (currentUserId == null) {
+            return AccessLevel.DENIED;
+        }
+        
+        // 获取用户信息以检查角色
+        Optional<User> userOpt = userService.findById(currentUserId);
+        if (userOpt.isEmpty()) {
+            return AccessLevel.DENIED;
+        }
+        
+        User currentUser = userOpt.get();
+        
+        // 管理员可以访问所有数据
+        if (User.Role.ADMIN.equals(currentUser.getRole())) {
+            return AccessLevel.ADMIN;
+        }
+        
+        // 检查是否访问自己的数据
+        if (currentUser.getUserId().equals(targetUserId)) {
+            return AccessLevel.SELF;
+        }
+        
+        // 其他用户的公开数据
+        return AccessLevel.PUBLIC;
+    }
+    
+    /**
+     * 访问级别枚举
+     */
+    enum AccessLevel {
+        ADMIN,   // 管理员权限，可以访问所有数据
+        SELF,    // 访问自己的数据，可以看到完整信息
+        PUBLIC,  // 访问他人的公开数据，只能看到非敏感信息
+        DENIED   // 拒绝访问
+    }
 }

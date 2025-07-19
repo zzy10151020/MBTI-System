@@ -114,10 +114,14 @@ public class ApiDispatcherServlet extends HttpServlet {
             if (routeKey.startsWith(httpMethod + ":" + controllerName)) {
                 String routePath = routeKey.substring(httpMethod.length() + controllerName.length() + 1);
                 
-                // 支持两种匹配模式：
+                // 支持三种匹配模式：
                 // 1. 精确匹配: @Route("/detail")
-                // 2. 参数化匹配: @Route("/byCreator/")
+                // 2. 参数化匹配: @Route("/byCreator/")  
+                // 3. 根路径参数匹配: @Route("") - 匹配任何以 / 开头的路径
                 if (routePath.endsWith("/") && subPath.startsWith(routePath)) {
+                    return entry.getValue();
+                } else if (routePath.isEmpty() && subPath.startsWith("/")) {
+                    // 空路由路径匹配任何以 / 开头的子路径
                     return entry.getValue();
                 }
             }

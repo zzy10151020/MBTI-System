@@ -111,11 +111,6 @@ public class UserServiceImpl implements UserService {
     }
     
     @Override
-    public boolean verifyPassword(String rawPassword, String hashedPassword) {
-        return PasswordUtil.verifyPassword(rawPassword, hashedPassword);
-    }
-    
-    @Override
     public User save(User user) {
         return userDAO.save(user);
     }

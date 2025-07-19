@@ -2,7 +2,6 @@ package org.frostedstar.mbtisystem.service;
 
 import org.frostedstar.mbtisystem.entity.Answer;
 import org.frostedstar.mbtisystem.entity.AnswerDetail;
-import org.frostedstar.mbtisystem.entity.Question;
 
 import java.util.List;
 import java.util.Map;
@@ -12,11 +11,6 @@ import java.util.Optional;
  * 测试 Service 接口
  */
 public interface TestService {
-    
-    /**
-     * 开始测试 - 获取问卷的问题和选项
-     */
-    List<Question> startTest(Integer questionnaireId);
     
     /**
      * 提交测试答案
@@ -52,9 +46,4 @@ public interface TestService {
      * 获取问卷的统计数据
      */
     Map<String, Object> getQuestionnaireStatistics(Integer questionnaireId);
-    
-    /**
-     * 获取 MBTI 结果的详细描述
-     */
-    Map<String, String> getMBTIDescription(String mbtiType);
 }
