@@ -181,11 +181,12 @@ public class QuestionDAOImpl implements QuestionDAO {
             stmt = conn.prepareStatement(DELETE_SQL);
             stmt.setInt(1, id);
             
-            return stmt.executeUpdate() > 0;
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;
             
         } catch (SQLException e) {
-            log.error("删除问题失败", e);
-            throw new RuntimeException("删除问题失败", e);
+            log.error("删除问题失败，问题ID: {}", id, e);
+            return false; // 返回false而不是抛出异常
         } finally {
             DatabaseUtil.closeQuietly(stmt, conn);
         }
@@ -310,11 +311,18 @@ public class QuestionDAOImpl implements QuestionDAO {
             stmt = conn.prepareStatement(DELETE_BY_QUESTIONNAIRE_ID_SQL);
             stmt.setInt(1, questionnaireId);
             
-            return stmt.executeUpdate() > 0;
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected > 0) {
+                log.info("成功删除 {} 个问题，问卷ID: {}", rowsAffected, questionnaireId);
+                return true;
+            } else {
+                log.info("没有找到需要删除的问题，问卷ID: {}", questionnaireId);
+                return true; // 没有问题也认为是成功的
+            }
             
         } catch (SQLException e) {
-            log.error("根据问卷ID删除问题失败", e);
-            throw new RuntimeException("根据问卷ID删除问题失败", e);
+            log.error("根据问卷ID删除问题失败，问卷ID: {}", questionnaireId, e);
+            return false; // 返回false而不是抛出异常
         } finally {
             DatabaseUtil.closeQuietly(stmt, conn);
         }

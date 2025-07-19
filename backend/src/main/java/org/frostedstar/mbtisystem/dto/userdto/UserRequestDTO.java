@@ -52,6 +52,9 @@ public class UserRequestDTO {
      */
     @JsonIgnore
     private String newPassword;
+
+    // 要获取详情的用户ID
+    private Integer getUserProfileId;
     
     // 删除操作相关字段
     /**
@@ -129,8 +132,8 @@ public class UserRequestDTO {
     /**
      * 查询用户请求验证
      */
-    public boolean isValidForQueryUser() {
-        return true; // 查询通常不需要特殊验证
+    public boolean isValidForGetUserProfileId() {
+        return getUserProfileId != null && getUserProfileId > 0; // 要查询的用户ID
     }
     
     /**

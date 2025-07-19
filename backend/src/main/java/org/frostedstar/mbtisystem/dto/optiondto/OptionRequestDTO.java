@@ -34,9 +34,10 @@ public class OptionRequestDTO {
     private String content;
     
     /**
-     * 选项值 (A, B, C, D)
+     * 选项分数 (-1 或 1)
      */
-    private String value;
+    private Byte score;
+
     
     // 验证方法
     
@@ -46,8 +47,7 @@ public class OptionRequestDTO {
     public boolean isValidForCreateOption() {
         return questionId != null && questionId > 0 &&
                content != null && !content.trim().isEmpty() &&
-               value != null && !value.trim().isEmpty() &&
-               isValidValue(value);
+               score != null && isValidScore(score);
     }
     
     /**
@@ -56,8 +56,7 @@ public class OptionRequestDTO {
     public boolean isValidForUpdateOption() {
         return optionId != null && optionId > 0 &&
                content != null && !content.trim().isEmpty() &&
-               value != null && !value.trim().isEmpty() &&
-               isValidValue(value);
+               score != null && isValidScore(score);
     }
     
     /**
@@ -68,21 +67,10 @@ public class OptionRequestDTO {
     }
     
     /**
-     * 验证选项值
+     * 验证分数值 (只能是 -1 或 1)
      */
-    private boolean isValidValue(String value) {
-        return "A".equals(value) || "B".equals(value) || 
-               "C".equals(value) || "D".equals(value);
-    }
-    
-    /**
-     * 将value转换为score
-     */
-    public Byte getScoreFromValue() {
-        if (value == null) {
-            return null;
-        }
-        return "A".equals(value) ? (byte) 1 : (byte) -1;
+    private boolean isValidScore(Byte score) {
+        return score != null && (score == -1 || score == 1);
     }
     
     /**
@@ -93,7 +81,7 @@ public class OptionRequestDTO {
         option.setOptionId(this.optionId);
         option.setQuestionId(this.questionId);
         option.setContent(this.content);
-        option.setScore(this.getScoreFromValue());
+        option.setScore(this.score);
         return option;
     }
     

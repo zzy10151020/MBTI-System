@@ -127,12 +127,49 @@ MBTI系统是一个基于Java Servlet的Web应用，提供MBTI性格测试功能
 }
 ```
 
-### 3.4 检查用户名/邮箱 (已禁用)
-**接口:** `GET /api/auth/checkUsername` 和 `GET /api/auth/checkEmail`
+### 3.4 检查用户名
+**接口:** `GET /api/auth/checkUsername`
 
-**状态:** 这些接口已被禁用，返回错误提示使用POST方式查询。
+**请求体:**
+```json
+{
+    "username": "testuser"
+}
+```
 
----
+**响应示例:**
+```json
+{
+  "success": true,
+  "message": "成功查到用户名",
+  "data": {
+    "exists": true
+  },
+  "timestamp": 1642680000000
+}
+```
+
+### 3.5检查用户名
+**接口:** `GET /api/auth/checkEmail`
+
+**请求体:**
+```json
+{
+    "email": "text@example.com"
+}
+```
+
+**响应示例:**
+```json
+{
+  "success": true,
+  "message": "成功查到邮箱",
+  "data": {
+    "exists": true
+  },
+  "timestamp": 1642680000000
+}
+```
 
 ## 4. 用户模块 `/api/user`
 
@@ -171,19 +208,104 @@ MBTI系统是一个基于Java Servlet的Web应用，提供MBTI性格测试功能
   // 或者更新基本信息
   "username": "newusername",
   "email": "newemail@example.com",
-  "role": "USER"  // 仅管理员可修改
+  "role": "USER"  // 仅管理员可修改（安全限制）
 }
 ```
 
-**注意:**
+**权限控制:**
+- **密码修改**: 用户只能修改自己的密码
+- **用户名/邮箱**: 用户可以修改自己的用户名和邮箱
+- **角色修改**: 只有管理员可以修改用户角色，普通用户尝试修改角色会收到权限错误
+
+**注意事项:**
 - 密码修改和信息更新可以同时进行
 - 新密码至少6位
 - 用户名和邮箱不能与其他用户重复
+- 修改用户名后，Session中的用户名会自动更新
+- 系统会返回数据库中的最新用户信息确保数据一致性
 
-### 4.3 获取用户详情 (已禁用)
-**接口:** `GET /api/user/profile`
+**成功响应示例（仅密码修改）:**
+```json
+{
+  "success": true,
+  "message": "密码修改成功",
+  "data": "密码修改成功",
+  "timestamp": 1642680000000
+}
+```
 
-**状态:** 已禁用，建议使用POST方式查询
+**成功响应示例（用户信息更新）:**
+```json
+{
+  "success": true,
+  "message": "用户信息更新成功",
+  "data": {
+    "userId": 1,
+    "username": "newusername",
+    "email": "newemail@example.com",
+    "role": "USER",
+    "createdAt": "2024-01-01T10:00:00"
+  },
+  "timestamp": 1642680000000
+}
+```
+
+**错误响应示例:**
+- 权限不足: `{"success": false, "message": "权限不足，只有管理员可以修改用户角色"}`
+- 原密码错误: `{"success": false, "message": "原密码错误"}`
+- 用户名已存在: `{"success": false, "message": "用户名已存在"}`
+
+### 4.3 获取用户详情
+**接口:** `POST /api/user/profile`
+
+**权限:** 需要登录
+
+**请求体:**
+```json
+{
+  "getUserProfileId": 123
+}
+```
+
+**权限控制:**
+- **管理员**: 可以查看任何用户的完整信息（包括邮箱）
+- **用户本人**: 可以查看自己的完整信息（包括邮箱） 
+- **其他用户**: 只能查看公开信息（不包括邮箱等敏感信息）
+
+**响应示例（完整信息）:**
+```json
+{
+  "success": true,
+  "message": "获取用户详情成功",
+  "data": {
+    "userId": 123,
+    "username": "targetuser",
+    "email": "target@example.com",
+    "role": "USER",
+    "createdAt": "2024-01-01T10:00:00"
+  },
+  "timestamp": 1642680000000
+}
+```
+
+**响应示例（公开信息）:**
+```json
+{
+  "success": true,
+  "message": "获取用户详情成功",
+  "data": {
+    "userId": 123,
+    "username": "targetuser",
+    "role": "USER",
+    "createdAt": "2024-01-01T10:00:00"
+  },
+  "timestamp": 1642680000000
+}
+```
+
+**错误响应:**
+- 权限不足: `{"success": false, "message": "权限不足，无法查看用户详情"}`
+- 用户不存在: `{"success": false, "message": "用户不存在"}`
 
 ### 4.4 获取用户列表
 **接口:** `GET /api/user/list`
@@ -335,8 +457,7 @@ MBTI系统是一个基于Java Servlet的Web应用，提供MBTI性格测试功能
       "options": [
         {
           "content": "选项内容",
-          "score": 1,
-          "optionOrder": 1
+          "score": 1
         }
       ]
     }
@@ -412,7 +533,7 @@ MBTI系统是一个基于Java Servlet的Web应用，提供MBTI性格测试功能
 **接口:** `GET /api/question`
 
 ### 6.2 根据问卷ID获取问题
-**接口:** `POST /api/question/by-questionnaire`
+**接口:** `POST /api/question/byQuestionnaire`
 
 **请求体:**
 ```json
@@ -422,7 +543,7 @@ MBTI系统是一个基于Java Servlet的Web应用，提供MBTI性格测试功能
 ```
 
 ### 6.3 根据维度获取问题
-**接口:** `POST /api/question/by-dimension`
+**接口:** `POST /api/question/byQimension`
 
 **请求体:**
 ```json
@@ -462,8 +583,7 @@ MBTI系统是一个基于Java Servlet的Web应用，提供MBTI性格测试功能
   "options": [
     {
       "content": "选项内容",
-      "score": 1,
-      "optionOrder": 1
+      "score": 1
     }
   ]
 }

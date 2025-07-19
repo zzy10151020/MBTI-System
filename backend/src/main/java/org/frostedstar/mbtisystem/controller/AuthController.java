@@ -167,14 +167,20 @@ public class AuthController extends BaseController {
     /**
      * 检查用户名是否存在
      */
-    @Route(value = "/checkUsername", method = "GET")
+    @Route(value = "/checkUsername", method = "POST")
     public void checkUsername(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
-            
-            ApiResponse<Object> apiResponse = ApiResponse.error("该功能已被禁用，请使用POST方式查询");
+            if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
+
+            // 解析请求体
+            AuthRequestDTO requestBody = parseRequestBody(request, AuthRequestDTO.class);
+            String username = requestBody.getUsername();
+
+            // 检查用户名是否存在
+            boolean exists = userService.existsByUsername(username);
+            ApiResponse<Boolean> apiResponse = ApiResponse.success("成功查到用户名", exists);
             sendApiResponse(response, apiResponse);
-            
+
         } catch (Exception e) {
             log.error("检查用户名失败", e);
             sendErrorResponse(response, 500, "检查用户名失败: " + e.getMessage(), "/api/auth/checkUsername");
@@ -184,14 +190,20 @@ public class AuthController extends BaseController {
     /**
      * 检查邮箱是否存在
      */
-    @Route(value = "/checkEmail", method = "GET")
+    @Route(value = "/checkEmail", method = "POST")
     public void checkEmail(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
-            
-            ApiResponse<Object> apiResponse = ApiResponse.error("该功能已被禁用，请使用POST方式查询");
+            if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
+
+            // 解析请求体
+            AuthRequestDTO requestBody = parseRequestBody(request, AuthRequestDTO.class);
+            String email = requestBody.getEmail();
+
+            // 检查邮箱是否存在
+            boolean exists = userService.existsByEmail(email);
+            ApiResponse<Boolean> apiResponse = ApiResponse.success("成功查到邮箱", exists);
             sendApiResponse(response, apiResponse);
-            
+
         } catch (Exception e) {
             log.error("检查邮箱失败", e);
             sendErrorResponse(response, 500, "检查邮箱失败: " + e.getMessage(), "/api/auth/checkEmail");

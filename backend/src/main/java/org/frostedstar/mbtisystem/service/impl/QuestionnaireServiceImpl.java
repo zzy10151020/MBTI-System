@@ -140,22 +140,33 @@ public class QuestionnaireServiceImpl implements QuestionnaireService {
         try {
             // 获取问卷的所有问题
             List<Question> questions = questionDAO.findByQuestionnaireId(questionnaireId);
+            log.info("准备删除问卷 {} 及其 {} 个问题", questionnaireId, questions.size());
             
             // 删除每个问题的选项
             for (Question question : questions) {
-                optionDAO.deleteByQuestionId(question.getQuestionId());
+                boolean optionDeleted = optionDAO.deleteByQuestionId(question.getQuestionId());
+                if (!optionDeleted) {
+                    log.error("删除问题 {} 的选项失败", question.getQuestionId());
+                    return false;
+                }
             }
             
             // 删除问卷的所有问题
-            questionDAO.deleteByQuestionnaireId(questionnaireId);
+            boolean questionsDeleted = questionDAO.deleteByQuestionnaireId(questionnaireId);
+            if (!questionsDeleted) {
+                log.error("删除问卷 {} 的问题失败", questionnaireId);
+                return false;
+            }
             
             // 删除问卷
-            boolean deleted = questionnaireDAO.deleteById(questionnaireId);
+            boolean questionnaireDeleted = questionnaireDAO.deleteById(questionnaireId);
             
-            if (deleted) {
+            if (questionnaireDeleted) {
                 log.info("问卷级联删除成功: {}", questionnaireId);
+            } else {
+                log.error("问卷删除失败: {}", questionnaireId);
             }
-            return deleted;
+            return questionnaireDeleted;
             
         } catch (Exception e) {
             log.error("问卷级联删除失败: {}", questionnaireId, e);

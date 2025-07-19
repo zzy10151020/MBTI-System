@@ -70,7 +70,7 @@ public class QuestionController extends BaseController {
     /**
      * 根据问卷ID获取问题列表
      */
-    @Route(value = "/by-questionnaire", method = "POST")
+    @Route(value = "/byQuestionnaire", method = "POST")
     public void getQuestionsByQuestionnaireId(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
@@ -220,9 +220,17 @@ public class QuestionController extends BaseController {
             User user = AuthUtils.checkAdmin(request, response, this);
             if (user == null) return;
 
-            // 解析请求体
-            @SuppressWarnings("unchecked")
-            List<QuestionRequestDTO> createRequests = parseRequestBody(request, List.class);
+            // 使用改进的解析方法
+            List<QuestionRequestDTO> createRequests;
+            try {
+                createRequests = parseRequestBodyList(request, QuestionRequestDTO.class);
+            } catch (Exception e) {
+                log.error("解析批量创建问题请求失败", e);
+                ApiResponse<Object> apiResponse = ApiResponse.error("请求数据格式错误");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+
             if (createRequests == null || createRequests.isEmpty()) {
                 ApiResponse<Object> apiResponse = ApiResponse.error("请求数据不能为空");
                 sendApiResponse(response, apiResponse);
@@ -230,9 +238,20 @@ public class QuestionController extends BaseController {
             }
 
             // 验证每个请求数据
-            for (QuestionRequestDTO createRequest : createRequests) {
+            for (int i = 0; i < createRequests.size(); i++) {
+                QuestionRequestDTO createRequest = createRequests.get(i);
+                if (createRequest == null) {
+                    ApiResponse<Object> apiResponse = ApiResponse.error("第" + (i + 1) + "个问题数据为空");
+                    sendApiResponse(response, apiResponse);
+                    return;
+                }
                 if (!createRequest.isValidForCreateQuestion()) {
-                    ApiResponse<Object> apiResponse = ApiResponse.error("请求数据不完整");
+                    ApiResponse<Object> apiResponse = ApiResponse.error("第" + (i + 1) + "个问题数据不完整");
+                    sendApiResponse(response, apiResponse);
+                    return;
+                }
+                if (createRequest.getOptions() == null || createRequest.getOptions().isEmpty()) {
+                    ApiResponse<Object> apiResponse = ApiResponse.error("第" + (i + 1) + "个问题的选项列表不能为空");
                     sendApiResponse(response, apiResponse);
                     return;
                 }
@@ -240,7 +259,7 @@ public class QuestionController extends BaseController {
 
             // 批量创建问题
             List<Question> questions = createRequests.stream()
-                .map((QuestionRequestDTO question) -> question.toEntity())
+                .map(dto -> dto.toEntity())
                 .collect(Collectors.toList());
 
             List<Question> savedQuestions = questionService.createQuestions(questions);
@@ -342,7 +361,7 @@ public class QuestionController extends BaseController {
             
             // 删除问题
             if (!questionService.deleteQuestionWithCascade(id)) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("可能存在关联数据");
+                ApiResponse<Object> apiResponse = ApiResponse.error("删除失败，可能存在关联数据或数据库错误");
                 sendApiResponse(response, apiResponse);
                 return;
             }

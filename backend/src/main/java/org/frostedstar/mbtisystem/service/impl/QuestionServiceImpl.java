@@ -106,25 +106,24 @@ public class QuestionServiceImpl implements QuestionService {
         // 级联删除问题和选项
         try {
             // 删除所有选项
-            boolean deleted;
-            if (optionDao.deleteByQuestionId(questionId)) {
-                // 删除问题
-                deleted = questionDao.deleteById(questionId);
-                if (deleted) {
-                    log.info("选项和问题删除成功: 问题ID {}", questionId);
-                } else {
-                    log.warn("选项删除成功，但问题删除失败: 问题ID {}", questionId);
-                }
-                return deleted;
-            } else {
-                // 删除问题失败
+            boolean optionDeleted = optionDao.deleteByQuestionId(questionId);
+            if (!optionDeleted) {
                 log.warn("选项删除失败: 问题ID {}", questionId);
                 return false;
             }
+            
+            // 删除问题
+            boolean questionDeleted = questionDao.deleteById(questionId);
+            if (questionDeleted) {
+                log.info("问题和选项删除成功: 问题ID {}", questionId);
+            } else {
+                log.warn("选项删除成功，但问题删除失败: 问题ID {}", questionId);
+            }
+            return questionDeleted;
 
         } catch (Exception e) {
-            log.error("级联删除问题下的所有选项失败", e);
-            throw new RuntimeException("级联删除问题下的所有选项失败", e);
+            log.error("级联删除问题失败: 问题ID {}", questionId, e);
+            return false;
         }
     }
 }

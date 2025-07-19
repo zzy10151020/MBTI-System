@@ -63,7 +63,7 @@ public class QuestionnaireController extends BaseController {
                         Optional<Questionnaire> questionnaire = questionnaireService.findById(id);
                         if (questionnaire.isPresent()) {
                             QuestionnaireResponseDTO questionnaireDTO = QuestionnaireResponseDTO.fromEntity(questionnaire.get());
-                            ApiResponse<QuestionnaireResponseDTO> apiResponse = ApiResponse.success(questionnaireDTO);
+                            ApiResponse<QuestionnaireResponseDTO> apiResponse = ApiResponse.success("成功获取问卷", questionnaireDTO);
                             sendApiResponse(response, apiResponse);
                         } else {
                             ApiResponse<Object> apiResponse = ApiResponse.error("问卷不存在");
@@ -111,7 +111,7 @@ public class QuestionnaireController extends BaseController {
             List<QuestionnaireResponseDTO> responses = questionnaires.stream()
                     .map(QuestionnaireResponseDTO::fromEntitySimple)
                     .collect(Collectors.toList());
-            ApiResponse<List<QuestionnaireResponseDTO>> apiResponse = ApiResponse.success(responses);
+            ApiResponse<List<QuestionnaireResponseDTO>> apiResponse = ApiResponse.success("成功获取问卷", responses);
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("根据创建者ID查找问卷失败", e);
@@ -132,7 +132,7 @@ public class QuestionnaireController extends BaseController {
                     .map(QuestionnaireResponseDTO::fromEntitySimple)
                     .collect(Collectors.toList());
 
-            ApiResponse<List<QuestionnaireResponseDTO>> apiResponse = ApiResponse.success(responses);
+            ApiResponse<List<QuestionnaireResponseDTO>> apiResponse = ApiResponse.success("成功获取已发布问卷", responses);
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("查找已发布的问卷失败", e);
@@ -158,7 +158,7 @@ public class QuestionnaireController extends BaseController {
                     .map(QuestionnaireResponseDTO::fromEntitySimple)
                     .collect(Collectors.toList());
 
-            ApiResponse<List<QuestionnaireResponseDTO>> apiResponse = ApiResponse.success(responses);
+            ApiResponse<List<QuestionnaireResponseDTO>> apiResponse = ApiResponse.success("成功获取所有问卷", responses);
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("获取所有问卷失败", e);
@@ -192,7 +192,7 @@ public class QuestionnaireController extends BaseController {
             List<QuestionnaireResponseDTO> responses = questionnaires.stream()
                     .map(QuestionnaireResponseDTO::fromEntitySimple)
                     .collect(Collectors.toList());
-            ApiResponse<List<QuestionnaireResponseDTO>> apiResponse = ApiResponse.success(responses);
+            ApiResponse<List<QuestionnaireResponseDTO>> apiResponse = ApiResponse.success("问卷查找成功", responses);
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("根据标题模糊查找问卷失败", e);
@@ -332,7 +332,9 @@ public class QuestionnaireController extends BaseController {
             
             // 级联删除问卷
             if (!questionnaireService.deleteQuestionnaireWithCascade(id)) {
-                throw new RuntimeException("可能是数据库错误或级联删除失败");
+                ApiResponse<Object> apiResponse = ApiResponse.error("删除失败，可能存在关联数据或数据库错误");
+                sendApiResponse(response, apiResponse);
+                return;
             }
             
             ApiResponse<String> apiResponse = ApiResponse.success("问卷删除成功", "问卷删除成功");
@@ -440,7 +442,7 @@ public class QuestionnaireController extends BaseController {
             }
             Questionnaire questionnaire = questionnaireOpt.get();
             QuestionnaireResponseDTO questionnaireDetailDTO = QuestionnaireResponseDTO.fromEntity(questionnaire);
-            ApiResponse<QuestionnaireResponseDTO> apiResponse = ApiResponse.success(questionnaireDetailDTO);
+            ApiResponse<QuestionnaireResponseDTO> apiResponse = ApiResponse.success("获取问卷详情成功", questionnaireDetailDTO);
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("获取问卷详情失败", e);
