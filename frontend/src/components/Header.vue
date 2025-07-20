@@ -22,7 +22,8 @@
       <router-link 
         :to="questionnaireRoute" 
         class="nav-link"
-        :class="{ active: $route.name === 'questionnaires' }">
+        :class="{ active: $route.name === 'questionnaires' }"
+        v-if="userStore.isLoggedIn">
         问卷测试
       </router-link>
       <router-link 

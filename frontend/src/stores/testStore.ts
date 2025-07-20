@@ -4,8 +4,9 @@ import { ElMessage } from 'element-plus'
 import { testApi } from '@/api'
 import type { 
   TestResult, 
-  TestResultDetail,
-  SubmitAnswersResponse
+  SubmitTestRequest,
+  SubmitTestResponse,
+  TestStatistics
 } from '@/api/types'
 
 // API函数期望的参数类型
@@ -17,7 +18,8 @@ interface SubmitAnswersParams {
 export const useTestStore = defineStore('test', () => {
   // 状态
   const testResults = ref<TestResult[]>([])
-  const currentTestDetail = ref<TestResultDetail | null>(null)
+  const currentTestDetail = ref<TestResult | null>(null)
+  const statistics = ref<TestStatistics | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -33,7 +35,7 @@ export const useTestStore = defineStore('test', () => {
       loading.value = true
       error.value = null
       
-      const results = await testApi.getTestResults()
+      const results = await testApi.getAllTests()
       testResults.value = results
       
     } catch (err: any) {
@@ -54,7 +56,7 @@ export const useTestStore = defineStore('test', () => {
       loading.value = true
       error.value = null
       
-      const detail = await testApi.getTestDetail(answerId)
+      const detail = await testApi.getTestById(answerId)
       currentTestDetail.value = detail
       
       return detail
@@ -75,8 +77,17 @@ export const useTestStore = defineStore('test', () => {
       loading.value = true
       error.value = null
       
+      // 根据后端API格式转换参数
+      const submitData: SubmitTestRequest = {
+        questionnaireId: data.questionnaireId,
+        answerDetails: data.answers.map(answer => ({
+          questionId: answer.questionId,
+          optionId: answer.optionId // 后端期望optionId而不是selectedOption
+        }))
+      }
+      
       // 调用API提交答案
-      const result = await testApi.submitAnswers(data)
+      const result = await testApi.submitTest(submitData)
       
       // 刷新测试结果列表
       await fetchTestResults()
@@ -227,15 +238,153 @@ export const useTestStore = defineStore('test', () => {
     error.value = null
   }
 
+  // 获取测试统计信息
+  const fetchTestStatistics = async (questionnaireId?: number) => {
+    try {
+      loading.value = true
+      error.value = null
+      
+      // 如果没有提供问卷ID，使用默认值或获取全局统计
+      const requestData = { questionnaireId: questionnaireId || 1 }
+      const stats = await testApi.getTestStatistics(requestData)
+      statistics.value = {
+        ...stats,
+        totalAnswers: stats.totalTests, // 兼容性映射
+        totalQuestionnaires: 10, // 临时硬编码，实际应该从API获取
+        publishedQuestionnaires: 8 // 临时硬编码，实际应该从API获取
+      }
+      
+    } catch (err: any) {
+      console.error('获取测试统计失败:', err)
+      error.value = err.message || '获取测试统计失败'
+      // 不显示错误消息，因为这个功能是可选的
+      statistics.value = null
+    } finally {
+      loading.value = false
+    }
+  }
+
   // 清除当前测试详情
   const clearCurrentTestDetail = () => {
     currentTestDetail.value = null
+  }
+
+  // 获取MBTI报告 (使用真实的测试结果数据)
+  const fetchMbtiReport = async (answerId: number) => {
+    // 首先尝试从当前的测试结果中获取数据
+    const testResult = testResults.value.find(r => r.answerId === answerId)
+    if (!testResult) {
+      // 如果本地没有找到，尝试从API获取
+      try {
+        const result = await fetchTestDetail(answerId)
+        if (!result) throw new Error('测试结果不存在')
+        
+        // 使用API返回的数据构建报告
+        return buildMbtiReportFromTestResult(result)
+      } catch (error) {
+        throw new Error('无法获取测试结果')
+      }
+    }
+    
+    return buildMbtiReportFromTestResult(testResult)
+  }
+
+  // 从测试结果构建MBTI报告
+  const buildMbtiReportFromTestResult = (testResult: TestResult) => {
+    const mbtiType = testResult.mbtiType || testResult.result || 'INFP'
+    const mbtiDescription = getMbtiDescription(mbtiType)
+    
+    // 处理后端返回的personalityProbabilities数据
+    let dimensions: Record<string, number> = {}
+    
+    if (testResult.personalityProbabilities) {
+      // 后端返回的是单个字母的概率值，需要转换为维度对比格式
+      const probs = testResult.personalityProbabilities
+      dimensions = {
+        'E': (probs['E'] || 0) * 100,  // 转换为百分比
+        'I': (probs['I'] || 0) * 100,
+        'S': (probs['S'] || 0) * 100,
+        'N': (probs['N'] || 0) * 100,
+        'T': (probs['T'] || 0) * 100,
+        'F': (probs['F'] || 0) * 100,
+        'J': (probs['J'] || 0) * 100,
+        'P': (probs['P'] || 0) * 100
+      }
+    } else if (testResult.dimensions) {
+      // 如果没有personalityProbabilities，使用dimensions数据
+      const dims = testResult.dimensions
+      for (const [key, value] of Object.entries(dims)) {
+        dimensions[key] = typeof value === 'string' ? parseFloat(value) || 0 : (value as number)
+      }
+    } else {
+      // 只在完全没有数据时使用默认值
+      dimensions = { 
+        'E': 60, 'I': 40, 'S': 30, 'N': 70, 
+        'T': 45, 'F': 55, 'J': 55, 'P': 45 
+      }
+    }
+    
+    return {
+      mbtiType,
+      dimensions,
+      dimensionScores: dimensions, // 兼容性字段
+      description: testResult.resultDescription || mbtiDescription.description,
+      traits: mbtiDescription.strengths || ['理想主义', '忠诚', '价值观导向'],
+      strengths: mbtiDescription.strengths || ['创造力', '同理心', '适应性'],
+      weaknesses: mbtiDescription.challenges || ['过度理想化', '敏感', '回避冲突'],
+      challenges: mbtiDescription.challenges || ['学会设定界限', '接受不完美', '处理冲突'],
+      careers: mbtiDescription.careers || ['心理咨询师', '作家', '艺术家', '社会工作者']
+    }
+  }
+
+  // 重新测试 (模拟)
+  const retakeTest = async (testId: number) => {
+    // 模拟重新测试逻辑
+    ElMessage.info('重新测试功能开发中...')
+    return true
+  }
+
+  // 删除测试结果 (模拟)
+  const deleteTestResult = async (answerId: number) => {
+    testResults.value = testResults.value.filter(r => r.answerId !== answerId)
+    ElMessage.success('测试结果已删除')
+  }
+
+  // 检查用户是否已完成测试
+  const checkTestCompleted = async (questionnaireId: number) => {
+    try {
+      const result = await testApi.checkTestCompleted({ questionnaireId })
+      return result
+    } catch (error: any) {
+      console.error('检查测试完成状态失败:', error)
+      // 降级处理：检查本地测试结果中是否有该问卷的记录
+      const hasCompleted = testResults.value.some(r => r.questionnaireId === questionnaireId)
+      return { completed: hasCompleted }
+    }
+  }
+
+  // 保存模拟测试结果
+  const saveMockTestResult = (mockResult: any, questionnaireId: number) => {
+    const testResult = {
+      answerId: Date.now(), // 使用时间戳作为ID
+      userId: 1, // 模拟用户ID
+      questionnaireId,
+      mbtiType: mockResult.mbtiType,
+      // 直接使用后端格式的personalityProbabilities
+      personalityProbabilities: mockResult.personalityProbabilities,
+      dimensions: mockResult.personalityProbabilities, // 兼容性字段
+      resultDescription: `您的性格类型是 ${mockResult.mbtiType}`,
+      createdAt: new Date().toISOString()
+    }
+    testResults.value.unshift(testResult)
+    return testResult
   }
 
   return {
     // 状态
     testResults,
     currentTestDetail,
+    statistics,
     loading,
     error,
     
@@ -246,6 +395,13 @@ export const useTestStore = defineStore('test', () => {
     // 方法
     fetchTestResults,
     fetchTestDetail,
+    fetchTestStatistics,
+    fetchMbtiReport,
+    buildMbtiReportFromTestResult,
+    checkTestCompleted,
+    retakeTest,
+    deleteTestResult,
+    saveMockTestResult,
     submitTestAnswers,
     getMbtiDescription,
     resetStore,

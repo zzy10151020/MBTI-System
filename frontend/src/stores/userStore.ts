@@ -64,8 +64,7 @@ export const useUserStore = defineStore('user', () => {
       
       const loginData: LoginRequest = { 
         username, 
-        password, 
-        operationType: 'QUERY' 
+        password
       }
       const result = await authApi.login(loginData)
       
@@ -169,7 +168,7 @@ export const useUserStore = defineStore('user', () => {
     try {
       loading.value = true
       
-      await userApi.changePassword({ currentPassword: oldPassword, newPassword })
+      await userApi.updateProfile({ currentPassword: oldPassword, newPassword })
       
       ElMessage.success('密码修改成功！')
       return true
@@ -207,7 +206,7 @@ export const useUserStore = defineStore('user', () => {
   // 检查用户名是否存在
   const checkUsernameExists = async (username: string): Promise<boolean> => {
     try {
-      const result = await authApi.checkUsername(username)
+      const result = await authApi.checkUsername({ username })
       return result.exists
     } catch (error: any) {
       console.error('检查用户名失败:', error)
@@ -218,7 +217,7 @@ export const useUserStore = defineStore('user', () => {
   // 检查邮箱是否存在
   const checkEmailExists = async (email: string): Promise<boolean> => {
     try {
-      const result = await authApi.checkEmail(email)
+      const result = await authApi.checkEmail({ email })
       return result.exists
     } catch (error: any) {
       console.error('检查邮箱失败:', error)

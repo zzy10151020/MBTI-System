@@ -25,13 +25,13 @@
           v-for="(questionnaire, index) in currentPageQuestionnaires" 
           :key="questionnaire.questionnaireId"
           class="questionnaire-item"
-          :class="{ 'featured': index === 0 }"
+          :class="{ 'featured': index === 0, 'completed': isQuestionnaireCompleted(questionnaire.questionnaireId) }"
           @click="selectQuestionnaire(questionnaire)"
         >
-          <!-- 暂时移除已完成标记，因为后端DTO中没有hasAnswered字段 -->
-          <!-- <div class="item-badge" v-if="questionnaire.hasAnswered">
+          <!-- 已完成标记 -->
+          <div class="item-badge" v-if="isQuestionnaireCompleted(questionnaire.questionnaireId)">
             <span>已完成</span>
-          </div> -->
+          </div>
           
           <div class="item-header">
             <div class="item-icon">
@@ -45,13 +45,12 @@
             
             <div class="item-stats">
               <div class="stat-item">
-                <el-icon><User /></el-icon>
-                <!-- 暂时显示固定数值，因为后端DTO中没有answerCount字段 -->
-                <span>0人已测试</span>
+                <el-icon><DocumentChecked /></el-icon>
+                <span>{{ questionnaire.questionCount || 0 }}道题目</span>
               </div>
               <div class="stat-item">
                 <el-icon><Clock /></el-icon>
-                <span>约15分钟</span>
+                <span>约{{ Math.ceil((questionnaire.questionCount || 60) / 4) }}分钟</span>
               </div>
             </div>
           </div>
@@ -135,16 +134,19 @@ import {
 } from '@element-plus/icons-vue'
 import { useQuestionnaireStore } from '@/stores/questionnaireStore'
 import { useUserStore } from '@/stores/userStore'
+import { useTestStore } from '@/stores/testStore'
 import type { Questionnaire } from '@/api'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 const questionnaireStore = useQuestionnaireStore()
+const testStore = useTestStore()
 
 // 响应式数据
 const currentPage = ref(1)
 const pageSize = ref(10) // 每页10个问卷（2列6行-1个大图片位置）
+const completedQuestionnaires = ref<Set<number>>(new Set())
 
 // 计算属性
 const totalPages = computed(() => {
@@ -166,6 +168,33 @@ const emptySlots = computed(() => {
 // 方法
 const fetchQuestionnaires = async () => {
   await questionnaireStore.fetchQuestionnaires()
+  // 问卷加载完成后检查用户完成状态
+  await checkAllQuestionnairesCompletion()
+}
+
+// 检查所有问卷的完成状态
+const checkAllQuestionnairesCompletion = async () => {
+  if (!userStore.isLoggedIn) return
+  
+  const completedSet = new Set<number>()
+  
+  for (const questionnaire of questionnaireStore.questionnaires) {
+    try {
+      const result = await testStore.checkTestCompleted(questionnaire.questionnaireId)
+      if (result.completed) {
+        completedSet.add(questionnaire.questionnaireId)
+      }
+    } catch (error) {
+      console.warn(`检查问卷 ${questionnaire.questionnaireId} 完成状态失败:`, error)
+    }
+  }
+  
+  completedQuestionnaires.value = completedSet
+}
+
+// 判断问卷是否已完成
+const isQuestionnaireCompleted = (questionnaireId: number): boolean => {
+  return completedQuestionnaires.value.has(questionnaireId)
 }
 
 const selectQuestionnaire = (questionnaire: Questionnaire) => {
@@ -179,12 +208,28 @@ const startTest = async (questionnaire: Questionnaire) => {
     return
   }
 
-  // 暂时移除已完成检查，因为后端DTO中没有hasAnswered字段
-  // if (questionnaire.hasAnswered) {
-  //   ElMessage.info('您已完成过该问卷')
-  //   return
-  // }
+  // 检查是否已完成测试
+  if (isQuestionnaireCompleted(questionnaire.questionnaireId)) {
+    ElMessageBox.confirm(
+      '您已完成过该问卷，是否要重新测试？重新测试将覆盖之前的结果。',
+      '确认重新测试',
+      {
+        confirmButtonText: '重新测试',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    ).then(() => {
+      navigateToTest(questionnaire)
+    }).catch(() => {
+      // 用户取消，不进行任何操作
+    })
+    return
+  }
 
+  navigateToTest(questionnaire)
+}
+
+const navigateToTest = (questionnaire: Questionnaire) => {
   try {
     // 跳转到测试页面，保持uid参数并传递问卷ID
     const uid = route.params.uid || userStore.user?.userId?.toString()
@@ -389,6 +434,18 @@ const checkCompletedTest = () => {
     var(--primary-teal-light) 100%);
 }
 
+.questionnaire-item.completed {
+  background: linear-gradient(135deg, 
+    var(--color-background-soft) 0%, 
+    #f0f9ff 100%);
+  border-color: #22c55e;
+}
+
+.questionnaire-item.completed:hover {
+  border-color: #16a34a;
+  box-shadow: 0 0.8rem 2.4rem rgba(34, 197, 94, 0.15);
+}
+
 /* 卡片头部 */
 .item-header {
   display: flex;
@@ -413,14 +470,14 @@ const checkCompletedTest = () => {
   position: absolute;
   top: 1.5rem;
   right: 1.5rem;
-  background-color: var(--primary-teal);
+  background-color: #22c55e;
   color: white;
   padding: 0.4rem 0.8rem;
   border-radius: 1rem;
   font-size: 1rem;
   font-weight: 500;
   z-index: 2;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 6px rgba(34, 197, 94, 0.2);
 }
 
 /* 卡片内容 */

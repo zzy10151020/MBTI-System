@@ -24,7 +24,7 @@ export const useQuestionnaireStore = defineStore('questionnaire', () => {
     try {
       loading.value = true
       error.value = null
-      questionnaires.value = await questionnaireApi.getQuestionnaireList()
+      questionnaires.value = await questionnaireApi.getPublishedQuestionnaires()
     } catch (err: any) {
       console.warn('API获取问卷失败，使用模拟数据:', err)
       
@@ -41,7 +41,7 @@ export const useQuestionnaireStore = defineStore('questionnaire', () => {
     try {
       loading.value = true
       error.value = null
-      return await questionnaireApi.getQuestionnaireDetail(id)
+      return await questionnaireApi.getQuestionnaireDetail({ questionnaireId: id })
     } catch (err: any) {
       console.warn('API获取问卷详情失败:', err)
       error.value = err.message || '获取问卷详情失败'
@@ -64,7 +64,7 @@ export const useQuestionnaireStore = defineStore('questionnaire', () => {
       error.value = null
       
       // 使用questionApi获取问题列表
-      const questions = await questionApi.getQuestionsByQuestionnaireId(id)
+      const questions = await questionApi.getQuestionsByQuestionnaire({ questionnaireId: id })
       
       // 构造符合前端期望的数据结构
       const result = {

@@ -6,6 +6,8 @@ import type {
   RegisterRequest, 
   RegisterResponse,
   User,
+  CheckUsernameRequest,
+  CheckEmailRequest,
   CheckUsernameResponse,
   CheckEmailResponse
 } from './types'
@@ -18,31 +20,23 @@ export const authApi = {
    * 用户登录
    * @param data 登录请求数据
    */
-  async login(data: { username: string; password: string }): Promise<LoginResponse> {
-    const requestData: LoginRequest = {
-      ...data,
-      operationType: 'QUERY'
-    }
-    const response = await service.post<any, ApiResponse<LoginResponse>>('/api/auth/login', requestData)
+  async login(data: LoginRequest): Promise<LoginResponse> {
+    const response = await service.post<any, ApiResponse<LoginResponse>>('/api/auth/login', data)
     
     // 登录成功后保存用户信息到localStorage
     if (response.success && response.data) {
       localStorage.setItem('userInfo', JSON.stringify(response.data.user))
     }
-    return response.data
+    return response.data!
   },
 
   /**
    * 用户注册
    * @param data 注册请求数据
    */
-  async register(data: { username: string; password: string; email: string }): Promise<RegisterResponse> {
-    const requestData: RegisterRequest = {
-      ...data,
-      operationType: 'CREATE'
-    }
-    const response = await service.post<any, ApiResponse<RegisterResponse>>('/api/auth/register', requestData)
-    return response.data
+  async register(data: RegisterRequest): Promise<RegisterResponse> {
+    const response = await service.post<any, ApiResponse<RegisterResponse>>('/api/auth/register', data)
+    return response.data!
   },
 
   /**
@@ -61,20 +55,20 @@ export const authApi = {
 
   /**
    * 检查用户名是否存在
-   * @param username 用户名
+   * @param data 检查用户名请求数据
    */
-  async checkUsername(username: string): Promise<CheckUsernameResponse> {
-    const response = await service.get<any, ApiResponse<CheckUsernameResponse>>(`/api/auth/checkUsername?username=${username}`)
-    return response.data
+  async checkUsername(data: CheckUsernameRequest): Promise<CheckUsernameResponse> {
+    const response = await service.post<any, ApiResponse<CheckUsernameResponse>>('/api/auth/checkUsername', data)
+    return response.data!
   },
 
   /**
    * 检查邮箱是否存在
-   * @param email 邮箱
+   * @param data 检查邮箱请求数据
    */
-  async checkEmail(email: string): Promise<CheckEmailResponse> {
-    const response = await service.get<any, ApiResponse<CheckEmailResponse>>(`/api/auth/checkEmail?email=${email}`)
-    return response.data
+  async checkEmail(data: CheckEmailRequest): Promise<CheckEmailResponse> {
+    const response = await service.post<any, ApiResponse<CheckEmailResponse>>('/api/auth/checkEmail', data)
+    return response.data!
   },
 
   /**

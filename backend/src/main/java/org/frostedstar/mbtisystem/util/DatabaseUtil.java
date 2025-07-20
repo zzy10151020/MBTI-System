@@ -8,6 +8,7 @@ import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Properties;
 
@@ -61,6 +62,23 @@ public class DatabaseUtil {
             config.setMaxLifetime(1800000);
             config.setLeakDetectionThreshold(60000);
             
+            // 添加连接池健壮性配置
+            config.setConnectionTestQuery("SELECT 1");
+            
+            // MySQL 特定配置，提高连接稳定性
+            config.addDataSourceProperty("autoReconnect", "true");
+            config.addDataSourceProperty("failOverReadOnly", "false");
+            config.addDataSourceProperty("maxReconnects", "3");
+            config.addDataSourceProperty("initialTimeout", "2");
+            config.addDataSourceProperty("useUnicode", "true");
+            config.addDataSourceProperty("characterEncoding", "utf8");
+            config.addDataSourceProperty("serverTimezone", "Asia/Shanghai");
+            config.addDataSourceProperty("useSSL", "false");
+            config.addDataSourceProperty("allowPublicKeyRetrieval", "true");
+            config.addDataSourceProperty("cachePrepStmts", "true");
+            config.addDataSourceProperty("prepStmtCacheSize", "250");
+            config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+            
             dataSource = new HikariDataSource(config);
             initialized = true;
             log.info("数据库连接池初始化成功");
@@ -95,6 +113,44 @@ public class DatabaseUtil {
         if (dataSource != null) {
             dataSource.close();
             log.info("数据库连接池已关闭");
+        }
+    }
+    
+    /**
+     * 检查数据库连接健康状态
+     */
+    public static boolean isConnectionHealthy() {
+        if (!initialized || dataSource == null) {
+            return false;
+        }
+        
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement("SELECT 1")) {
+            
+            stmt.executeQuery();
+            return true;
+            
+        } catch (SQLException e) {
+            log.warn("数据库连接健康检查失败", e);
+            return false;
+        }
+    }
+    
+    /**
+     * 获取连接池状态信息
+     */
+    public static String getPoolStatus() {
+        if (!initialized || dataSource == null) {
+            return "连接池未初始化";
+        }
+        
+        try {
+            return String.format("连接池状态 - 活跃连接: %d, 空闲连接: %d, 等待获取连接的线程: %d", 
+                dataSource.getHikariPoolMXBean().getActiveConnections(),
+                dataSource.getHikariPoolMXBean().getIdleConnections(),
+                dataSource.getHikariPoolMXBean().getThreadsAwaitingConnection());
+        } catch (Exception e) {
+            return "无法获取连接池状态: " + e.getMessage();
         }
     }
     

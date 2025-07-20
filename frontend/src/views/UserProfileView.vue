@@ -32,7 +32,7 @@
             <el-icon><DocumentChecked /></el-icon>
           </div>
           <div class="stat-content">
-            <h3>{{ userStore.user?.answerCount || 0 }}</h3>
+            <h3>{{ testStore.testResults.length }}</h3>
             <p>完成测试</p>
           </div>
         </div>
@@ -53,7 +53,7 @@
           </div>
           <div class="stat-content">
             <h3>最新类型</h3>
-            <p>{{ formatDate(testStore.latestTestResult.submittedAt) }}</p>
+            <p>{{ formatDate(testStore.latestTestResult.createdAt) }}</p>
           </div>
         </div>
 
@@ -133,7 +133,11 @@
               <div class="mbti-bar">
                 <div 
                   class="mbti-fill"
-                  :style="{ width: `${(count / Math.max(...Object.values(testStore.statistics.mbtiDistribution))) * 100}%` }"
+                  :style="{ 
+                    width: testStore.statistics ? 
+                      `${(count / Math.max(...Object.values(testStore.statistics.mbtiDistribution).map(v => Number(v) || 0))) * 100}%` : 
+                      '0%' 
+                  }"
                 ></div>
               </div>
               <div class="mbti-count">{{ count }}</div>
@@ -249,7 +253,7 @@ onMounted(async () => {
   await userStore.fetchUserProfile()
   
   // 获取测试结果
-  await testStore.fetchTestResults({ page: 0, size: 1 })
+  await testStore.fetchTestResults()
   
   // 如果是管理员，获取统计信息
   if (userStore.user?.role === 'ADMIN') {
@@ -327,7 +331,7 @@ const exportData = async () => {
       }
     ).then(async () => {
       // 获取所有测试结果
-      await testStore.fetchTestResults({ page: 0, size: 1000 })
+      await testStore.fetchTestResults()
       
       // 生成导出数据
       const exportData = {

@@ -83,6 +83,7 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const route = useRoute()
@@ -149,6 +150,13 @@ const carouselItems = ref([
 const handleStartTest = () => {
   console.log('开始MBTI测试')
   // 跳转到问卷选择页面，保持uid参数
+  if (!userStore.isLoggedIn) {
+    ElMessage({
+      message: '请先登录',
+      type: 'warning'
+    })
+    return
+  }
   if (currentUid.value) {
     router.push({ 
       name: 'questionnaires', 

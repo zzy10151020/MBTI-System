@@ -25,7 +25,7 @@
           </div>
           <div class="stat-content">
             <h3>最新类型</h3>
-            <p>{{ formatDate(testStore.latestTestResult.submittedAt) }}</p>
+            <p>{{ formatDate(testStore.latestTestResult.createdAt || '') }}</p>
           </div>
         </div>
       </div>
@@ -42,8 +42,8 @@
           >
             <div class="result-header">
               <div class="result-info">
-                <h3 class="result-title">{{ result.questionnaireTitle }}</h3>
-                <p class="result-date">{{ formatDate(result.submittedAt) }}</p>
+                <h3 class="result-title">{{ result.title || '未知问卷' }}</h3>
+                <p class="result-date">{{ formatDate(result.createdAt || '') }}</p>
               </div>
               <div class="result-actions">
                 <el-dropdown @command="handleAction">
@@ -69,10 +69,10 @@
             
             <div class="result-content">
               <div class="mbti-display">
-                <div class="mbti-type">{{ result.mbtiType }}</div>
+                <div class="mbti-type">{{ result.mbtiType || 'INFP' }}</div>
                 <div class="mbti-letters">
                   <span 
-                    v-for="(letter, index) in result.mbtiType.split('')" 
+                    v-for="(letter, index) in (result.mbtiType || 'INFP').split('')" 
                     :key="index"
                     class="mbti-letter"
                   >
@@ -82,7 +82,7 @@
               </div>
               
               <div class="result-summary">
-                <p>{{ getMbtiDescription(result.mbtiType) }}</p>
+                <p>{{ getMbtiDescription(result.mbtiType || 'INFP') }}</p>
               </div>
             </div>
             
@@ -99,12 +99,12 @@
         </div>
         
         <!-- 分页 -->
-        <div class="pagination-section" v-if="testStore.pagination.totalPages > 1">
+        <div class="pagination-section" v-if="testStore.testResults.length > pageSize">
           <el-pagination
             v-model:current-page="currentPage"
             v-model:page-size="pageSize"
             :page-sizes="[5, 10, 20]"
-            :total="testStore.pagination.totalElements"
+            :total="testStore.testResults.length"
             layout="total, sizes, prev, pager, next, jumper"
             :background="true"
             @size-change="handleSizeChange"
@@ -149,7 +149,7 @@
             <h2>{{ currentReport.mbtiType }}</h2>
             <div class="dimension-scores">
               <div 
-                v-for="(score, dimension) in currentReport.dimensionScores" 
+                v-for="(score, dimension) in currentReport.dimensionScores || currentReport.dimensions"
                 :key="dimension"
                 class="dimension-item"
               >
@@ -188,7 +188,7 @@
           <h3>成长挑战</h3>
           <div class="trait-tags">
             <el-tag 
-              v-for="challenge in currentReport.challenges" 
+              v-for="challenge in currentReport.challenges || []" 
               :key="challenge"
               type="warning"
             >
@@ -201,7 +201,7 @@
           <h3>适合职业</h3>
           <div class="trait-tags">
             <el-tag 
-              v-for="career in currentReport.careers" 
+              v-for="career in currentReport.careers || []" 
               :key="career"
               type="info"
             >
@@ -288,8 +288,8 @@ const formatDate = (dateString: string): string => {
 }
 
 const getDimensionPercentage = (score: number): number => {
-  // 将-10到10的分数转换为0-100的百分比
-  return Math.max(0, Math.min(100, (score + 10) * 5))
+  // 数据已经是百分比格式（0-100），直接使用
+  return Math.max(0, Math.min(100, Math.round(score || 0)))
 }
 
 const viewReport = async (answerId: number) => {
@@ -386,10 +386,7 @@ const handleCurrentChange = (val: number) => {
 }
 
 const fetchResults = () => {
-  testStore.fetchTestResults({
-    page: currentPage.value - 1,
-    size: pageSize.value
-  })
+  testStore.fetchTestResults()
 }
 
 const handleDialogClose = () => {

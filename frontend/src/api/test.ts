@@ -1,10 +1,13 @@
 import service from './axios'
 import type { 
   ApiResponse,
-  SubmitAnswersRequest,
-  SubmitAnswersResponse,
   TestResult,
-  TestResultDetail
+  SubmitTestRequest,
+  SubmitTestResponse,
+  CheckTestCompletedRequest,
+  CheckTestCompletedResponse,
+  GetTestStatisticsRequest,
+  TestStatistics
 } from './types'
 
 /**
@@ -12,42 +15,47 @@ import type {
  */
 export const testApi = {
   /**
-   * 提交答案
-   * @param data 答案数据
+   * 根据测试ID获取测试记录
+   * @param testId 测试ID
    */
-  async submitAnswers(data: { questionnaireId: number; answers: Array<{ questionId: number; optionId: number }> }): Promise<SubmitAnswersResponse> {
-    // 获取当前用户ID
-    const userInfo = localStorage.getItem('userInfo')
-    if (!userInfo) {
-      throw new Error('用户未登录，请先登录')
-    }
-    
-    const user = JSON.parse(userInfo)
-    const requestData: SubmitAnswersRequest = {
-      userId: user.userId,
-      questionnaireId: data.questionnaireId,
-      answerDetails: data.answers,
-      operationType: 'CREATE'
-    }
-    const response = await service.post<any, ApiResponse<SubmitAnswersResponse>>('/api/test', requestData)
-    return response.data
+  async getTestById(testId: number): Promise<TestResult> {
+    const response = await service.get<any, ApiResponse<TestResult>>(`/api/test/${testId}`)
+    return response.data!
   },
 
   /**
-   * 获取测试结果列表
+   * 获取所有测试记录（管理员功能）
    */
-  async getTestResults(): Promise<TestResult[]> {
-    const response = await service.get<any, ApiResponse<TestResult[]>>('/api/test')
-    return response.data
+  async getAllTests(): Promise<TestResult[]> {
+    const response = await service.get<any, ApiResponse<TestResult[]>>('/api/test/all')
+    return response.data!
   },
 
   /**
-   * 获取测试详情
-   * @param answerId 答案ID
+   * 提交测试答案
+   * @param data 提交测试请求数据
    */
-  async getTestDetail(answerId: number): Promise<TestResultDetail> {
-    const response = await service.get<any, ApiResponse<TestResultDetail>>(`/api/test?id=${answerId}`)
-    return response.data
+  async submitTest(data: SubmitTestRequest): Promise<TestResult> {
+    const response = await service.post<any, ApiResponse<TestResult>>('/api/test/submit', data)
+    return response.data!
+  },
+
+  /**
+   * 检查用户是否已完成测试
+   * @param data 检查完成测试请求数据
+   */
+  async checkTestCompleted(data: CheckTestCompletedRequest): Promise<CheckTestCompletedResponse> {
+    const response = await service.post<any, ApiResponse<CheckTestCompletedResponse>>('/api/test/completed', data)
+    return response.data!
+  },
+
+  /**
+   * 获取测试统计信息
+   * @param data 获取统计信息请求数据
+   */
+  async getTestStatistics(data: GetTestStatisticsRequest): Promise<TestStatistics> {
+    const response = await service.post<any, ApiResponse<TestStatistics>>('/api/test/statistics', data)
+    return response.data!
   }
 }
 

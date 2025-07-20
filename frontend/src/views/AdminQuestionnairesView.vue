@@ -92,7 +92,7 @@
             </template>
           </el-table-column>
           
-          <el-table-column prop="creatorUsername" label="创建者" width="120" />
+          <el-table-column prop="creatorName" label="创建者" width="120" />
           
           <el-table-column prop="isPublished" label="状态" width="100">
             <template #default="{ row }">
@@ -102,9 +102,9 @@
             </template>
           </el-table-column>
           
-          <el-table-column prop="answerCount" label="答题数" width="100">
+          <el-table-column prop="questionCount" label="问题数" width="100">
             <template #default="{ row }">
-              <span class="answer-count">{{ row.answerCount }}</span>
+              <span class="answer-count">{{ row.questionCount || 0 }}</span>
             </template>
           </el-table-column>
           
@@ -300,7 +300,7 @@
             </div>
             <div class="info-item">
               <label>创建者：</label>
-              <span>{{ selectedQuestionnaire.creatorUsername }}</span>
+              <span>{{ selectedQuestionnaire.creatorName }}</span>
             </div>
             <div class="info-item">
               <label>状态：</label>
@@ -309,8 +309,8 @@
               </el-tag>
             </div>
             <div class="info-item">
-              <label>答题数：</label>
-              <span>{{ selectedQuestionnaire.answerCount }}</span>
+              <label>问题数：</label>
+              <span>{{ selectedQuestionnaire.questionCount || 0 }}</span>
             </div>
             <div class="info-item">
               <label>创建时间：</label>
@@ -408,7 +408,7 @@ const draftCount = computed(() => {
 })
 
 const totalAnswers = computed(() => {
-  return questionnaires.value.reduce((sum, q) => sum + q.answerCount, 0)
+  return questionnaires.value.reduce((sum, q) => sum + (q.questionCount || 0), 0)
 })
 
 const filteredQuestionnaires = computed(() => {
@@ -419,7 +419,7 @@ const filteredQuestionnaires = computed(() => {
     filtered = filtered.filter(q => 
       q.title.toLowerCase().includes(keyword) ||
       q.description.toLowerCase().includes(keyword) ||
-      q.creatorUsername.toLowerCase().includes(keyword)
+      (q.creatorName && q.creatorName.toLowerCase().includes(keyword))
     )
   }
   
@@ -438,12 +438,9 @@ onMounted(async () => {
 const fetchQuestionnaires = async () => {
   try {
     loading.value = true
-    const response = await questionnaireApi.getQuestionnaireList({
-      page: 0,
-      size: 1000 // 获取所有问卷用于前端分页和搜索
-    })
-    questionnaires.value = response.content
-    totalItems.value = response.totalElements
+    const response = await questionnaireApi.getAllQuestionnaires()
+    questionnaires.value = response
+    totalItems.value = response.length
   } catch (error: any) {
     console.error('获取问卷列表失败:', error)
     ElMessage.error('获取问卷列表失败')
@@ -478,7 +475,7 @@ const updatePagination = () => {
     const keyword = searchKeyword.value.toLowerCase()
     return q.title.toLowerCase().includes(keyword) ||
            q.description.toLowerCase().includes(keyword) ||
-           q.creatorUsername.toLowerCase().includes(keyword)
+           (q.creatorName && q.creatorName.toLowerCase().includes(keyword))
   })
   totalItems.value = filtered.length
 }
@@ -526,14 +523,12 @@ const updateQuestionnaire = async () => {
     editing.value = true
     
     const updateData = {
+      questionnaireId: selectedQuestionnaire.value!.questionnaireId,
       title: editForm.value.title,
       description: editForm.value.description
     }
     
-    const updatedQuestionnaire = await questionnaireApi.updateQuestionnaire(
-      selectedQuestionnaire.value!.questionnaireId,
-      updateData
-    )
+    const updatedQuestionnaire = await questionnaireApi.updateQuestionnaire(updateData)
     
     // 更新本地数据
     const index = questionnaires.value.findIndex(q => q.questionnaireId === selectedQuestionnaire.value!.questionnaireId)
@@ -567,10 +562,13 @@ const togglePublishStatus = async (questionnaire: Questionnaire) => {
     )
     
     // 调用API切换发布状态
-    const updatedQuestionnaire = await questionnaireApi.updateQuestionnaireStatus(
-      questionnaire.questionnaireId, 
-      !questionnaire.isPublished
-    )
+    const updateData = {
+      questionnaireId: questionnaire.questionnaireId,
+      title: questionnaire.title,
+      description: questionnaire.description,
+      isPublished: !questionnaire.isPublished
+    }
+    const updatedQuestionnaire = await questionnaireApi.updateQuestionnaire(updateData)
     
     // 更新本地状态
     const index = questionnaires.value.findIndex(q => q.questionnaireId === questionnaire.questionnaireId)
@@ -605,7 +603,7 @@ const viewDetails = (questionnaire: Questionnaire) => {
 const deleteQuestionnaire = async (questionnaireId: number) => {
   try {
     // 调用删除API
-    await questionnaireApi.deleteQuestionnaire(questionnaireId)
+    await questionnaireApi.deleteQuestionnaire({ questionnaireId })
     
     // 从本地列表中移除
     questionnaires.value = questionnaires.value.filter(q => q.questionnaireId !== questionnaireId)

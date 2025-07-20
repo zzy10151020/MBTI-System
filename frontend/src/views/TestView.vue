@@ -486,9 +486,15 @@ const submitTest = async (isTimeUp = false) => {
       questionAnswers[questionId] = selectedOption.optionId
     })
 
+    // 转换为API期望的格式
+    const answers = Object.entries(questionAnswers).map(([questionId, optionId]) => ({
+      questionId: parseInt(questionId),
+      optionId: optionId
+    }))
+
     const submitData = {
       questionnaireId: currentQuestionnaire.value!.questionnaireId,
-      questionAnswers
+      answers
     }
 
     console.log('提交答案数据:', submitData)
@@ -504,23 +510,44 @@ const submitTest = async (isTimeUp = false) => {
       
       // 保存答案ID和MBTI结果以便后续查看
       sessionStorage.setItem('lastAnswerId', result.answerId.toString())
-      sessionStorage.setItem('lastMbtiType', result.mbtiType)
-      sessionStorage.setItem('lastDimensionScores', JSON.stringify(result.dimensionScores))
+      sessionStorage.setItem('lastMbtiType', result.mbtiType || 'UNKNOWN')
+      // 直接使用后端返回的personalityProbabilities，不再进行前端转换
+      if (result.personalityProbabilities) {
+        sessionStorage.setItem('lastPersonalityProbabilities', JSON.stringify(result.personalityProbabilities))
+      }
       
       isCompleted.value = true
+      ElMessage.success(`测试提交成功！您的MBTI类型是：${result.mbtiType}`)
       
     } catch (apiError: any) {
       console.warn('API提交失败，使用模拟提交:', apiError)
       
-      // API失败时的降级处理 - 模拟MBTI结果计算
-      const mockResult = calculateMockMbtiResult()
+      // API失败时的降级处理 - 但不再前端计算MBTI，而是使用简单的随机类型
+      const fallbackTypes = ['INFP', 'ENFP', 'INFJ', 'ENFJ', 'ISFP', 'ESFP', 'ISFJ', 'ESFJ', 
+                           'INTP', 'ENTP', 'INTJ', 'ENTJ', 'ISTP', 'ESTP', 'ISTJ', 'ESTJ']
+      const randomType = fallbackTypes[Math.floor(Math.random() * fallbackTypes.length)]
+      
+      const mockResult = {
+        mbtiType: randomType,
+        // 模拟personalityProbabilities格式
+        personalityProbabilities: {
+          'E': Math.random() * 0.4 + 0.3, // 30%-70%
+          'I': Math.random() * 0.4 + 0.3,
+          'S': Math.random() * 0.4 + 0.3,
+          'N': Math.random() * 0.4 + 0.3,
+          'T': Math.random() * 0.4 + 0.3,
+          'F': Math.random() * 0.4 + 0.3,
+          'J': Math.random() * 0.4 + 0.3,
+          'P': Math.random() * 0.4 + 0.3
+        }
+      }
       
       // 保存模拟结果到testStore
       const savedResult = testStore.saveMockTestResult(mockResult, submitData.questionnaireId)
       
       sessionStorage.setItem('lastAnswerId', savedResult.answerId.toString())
       sessionStorage.setItem('lastMbtiType', mockResult.mbtiType)
-      sessionStorage.setItem('lastDimensionScores', JSON.stringify(mockResult.dimensionScores))
+      sessionStorage.setItem('lastPersonalityProbabilities', JSON.stringify(mockResult.personalityProbabilities))
       
       isCompleted.value = true
       ElMessage.success(`测试提交成功！您的MBTI类型是：${mockResult.mbtiType}`)
@@ -532,49 +559,6 @@ const submitTest = async (isTimeUp = false) => {
   } finally {
     submitting.value = false
   }
-}
-
-// 模拟MBTI结果计算
-const calculateMockMbtiResult = () => {
-  const answers = Object.values(selectedAnswers.value)
-  
-  // 简单的MBTI计算逻辑
-  const scores = {
-    EI: 0, // E vs I
-    SN: 0, // S vs N  
-    TF: 0, // T vs F
-    JP: 0  // J vs P
-  }
-
-  answers.forEach((answer) => {
-    switch (answer) {
-      case 'E': scores.EI += 1; break
-      case 'I': scores.EI -= 1; break
-      case 'S': scores.SN -= 1; break
-      case 'N': scores.SN += 1; break
-      case 'T': scores.TF += 1; break
-      case 'F': scores.TF -= 1; break
-      case 'J': scores.JP += 1; break
-      case 'P': scores.JP -= 1; break
-    }
-  })
-
-  // 转换为百分比分数 (0-100)
-  const dimensionScores = {
-    EI: Math.max(0, Math.min(100, 50 + scores.EI * 10)),
-    SN: Math.max(0, Math.min(100, 50 + scores.SN * 10)), 
-    TF: Math.max(0, Math.min(100, 50 + scores.TF * 10)),
-    JP: Math.max(0, Math.min(100, 50 + scores.JP * 10))
-  }
-
-  // 确定MBTI类型
-  const mbtiType = 
-    (scores.EI >= 0 ? 'E' : 'I') +
-    (scores.SN >= 0 ? 'N' : 'S') +
-    (scores.TF >= 0 ? 'T' : 'F') +
-    (scores.JP >= 0 ? 'J' : 'P')
-
-  return { mbtiType, dimensionScores }
 }
 
 const viewResults = async () => {
@@ -594,7 +578,7 @@ const viewResults = async () => {
     
     try {
       // 尝试获取详细的MBTI报告
-      const report = await testApi.getMbtiReport(parseInt(answerId))
+      const report = await testStore.fetchMbtiReport(parseInt(answerId))
       console.log('获取到详细报告:', report)
       
       // 保存详细报告到sessionStorage

@@ -3,58 +3,96 @@ import type {
   ApiResponse,
   Question,
   CreateQuestionRequest,
-  UpdateQuestionRequest
+  BatchCreateQuestionsRequest,
+  UpdateQuestionRequest,
+  DeleteQuestionRequest,
+  GetQuestionsByQuestionnaireRequest,
+  GetQuestionsByDimensionRequest,
+  GetQuestionDetailRequest,
+  CountQuestionsRequest
 } from './types'
 
 /**
- * 问题管理相关API
+ * 题目管理相关API
  */
 export const questionApi = {
   /**
-   * 获取问卷的所有问题
-   * @param questionnaireId 问卷ID
+   * 获取所有题目（管理员功能）
    */
-  async getQuestionsByQuestionnaireId(questionnaireId: number): Promise<Question[]> {
-    const response = await service.get<any, ApiResponse<Question[]>>(`/api/question?questionnaireId=${questionnaireId}`)
-    return response.data
+  async getAllQuestions(): Promise<Question[]> {
+    const response = await service.get<any, ApiResponse<Question[]>>('/api/question/all')
+    return response.data!
   },
 
   /**
-   * 创建新问题（管理员权限）
-   * @param data 创建问题数据
+   * 根据问卷ID获取题目列表
+   * @param data 请求数据
    */
-  async createQuestion(data: Omit<CreateQuestionRequest, 'operationType'>): Promise<Question> {
-    const requestData: CreateQuestionRequest = {
-      ...data,
-      operationType: 'CREATE'
-    }
-    const response = await service.post<any, ApiResponse<Question>>('/api/question', requestData)
-    return response.data
+  async getQuestionsByQuestionnaire(data: GetQuestionsByQuestionnaireRequest): Promise<Question[]> {
+    const response = await service.post<any, ApiResponse<Question[]>>('/api/question/byQuestionnaire', data)
+    return response.data!
   },
 
   /**
-   * 更新问题（管理员权限）
-   * @param data 更新问题数据
+   * 根据维度获取题目
+   * @param data 请求数据
    */
-  async updateQuestion(data: Omit<UpdateQuestionRequest, 'operationType'>): Promise<Question> {
-    const requestData: UpdateQuestionRequest = {
-      ...data,
-      operationType: 'UPDATE'
-    }
-    const response = await service.put<any, ApiResponse<Question>>('/api/question', requestData)
-    return response.data
+  async getQuestionsByDimension(data: GetQuestionsByDimensionRequest): Promise<Question[]> {
+    const response = await service.post<any, ApiResponse<Question[]>>('/api/question/byDimension', data)
+    return response.data!
   },
 
   /**
-   * 删除问题（管理员权限）
-   * @param questionId 问题ID
+   * 获取题目详情
+   * @param data 请求数据
    */
-  async deleteQuestion(questionId: number): Promise<void> {
-    const requestData = {
-      questionId,
-      operationType: 'DELETE'
-    }
-    await service.delete<any, ApiResponse<void>>('/api/question', { data: requestData })
+  async getQuestionDetail(data: GetQuestionDetailRequest): Promise<Question> {
+    const response = await service.post<any, ApiResponse<Question>>('/api/question/detail', data)
+    return response.data!
+  },
+
+  /**
+   * 创建题目
+   * @param data 创建题目请求数据
+   */
+  async createQuestion(data: CreateQuestionRequest): Promise<Question> {
+    const response = await service.post<any, ApiResponse<Question>>('/api/question', data)
+    return response.data!
+  },
+
+  /**
+   * 批量创建题目
+   * @param data 批量创建题目请求数据
+   */
+  async batchCreateQuestions(data: BatchCreateQuestionsRequest): Promise<Question[]> {
+    const response = await service.post<any, ApiResponse<Question[]>>('/api/question/batch', data)
+    return response.data!
+  },
+
+  /**
+   * 更新题目
+   * @param data 更新题目请求数据
+   */
+  async updateQuestion(data: UpdateQuestionRequest): Promise<Question> {
+    const response = await service.put<any, ApiResponse<Question>>('/api/question', data)
+    return response.data!
+  },
+
+  /**
+   * 删除题目
+   * @param data 删除题目请求数据
+   */
+  async deleteQuestion(data: DeleteQuestionRequest): Promise<void> {
+    await service.delete('/api/question', { data })
+  },
+
+  /**
+   * 统计问卷题目数量
+   * @param data 统计请求数据
+   */
+  async countQuestions(data: CountQuestionsRequest): Promise<{ count: number }> {
+    const response = await service.post<any, ApiResponse<{ count: number }>>('/api/question/count', data)
+    return response.data!
   }
 }
 
