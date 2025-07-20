@@ -41,6 +41,11 @@ public interface AnswerDAO extends BaseDAO<Answer, Integer> {
     boolean deleteByQuestionnaireId(Integer questionnaireId);
 
     /**
+     * 根据用户ID删除用户的所有回答
+     */
+    boolean deleteByUserId(Integer userId);
+
+    /**
      * 根据问卷ID统计回答数量
      */
     long countByQuestionnaireId(Integer questionnaireId);

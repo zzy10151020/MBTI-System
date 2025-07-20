@@ -356,6 +356,26 @@ public class AnswerDAOImpl implements AnswerDAO {
     }
 
     @Override
+    public boolean deleteByUserId(Integer userId) {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        
+        try {
+            conn = DatabaseUtil.getConnection();
+            stmt = conn.prepareStatement("DELETE FROM answer WHERE user_id = ?");
+            stmt.setInt(1, userId);
+            
+            return stmt.executeUpdate() > 0;
+            
+        } catch (SQLException e) {
+            log.error("根据用户ID删除所有回答失败", e);
+            throw new RuntimeException("根据用户ID删除所有回答失败", e);
+        } finally {
+            DatabaseUtil.closeQuietly(stmt, conn);
+        }
+    }
+
+    @Override
     public long countByQuestionnaireId(Integer questionnaireId) {
         Connection conn = null;
         PreparedStatement stmt = null;

@@ -179,7 +179,7 @@ public class AuthController extends BaseController {
 
             // 检查用户名是否存在
             boolean exists = userService.existsByUsername(username);
-            ApiResponse<Boolean> apiResponse = ApiResponse.success("成功查到用户名", exists);
+            ApiResponse<Map<String, Boolean>> apiResponse = ApiResponse.success("成功查到用户名", Map.of("exists", exists));
             sendApiResponse(response, apiResponse);
 
         } catch (Exception e) {
@@ -202,7 +202,7 @@ public class AuthController extends BaseController {
 
             // 检查邮箱是否存在
             boolean exists = userService.existsByEmail(email);
-            ApiResponse<Boolean> apiResponse = ApiResponse.success("成功查到邮箱", exists);
+            ApiResponse<Map<String, Boolean>> apiResponse = ApiResponse.success("成功查到邮箱", Map.of("exists", exists));
             sendApiResponse(response, apiResponse);
 
         } catch (Exception e) {

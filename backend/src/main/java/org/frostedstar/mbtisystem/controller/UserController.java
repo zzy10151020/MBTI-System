@@ -375,16 +375,23 @@ public class UserController extends BaseController {
             User targetUser = userOptional.get();
             String targetUsername = targetUser.getUsername();
             
-            // 删除用户
-            boolean deleted = userService.deleteById(deleteUserId);
+            // 添加管理员权限验证：管理员不得删除其他管理员，除非先撤销其管理员身份
+            if (User.Role.ADMIN.equals(targetUser.getRole())) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("不能删除其他管理员，请先撤销其管理员身份");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            
+            // 级联删除用户（包括其答题记录）
+            boolean deleted = userService.deleteUserWithCascade(deleteUserId);
             if (deleted) {
-                ApiResponse<String> apiResponse = ApiResponse.success("用户删除成功", "用户 " + targetUsername + " 已被删除");
+                ApiResponse<String> apiResponse = ApiResponse.success("用户删除成功", "用户 " + targetUsername + " 及其所有答题记录已被删除");
                 sendApiResponse(response, apiResponse);
-                log.info("管理员 {} 删除用户成功: {} (ID: {})", adminUser.getUsername(), targetUsername, deleteUserId);
+                log.info("管理员 {} 级联删除用户成功: {} (ID: {})", adminUser.getUsername(), targetUsername, deleteUserId);
             } else {
-                ApiResponse<Object> apiResponse = ApiResponse.error("用户删除失败，可能用户不存在或无法删除");
+                ApiResponse<Object> apiResponse = ApiResponse.error("用户删除失败，可能用户不存在或数据关联导致无法删除");
                 sendApiResponse(response, apiResponse);
-                log.warn("管理员 {} 删除用户失败: {} (ID: {})", adminUser.getUsername(), targetUsername, deleteUserId);
+                log.warn("管理员 {} 级联删除用户失败: {} (ID: {})", adminUser.getUsername(), targetUsername, deleteUserId);
             }
             
         } catch (Exception e) {

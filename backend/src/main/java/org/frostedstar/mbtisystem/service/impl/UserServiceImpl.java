@@ -1,8 +1,13 @@
 package org.frostedstar.mbtisystem.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import org.frostedstar.mbtisystem.dao.AnswerDAO;
+import org.frostedstar.mbtisystem.dao.AnswerDetailDAO;
 import org.frostedstar.mbtisystem.dao.UserDAO;
+import org.frostedstar.mbtisystem.dao.impl.AnswerDAOImpl;
+import org.frostedstar.mbtisystem.dao.impl.AnswerDetailDAOImpl;
 import org.frostedstar.mbtisystem.dao.impl.UserDAOImpl;
+import org.frostedstar.mbtisystem.entity.Answer;
 import org.frostedstar.mbtisystem.entity.User;
 import org.frostedstar.mbtisystem.service.UserService;
 import org.frostedstar.mbtisystem.util.PasswordUtil;
@@ -18,9 +23,13 @@ import java.util.Optional;
 public class UserServiceImpl implements UserService {
     
     private final UserDAO userDAO;
+    private final AnswerDAO answerDAO;
+    private final AnswerDetailDAO answerDetailDAO;
     
     public UserServiceImpl() {
         this.userDAO = new UserDAOImpl();
+        this.answerDAO = new AnswerDAOImpl();
+        this.answerDetailDAO = new AnswerDetailDAOImpl();
     }
     
     @Override
@@ -138,5 +147,47 @@ public class UserServiceImpl implements UserService {
     @Override
     public long count() {
         return userDAO.count();
+    }
+    
+    @Override
+    public boolean deleteUserWithCascade(Integer userId) {
+        try {
+            // 1. 首先获取用户的所有答案记录
+            List<Answer> userAnswers = answerDAO.findByUserId(userId);
+            log.info("开始级联删除用户 {} 的数据，共有 {} 个答案记录", userId, userAnswers.size());
+            
+            // 2. 删除每个答案的详情记录
+            for (Answer answer : userAnswers) {
+                boolean detailsDeleted = answerDetailDAO.deleteByAnswerId(answer.getAnswerId());
+                if (detailsDeleted) {
+                    log.debug("删除答案详情: answerId={}", answer.getAnswerId());
+                } else {
+                    log.warn("删除答案详情失败: answerId={}", answer.getAnswerId());
+                }
+            }
+            
+            // 3. 删除用户的所有答案记录
+            boolean answersDeleted = answerDAO.deleteByUserId(userId);
+            if (answersDeleted && !userAnswers.isEmpty()) {
+                log.info("删除用户答案记录成功: userId={}, 删除了 {} 个答案", userId, userAnswers.size());
+            } else if (!userAnswers.isEmpty()) {
+                log.warn("删除用户答案记录失败: userId={}", userId);
+                return false;
+            }
+            
+            // 4. 最后删除用户记录
+            boolean userDeleted = userDAO.deleteById(userId);
+            if (userDeleted) {
+                log.info("用户级联删除成功: userId={}, 删除了 {} 个答案记录", userId, userAnswers.size());
+            } else {
+                log.error("用户删除失败: userId={}", userId);
+            }
+            
+            return userDeleted;
+            
+        } catch (Exception e) {
+            log.error("用户级联删除失败: userId={}", userId, e);
+            return false;
+        }
     }
 }

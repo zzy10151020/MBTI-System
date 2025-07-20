@@ -43,4 +43,9 @@ public interface UserService extends BaseService<User, Integer> {
      * 修改密码
      */
     boolean changePassword(Integer userId, String oldPassword, String newPassword);
+    
+    /**
+     * 级联删除用户（同时删除用户的所有答题记录）
+     */
+    boolean deleteUserWithCascade(Integer userId);
 }

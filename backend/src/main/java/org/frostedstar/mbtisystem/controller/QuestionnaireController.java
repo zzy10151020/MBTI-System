@@ -4,6 +4,7 @@ import org.frostedstar.mbtisystem.entity.Questionnaire;
 import org.frostedstar.mbtisystem.entity.User;
 import org.frostedstar.mbtisystem.service.QuestionnaireService;
 import org.frostedstar.mbtisystem.service.QuestionService;
+import org.frostedstar.mbtisystem.service.UserService;
 import org.frostedstar.mbtisystem.service.ServiceFactory;
 import org.frostedstar.mbtisystem.dto.ApiResponse;
 import org.frostedstar.mbtisystem.dto.questionnairedto.*;
@@ -28,10 +29,12 @@ public class QuestionnaireController extends BaseController {
     
     private final QuestionnaireService questionnaireService;
     private final QuestionService questionService;
+    private final UserService userService;
     
     public QuestionnaireController() {
         this.questionnaireService = ServiceFactory.getQuestionnaireService();
         this.questionService = ServiceFactory.getQuestionService();
+        this.userService = ServiceFactory.getUserService();
     }
     
     /**
@@ -67,6 +70,7 @@ public class QuestionnaireController extends BaseController {
                         Optional<Questionnaire> questionnaire = questionnaireService.findById(id);
                         if (questionnaire.isPresent()) {
                             Long questionCount = questionService.countByQuestionnaireId(id);
+                            populateCreatorInfo(questionnaire.get());
                             QuestionnaireResponseDTO questionnaireDTO = QuestionnaireResponseDTO.fromEntitySimple(questionnaire.get(), questionCount);
                             ApiResponse<QuestionnaireResponseDTO> apiResponse = ApiResponse.success("成功获取问卷", questionnaireDTO);
                             sendApiResponse(response, apiResponse);
@@ -113,6 +117,7 @@ public class QuestionnaireController extends BaseController {
                 sendApiResponse(response, apiResponse);
                 return;
             }
+            populateCreatorInfo(questionnaires);
             List<QuestionnaireResponseDTO> responses = questionnaires.stream()
                     .map(questionnaire -> {
                         Long questionCount = questionService.countByQuestionnaireId(questionnaire.getQuestionnaireId());
@@ -136,6 +141,7 @@ public class QuestionnaireController extends BaseController {
             if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
 
             List<Questionnaire> publishedQuestionnaires = questionnaireService.findPublished();
+            populateCreatorInfo(publishedQuestionnaires);
             List<QuestionnaireResponseDTO> responses = publishedQuestionnaires.stream()
                     .map(questionnaire -> {
                         Long questionCount = questionService.countByQuestionnaireId(questionnaire.getQuestionnaireId());
@@ -165,6 +171,7 @@ public class QuestionnaireController extends BaseController {
 
             // 获取所有问卷
             List<Questionnaire> questionnaires = questionnaireService.findAll();
+            populateCreatorInfo(questionnaires);
             List<QuestionnaireResponseDTO> responses = questionnaires.stream()
                     .map(questionnaire -> {
                         Long questionCount = questionService.countByQuestionnaireId(questionnaire.getQuestionnaireId());
@@ -203,6 +210,7 @@ public class QuestionnaireController extends BaseController {
                 sendApiResponse(response, apiResponse);
                 return;
             }
+            populateCreatorInfo(questionnaires);
             List<QuestionnaireResponseDTO> responses = questionnaires.stream()
                     .map(questionnaire -> {
                         Long questionCount = questionService.countByQuestionnaireId(questionnaire.getQuestionnaireId());
@@ -254,6 +262,7 @@ public class QuestionnaireController extends BaseController {
             Questionnaire createdQuestionnaire = questionnaireService.createQuestionnaire(questionnaire);
             
             Long questionCount = questionService.countByQuestionnaireId(createdQuestionnaire.getQuestionnaireId());
+            populateCreatorInfo(createdQuestionnaire);
             QuestionnaireResponseDTO questionnaireDTO = QuestionnaireResponseDTO.fromEntitySimple(createdQuestionnaire, questionCount);
             ApiResponse<QuestionnaireResponseDTO> apiResponse = ApiResponse.success("问卷创建成功", questionnaireDTO);
             sendApiResponse(response, apiResponse);
@@ -308,6 +317,7 @@ public class QuestionnaireController extends BaseController {
             questionnaireService.update(updatedQuestionnaire);
             
             Long questionCount = questionService.countByQuestionnaireId(updatedQuestionnaire.getQuestionnaireId());
+            populateCreatorInfo(updatedQuestionnaire);
             QuestionnaireResponseDTO questionnaireDTO = QuestionnaireResponseDTO.fromEntitySimple(updatedQuestionnaire, questionCount);
             ApiResponse<QuestionnaireResponseDTO> apiResponse = ApiResponse.success("问卷更新成功", questionnaireDTO);
             sendApiResponse(response, apiResponse);
@@ -456,12 +466,39 @@ public class QuestionnaireController extends BaseController {
             }
             Questionnaire questionnaire = questionnaireOpt.get();
             Long questionCount = questionService.countByQuestionnaireId(questionnaireId);
+            populateCreatorInfo(questionnaire);
             QuestionnaireResponseDTO questionnaireDetailDTO = QuestionnaireResponseDTO.fromEntity(questionnaire, questionCount);
             ApiResponse<QuestionnaireResponseDTO> apiResponse = ApiResponse.success("获取问卷详情成功", questionnaireDetailDTO);
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("获取问卷详情失败", e);
             sendErrorResponse(response, 500, "获取问卷详情失败: " + e.getMessage(), "/api/questionnaire/detail");
+        }
+    }
+    
+    /**
+     * 填充问卷的创建者信息
+     */
+    private void populateCreatorInfo(Questionnaire questionnaire) {
+        if (questionnaire != null && questionnaire.getCreatorId() != null) {
+            try {
+                Optional<User> creator = userService.findById(questionnaire.getCreatorId());
+                questionnaire.setCreator(creator.orElse(null));
+            } catch (Exception e) {
+                log.warn("获取创建者信息失败，creatorId: {}", questionnaire.getCreatorId(), e);
+                questionnaire.setCreator(null);
+            }
+        }
+    }
+    
+    /**
+     * 批量填充问卷列表的创建者信息
+     */
+    private void populateCreatorInfo(List<Questionnaire> questionnaires) {
+        if (questionnaires != null) {
+            for (Questionnaire questionnaire : questionnaires) {
+                populateCreatorInfo(questionnaire);
+            }
         }
     }
 }
