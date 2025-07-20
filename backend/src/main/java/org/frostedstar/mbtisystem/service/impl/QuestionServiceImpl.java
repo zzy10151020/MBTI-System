@@ -96,7 +96,7 @@ public class QuestionServiceImpl implements QuestionService {
             // 检查问题是否存在
             Optional<Question> existingQuestionOpt = questionDao.findById(question.getQuestionId());
             if (existingQuestionOpt.isEmpty()) {
-                log.warn("问题不存在: questionId={}", question.getQuestionId());
+                log.warn("问题不存在: questionId={}, 无法更新", question.getQuestionId());
                 return false;
             }
             
@@ -106,7 +106,7 @@ public class QuestionServiceImpl implements QuestionService {
             // 检查问题所属问卷的发布状态
             Optional<Questionnaire> questionnaireOpt = questionnaireDao.findById(questionnaireId);
             if (questionnaireOpt.isEmpty()) {
-                log.warn("问题所属问卷不存在: questionnaireId={}", questionnaireId);
+                log.warn("问题所属问卷不存在: questionnaireId={}, 无法更新", questionnaireId);
                 return false;
             }
             
@@ -210,7 +210,7 @@ public class QuestionServiceImpl implements QuestionService {
             // 首先获取问题信息
             Optional<Question> questionOpt = questionDao.findById(questionId);
             if (questionOpt.isEmpty()) {
-                log.warn("问题不存在: questionId={}", questionId);
+                log.warn("问题不存在: questionId={}, 无法删除", questionId);
                 return false;
             }
             
@@ -220,7 +220,7 @@ public class QuestionServiceImpl implements QuestionService {
             // 检查问题所属问卷的发布状态
             Optional<Questionnaire> questionnaireOpt = questionnaireDao.findById(questionnaireId);
             if (questionnaireOpt.isEmpty()) {
-                log.warn("问题所属问卷不存在: questionnaireId={}", questionnaireId);
+                log.warn("问题所属问卷不存在: questionnaireId={}, 无法删除", questionnaireId);
                 return false;
             }
             
@@ -241,15 +241,15 @@ public class QuestionServiceImpl implements QuestionService {
                     log.info("问题和选项删除成功: questionId={}, questionnaireId={}", questionId, questionnaireId);
                 } else {
                     log.warn("选项删除成功，但问题删除失败: questionId={}", questionId);
+                    return false;
                 }
                 return questionDeleted;
             } else {
                 log.warn("选项删除失败: questionId={}", questionId);
                 return false;
             }
-
         } catch (Exception e) {
-            log.error("级联删除问题失败: questionId={}", questionId, e);
+            log.error("删除问题时发生异常: questionId={}", questionId, e);
             return false;
         }
     }

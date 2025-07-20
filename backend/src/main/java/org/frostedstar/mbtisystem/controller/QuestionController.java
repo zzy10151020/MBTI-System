@@ -31,40 +31,23 @@ public class QuestionController extends BaseController {
     /**
      * 获取问题列表
      */
-    @Route(value = "", method = "GET")
+    @Route(value = "/all", method = "GET")
     public void getQuestions(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
-            
+
             // 获取所有问题
-            fetchAllQuestions(response);
+            List<Question> questions = questionService.findAll();
+            List<QuestionResponseDTO> questionResponseDTOS = questions.stream()
+                    .map(QuestionResponseDTO::fromEntity)
+                    .collect(Collectors.toList());
+
+            ApiResponse<List<QuestionResponseDTO>> apiResponse = ApiResponse.success("获取问题列表成功", questionResponseDTOS);
+            sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("获取问题列表失败", e);
             sendErrorResponse(response, 500, "获取问题列表失败: " + e.getMessage(), "/api/question");
         }
-    }
-
-    private void fetchAllQuestions(HttpServletResponse response) throws IOException {
-        List<Question> questions = questionService.findAll();
-        List<QuestionResponseDTO> questionResponseDTOS = questions.stream()
-            .map(QuestionResponseDTO::fromEntity)
-            .collect(Collectors.toList());
-
-        ApiResponse<List<QuestionResponseDTO>> apiResponse = ApiResponse.success("获取问题列表成功", questionResponseDTOS);
-        sendApiResponse(response, apiResponse);
-    }
-
-    /**
-     * 根据问卷ID获取问题列表
-     */
-    private void fetchQuestionsByQuestionnaireId(Integer questionnaireId, HttpServletResponse response) throws IOException {
-        List<Question> questions = questionService.findByQuestionnaireId(questionnaireId);
-        List<QuestionResponseDTO> questionResponseDTOS = questions.stream()
-            .map(QuestionResponseDTO::fromEntity)
-            .collect(Collectors.toList());
-
-        ApiResponse<List<QuestionResponseDTO>> apiResponse = ApiResponse.success("获取问卷问题列表成功", questionResponseDTOS);
-        sendApiResponse(response, apiResponse);
     }
 
     /**
@@ -85,7 +68,13 @@ public class QuestionController extends BaseController {
                 return;
             }
 
-            fetchQuestionsByQuestionnaireId(queryRequest.getQuestionnaireId(), response);
+            List<Question> questions = questionService.findByQuestionnaireId(queryRequest.getQuestionnaireId());
+            List<QuestionResponseDTO> questionResponseDTOS = questions.stream()
+                    .map(QuestionResponseDTO::fromEntity)
+                    .collect(Collectors.toList());
+
+            ApiResponse<List<QuestionResponseDTO>> apiResponse = ApiResponse.success("获取问卷问题列表成功", questionResponseDTOS);
+            sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("根据问卷ID获取问题列表失败", e);
             sendErrorResponse(response, 500, "根据问卷ID获取问题列表失败: " + e.getMessage(), "/api/question/by-questionnaire");
@@ -314,9 +303,17 @@ public class QuestionController extends BaseController {
                 .content(updateRequest.getContent())
                 .dimension(Question.Dimension.valueOf(updateRequest.getDimension()))
                 .questionOrder(updateRequest.getQuestionOrder())
+                .options(updateRequest.getOptions().stream()
+                    .map(optionDTO -> optionDTO.toEntity())
+                    .collect(Collectors.toList()))
                 .build();
             
-            questionService.update(updatedQuestion);
+            // 尝试更新问题
+            if (!questionService.update(updatedQuestion)) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("更新失败: 所在问卷可能已经发布或数据不完整");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
             
             QuestionResponseDTO questionResponseDTO = QuestionResponseDTO.fromEntity(updatedQuestion);
             ApiResponse<QuestionResponseDTO> apiResponse = ApiResponse.success("问题更新成功", questionResponseDTO);
@@ -361,8 +358,7 @@ public class QuestionController extends BaseController {
             
             // 删除问题
             if (!questionService.deleteQuestionWithCascade(id)) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("删除失败，可能存在关联数据或数据库错误");
-                sendApiResponse(response, apiResponse);
+                sendErrorResponse(response, 400, "删除失败: 所在问卷可能已经发布或该问题不存在", "/api/question");
                 return;
             }
             

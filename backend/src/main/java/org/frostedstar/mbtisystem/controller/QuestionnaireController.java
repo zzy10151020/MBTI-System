@@ -331,15 +331,10 @@ public class QuestionnaireController extends BaseController {
             }
             
             // 级联删除问卷
-            if (!questionnaireService.deleteQuestionnaireWithCascade(id)) {
-                ApiResponse<Object> apiResponse = ApiResponse.error("删除失败，可能存在关联数据或数据库错误");
+            if (questionnaireService.deleteQuestionnaireWithCascade(id)) {
+                ApiResponse<String> apiResponse = ApiResponse.success("问卷删除成功", "问卷删除成功");
                 sendApiResponse(response, apiResponse);
-                return;
             }
-            
-            ApiResponse<String> apiResponse = ApiResponse.success("问卷删除成功", "问卷删除成功");
-            sendApiResponse(response, apiResponse);
-            
         } catch (Exception e) {
             log.error("删除问卷失败", e);
             sendErrorResponse(response, 500, "删除问卷失败: " + e.getMessage(), "/api/questionnaire");
