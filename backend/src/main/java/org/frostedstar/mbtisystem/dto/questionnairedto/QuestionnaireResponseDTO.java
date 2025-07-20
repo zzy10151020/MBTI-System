@@ -29,6 +29,7 @@ public class QuestionnaireResponseDTO {
     private String creatorName;
     private LocalDateTime createdAt;
     private Boolean isPublished;
+    private Long questionCount;  // 问题数量
     
     // 关联信息（仅查询时使用）
     private List<QuestionResponseDTO> questions;
@@ -36,7 +37,7 @@ public class QuestionnaireResponseDTO {
     /**
      * 从Questionnaire实体转换为QuestionnaireResponseDTO（完整版）
      */
-    public static QuestionnaireResponseDTO fromEntity(Questionnaire questionnaire) {
+    public static QuestionnaireResponseDTO fromEntity(Questionnaire questionnaire, Long questionCount) {
         if (questionnaire == null) {
             return null;
         }
@@ -49,6 +50,7 @@ public class QuestionnaireResponseDTO {
                 .creatorName(questionnaire.getCreator() != null ? questionnaire.getCreator().getUsername() : null)
                 .createdAt(questionnaire.getCreatedAt())
                 .isPublished(questionnaire.getIsPublished())
+                .questionCount(questionCount)
                 .questions(questionnaire.getQuestions() != null ? 
                     questionnaire.getQuestions().stream()
                         .map(QuestionResponseDTO::fromEntity)
@@ -59,7 +61,7 @@ public class QuestionnaireResponseDTO {
     /**
      * 从Questionnaire实体转换为QuestionnaireResponseDTO（无问题）
      */
-    public static QuestionnaireResponseDTO fromEntitySimple(Questionnaire questionnaire) {
+    public static QuestionnaireResponseDTO fromEntitySimple(Questionnaire questionnaire, Long questionCount) {
         if (questionnaire == null) {
             return null;
         }
@@ -72,6 +74,7 @@ public class QuestionnaireResponseDTO {
                 .creatorName(questionnaire.getCreator() != null ? questionnaire.getCreator().getUsername() : null)
                 .createdAt(questionnaire.getCreatedAt())
                 .isPublished(questionnaire.getIsPublished())
+                .questionCount(questionCount)
                 .build();
     }
 }

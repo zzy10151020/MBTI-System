@@ -3,6 +3,7 @@ package org.frostedstar.mbtisystem.controller;
 import org.frostedstar.mbtisystem.entity.Questionnaire;
 import org.frostedstar.mbtisystem.entity.User;
 import org.frostedstar.mbtisystem.service.QuestionnaireService;
+import org.frostedstar.mbtisystem.service.QuestionService;
 import org.frostedstar.mbtisystem.service.ServiceFactory;
 import org.frostedstar.mbtisystem.dto.ApiResponse;
 import org.frostedstar.mbtisystem.dto.questionnairedto.*;
@@ -26,9 +27,11 @@ import java.util.stream.Collectors;
 public class QuestionnaireController extends BaseController {
     
     private final QuestionnaireService questionnaireService;
+    private final QuestionService questionService;
     
     public QuestionnaireController() {
         this.questionnaireService = ServiceFactory.getQuestionnaireService();
+        this.questionService = ServiceFactory.getQuestionService();
     }
     
     /**
@@ -63,7 +66,8 @@ public class QuestionnaireController extends BaseController {
                         Integer id = Integer.parseInt(pathParts[1]); // pathParts[0] 是空字符串
                         Optional<Questionnaire> questionnaire = questionnaireService.findById(id);
                         if (questionnaire.isPresent()) {
-                            QuestionnaireResponseDTO questionnaireDTO = QuestionnaireResponseDTO.fromEntitySimple(questionnaire.get());
+                            Long questionCount = questionService.countByQuestionnaireId(id);
+                            QuestionnaireResponseDTO questionnaireDTO = QuestionnaireResponseDTO.fromEntitySimple(questionnaire.get(), questionCount);
                             ApiResponse<QuestionnaireResponseDTO> apiResponse = ApiResponse.success("成功获取问卷", questionnaireDTO);
                             sendApiResponse(response, apiResponse);
                         } else {
@@ -110,7 +114,10 @@ public class QuestionnaireController extends BaseController {
                 return;
             }
             List<QuestionnaireResponseDTO> responses = questionnaires.stream()
-                    .map(QuestionnaireResponseDTO::fromEntitySimple)
+                    .map(questionnaire -> {
+                        Long questionCount = questionService.countByQuestionnaireId(questionnaire.getQuestionnaireId());
+                        return QuestionnaireResponseDTO.fromEntitySimple(questionnaire, questionCount);
+                    })
                     .collect(Collectors.toList());
             ApiResponse<List<QuestionnaireResponseDTO>> apiResponse = ApiResponse.success("成功获取问卷", responses);
             sendApiResponse(response, apiResponse);
@@ -130,7 +137,10 @@ public class QuestionnaireController extends BaseController {
 
             List<Questionnaire> publishedQuestionnaires = questionnaireService.findPublished();
             List<QuestionnaireResponseDTO> responses = publishedQuestionnaires.stream()
-                    .map(QuestionnaireResponseDTO::fromEntitySimple)
+                    .map(questionnaire -> {
+                        Long questionCount = questionService.countByQuestionnaireId(questionnaire.getQuestionnaireId());
+                        return QuestionnaireResponseDTO.fromEntitySimple(questionnaire, questionCount);
+                    })
                     .collect(Collectors.toList());
 
             ApiResponse<List<QuestionnaireResponseDTO>> apiResponse = ApiResponse.success("成功获取已发布问卷", responses);
@@ -156,7 +166,10 @@ public class QuestionnaireController extends BaseController {
             // 获取所有问卷
             List<Questionnaire> questionnaires = questionnaireService.findAll();
             List<QuestionnaireResponseDTO> responses = questionnaires.stream()
-                    .map(QuestionnaireResponseDTO::fromEntitySimple)
+                    .map(questionnaire -> {
+                        Long questionCount = questionService.countByQuestionnaireId(questionnaire.getQuestionnaireId());
+                        return QuestionnaireResponseDTO.fromEntitySimple(questionnaire, questionCount);
+                    })
                     .collect(Collectors.toList());
 
             ApiResponse<List<QuestionnaireResponseDTO>> apiResponse = ApiResponse.success("成功获取所有问卷", responses);
@@ -191,7 +204,10 @@ public class QuestionnaireController extends BaseController {
                 return;
             }
             List<QuestionnaireResponseDTO> responses = questionnaires.stream()
-                    .map(QuestionnaireResponseDTO::fromEntitySimple)
+                    .map(questionnaire -> {
+                        Long questionCount = questionService.countByQuestionnaireId(questionnaire.getQuestionnaireId());
+                        return QuestionnaireResponseDTO.fromEntitySimple(questionnaire, questionCount);
+                    })
                     .collect(Collectors.toList());
             ApiResponse<List<QuestionnaireResponseDTO>> apiResponse = ApiResponse.success("问卷查找成功", responses);
             sendApiResponse(response, apiResponse);
@@ -237,7 +253,8 @@ public class QuestionnaireController extends BaseController {
 
             Questionnaire createdQuestionnaire = questionnaireService.createQuestionnaire(questionnaire);
             
-            QuestionnaireResponseDTO questionnaireDTO = QuestionnaireResponseDTO.fromEntitySimple(createdQuestionnaire);
+            Long questionCount = questionService.countByQuestionnaireId(createdQuestionnaire.getQuestionnaireId());
+            QuestionnaireResponseDTO questionnaireDTO = QuestionnaireResponseDTO.fromEntitySimple(createdQuestionnaire, questionCount);
             ApiResponse<QuestionnaireResponseDTO> apiResponse = ApiResponse.success("问卷创建成功", questionnaireDTO);
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
@@ -290,7 +307,8 @@ public class QuestionnaireController extends BaseController {
             
             questionnaireService.update(updatedQuestionnaire);
             
-            QuestionnaireResponseDTO questionnaireDTO = QuestionnaireResponseDTO.fromEntitySimple(updatedQuestionnaire);
+            Long questionCount = questionService.countByQuestionnaireId(updatedQuestionnaire.getQuestionnaireId());
+            QuestionnaireResponseDTO questionnaireDTO = QuestionnaireResponseDTO.fromEntitySimple(updatedQuestionnaire, questionCount);
             ApiResponse<QuestionnaireResponseDTO> apiResponse = ApiResponse.success("问卷更新成功", questionnaireDTO);
             sendApiResponse(response, apiResponse);
             
@@ -437,7 +455,8 @@ public class QuestionnaireController extends BaseController {
                 return;
             }
             Questionnaire questionnaire = questionnaireOpt.get();
-            QuestionnaireResponseDTO questionnaireDetailDTO = QuestionnaireResponseDTO.fromEntity(questionnaire);
+            Long questionCount = questionService.countByQuestionnaireId(questionnaireId);
+            QuestionnaireResponseDTO questionnaireDetailDTO = QuestionnaireResponseDTO.fromEntity(questionnaire, questionCount);
             ApiResponse<QuestionnaireResponseDTO> apiResponse = ApiResponse.success("获取问卷详情成功", questionnaireDetailDTO);
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
