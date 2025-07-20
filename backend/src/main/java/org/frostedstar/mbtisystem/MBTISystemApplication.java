@@ -26,8 +26,8 @@ public class MBTISystemApplication {
     /**
      * 检查端口是否可用
      */
-    private static boolean isPortAvailable(int port) {
-        try (ServerSocket socket = new ServerSocket(port)) {
+    private static boolean isPortAvailable() {
+        try (ServerSocket socket = new ServerSocket(MBTISystemApplication.PORT)) {
             socket.setReuseAddress(true);
             return true;
         } catch (IOException e) {
@@ -38,7 +38,7 @@ public class MBTISystemApplication {
     public static void main(String[] args) {
         try {
             // 检查端口是否可用
-            if (!isPortAvailable(PORT)) {
+            if (!isPortAvailable()) {
                 log.error("Port {} is already in use. Please stop the existing service or use a different port.", PORT);
                 System.exit(1);
             }

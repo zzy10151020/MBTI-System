@@ -128,7 +128,14 @@ public class QuestionRequestDTO {
     public Integer getActualId() {
         return id != null ? id : questionId;
     }
-    
+
+    /**
+     * 根据问卷ID统计问题数量的验证
+     */
+    public boolean isValidForCountQuestionsByQuestionnaireId() {
+        return questionnaireId != null && questionnaireId > 0;
+    }
+
     /**
      * 从请求DTO转换为Question实体
      */

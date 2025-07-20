@@ -46,4 +46,19 @@ public interface TestService {
      * 获取问卷的统计数据
      */
     Map<String, Object> getQuestionnaireStatistics(Integer questionnaireId);
+    
+    /**
+     * 计算维度统计信息（各维度倾向）
+     */
+    Map<String, String> calculateDimensions(String mbtiResult);
+    
+    /**
+     * 计算维度比例统计
+     */
+    Map<String, Object> calculateDimensionStatistics(List<AnswerDetail> answerDetails);
+    
+    /**
+     * 计算所有可能的MBTI类型概率
+     */
+    Map<String, Double> calculatePersonalityProbabilities(List<AnswerDetail> answerDetails);
 }

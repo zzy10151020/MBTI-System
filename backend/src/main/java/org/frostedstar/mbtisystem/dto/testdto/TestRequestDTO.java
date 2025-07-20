@@ -57,6 +57,29 @@ public class TestRequestDTO {
     public boolean isValidForDeleteTestResult() {
         return answerId != null && answerId > 0;
     }
+
+    /**
+     * 获取用户测试结果请求验证
+     */
+    public boolean isValidForGetUserTestResult() {
+        return answerId != null && answerId > 0;
+    }
+
+    /**
+     * 检查用户是否已完成测试请求验证
+     */
+    public boolean isValidForCheckUserCompleted() {
+        return questionnaireId != null && questionnaireId > 0;
+    }
+
+    /**
+     * 获取问卷统计请求验证
+     */
+    public boolean isValidForGetQuestionnaireStatistics() {
+        return questionnaireId != null && questionnaireId > 0;
+    }
+
+
     
     /**
      * 答案详情请求DTO

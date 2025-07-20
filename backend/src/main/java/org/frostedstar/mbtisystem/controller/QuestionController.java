@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -84,7 +85,7 @@ public class QuestionController extends BaseController {
     /**
      * 根据维度查找问题
      */
-    @Route(value = "/by-dimension", method = "POST")
+    @Route(value = "/byDimension", method = "POST")
     public void getQuestionsByDimension(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
@@ -187,6 +188,12 @@ public class QuestionController extends BaseController {
             Question question = createRequest.toEntity();
             
             Question savedQuestion = questionService.save(question);
+
+            if (savedQuestion == null) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("创建问题失败: 问题可能已存在或数据不完整");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
             
             QuestionResponseDTO questionResponseDTO = QuestionResponseDTO.fromEntity(savedQuestion);
             ApiResponse<QuestionResponseDTO> apiResponse = ApiResponse.success("问题创建成功", questionResponseDTO);
@@ -304,7 +311,7 @@ public class QuestionController extends BaseController {
                 .dimension(Question.Dimension.valueOf(updateRequest.getDimension()))
                 .questionOrder(updateRequest.getQuestionOrder())
                 .options(updateRequest.getOptions().stream()
-                    .map(optionDTO -> optionDTO.toEntity())
+                    .map(option -> option.toEntity())
                     .collect(Collectors.toList()))
                 .build();
             
@@ -362,11 +369,39 @@ public class QuestionController extends BaseController {
                 return;
             }
             
-            ApiResponse<String> apiResponse = ApiResponse.success("问题删除成功", "问题删除成功");
+            ApiResponse<Map<String, String>> apiResponse = ApiResponse.success("问题删除成功", Map.of("result", "问题删除成功"));
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("删除问题失败", e);
             sendErrorResponse(response, 500, "删除问题失败: " + e.getMessage(), "/api/question");
         }
     }
+
+    /**
+     * 根据问卷ID统计问题数量
+     */
+    @Route(value = "/count", method = "POST")
+    public void countQuestionsByQuestionnaireId(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        try {
+            if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
+
+            // 解析请求体
+            QuestionRequestDTO queryRequest = parseRequestBody(request, QuestionRequestDTO.class);
+
+            // 验证请求数据
+            if (!queryRequest.isValidForCountQuestionsByQuestionnaireId()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("缺少或无效的问卷ID");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+
+            long count = questionService.countByQuestionnaireId(queryRequest.getQuestionnaireId());
+            ApiResponse<Map<String, Long>> apiResponse = ApiResponse.success("统计问题数量成功", Map.of("count", count));
+            sendApiResponse(response, apiResponse);
+        } catch (Exception e) {
+            log.error("根据问卷ID统计问题数量失败", e);
+            sendErrorResponse(response, 500, "根据问卷ID统计问题数量失败: " + e.getMessage(), "/api/question/count");
+        }
+    }
+
 }

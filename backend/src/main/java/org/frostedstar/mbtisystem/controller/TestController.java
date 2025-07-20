@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -57,8 +58,8 @@ public class TestController extends BaseController {
                 requestURI, contextPath, servletPath, fullPath, pathInfo);
             
             if (pathInfo == null || pathInfo.equals("/") || pathInfo.isEmpty()) {
-                // 获取用户的测试结果列表
-                fetchUserTestResultList(response, user);
+                ApiResponse<Object> apiResponse = ApiResponse.error("请提供问卷ID，或使用 /api/test/all 等端点");
+                sendApiResponse(response, apiResponse);
             } else {
                 // 尝试解析问卷ID - pathInfo 应该是 "/1", "/2" 这样的格式
                 String[] pathParts = pathInfo.split("/");
@@ -67,7 +68,22 @@ public class TestController extends BaseController {
                         Integer questionnaireId = Integer.parseInt(pathParts[1]); // pathParts[0] 是空字符串
                         Optional<Answer> answer = testService.getUserTestResult(user.getUserId(), questionnaireId);
                         if (answer.isPresent()) {
-                            TestResponseDTO testDTO = TestResponseDTO.fromEntity(answer.get());
+                            Answer testAnswer = answer.get();
+                            
+                            // 计算MBTI结果
+                            String mbtiResult = null;
+                            if (testAnswer.getDetails() != null && !testAnswer.getDetails().isEmpty()) {
+                                mbtiResult = testService.calculateMBTIResult(testAnswer.getDetails());
+                            }
+                            
+                            // 在Controller层使用Service计算结果
+                            Map<String, String> dimensions = testService.calculateDimensions(mbtiResult);
+                            Map<String, Object> statistics = testService.calculateDimensionStatistics(testAnswer.getDetails());
+                            Map<String, Double> personalityProbabilities = testService.calculatePersonalityProbabilities(testAnswer.getDetails());
+                            
+                            // 创建增强的TestResponseDTO，包含所有必需字段
+                            TestResponseDTO testDTO = TestResponseDTO.fromEntityWithDetails(testAnswer, mbtiResult, 
+                                dimensions, statistics, personalityProbabilities);
                             ApiResponse<TestResponseDTO> apiResponse = ApiResponse.success("获取测试详情成功", testDTO);
                             sendApiResponse(response, apiResponse);
                         } else {
@@ -90,14 +106,43 @@ public class TestController extends BaseController {
         }
     }
 
-    private void fetchUserTestResultList(HttpServletResponse response, User user) throws IOException {
-        List<Answer> answers = testService.getUserAllTestResults(user.getUserId());
-        List<TestResponseDTO> testDTOs = answers.stream()
-            .map(TestResponseDTO::fromEntity)
-            .collect(Collectors.toList());
+    /**
+     * 获取用户的所有测试结果
+     */
+    @Route(value = "/all", method = "GET")
+    public void getUserTestResults(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        try {
+            if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
 
-        ApiResponse<List<TestResponseDTO>> apiResponse = ApiResponse.success("获取测试结果成功", testDTOs);
-        sendApiResponse(response, apiResponse);
+            // 检查用户是否已登录
+            User user = AuthUtils.checkLogin(request, response, this);
+            if (user == null) return;
+
+            List<Answer> answers = testService.getUserAllTestResults(user.getUserId());
+            List<TestResponseDTO> testDTOs = answers.stream()
+                    .map(answer -> {
+                        // 计算每个答案的MBTI结果
+                        String mbtiResult = null;
+                        if (answer.getDetails() != null && !answer.getDetails().isEmpty()) {
+                            mbtiResult = testService.calculateMBTIResult(answer.getDetails());
+                        }
+                        
+                        // 在Controller层使用Service计算结果
+                        Map<String, String> dimensions = testService.calculateDimensions(mbtiResult);
+                        Map<String, Object> statistics = testService.calculateDimensionStatistics(answer.getDetails());
+                        Map<String, Double> personalityProbabilities = testService.calculatePersonalityProbabilities(answer.getDetails());
+                        
+                        return TestResponseDTO.fromEntityWithDetails(answer, mbtiResult, 
+                            dimensions, statistics, personalityProbabilities);
+                    })
+                    .collect(Collectors.toList());
+
+            ApiResponse<List<TestResponseDTO>> apiResponse = ApiResponse.success("获取测试结果成功", testDTOs);
+            sendApiResponse(response, apiResponse);
+        } catch (Exception e) {
+            log.error("获取用户测试结果失败", e);
+            sendErrorResponse(response, 500, "获取用户测试结果失败: " + e.getMessage(), "/api/test/all");
+        }
     }
 
     /**
@@ -135,7 +180,16 @@ public class TestController extends BaseController {
             // 提交测试结果
             Answer answer = testService.submitTest(user.getUserId(), testRequest.getQuestionnaireId(), answerDetails);
             
-            TestResponseDTO testDTO = TestResponseDTO.fromEntity(answer);
+            // 计算MBTI结果
+            String mbtiResult = testService.calculateMBTIResult(answerDetails);
+            
+            // 在Controller层使用Service计算结果
+            Map<String, String> dimensions = testService.calculateDimensions(mbtiResult);
+            Map<String, Object> statistics = testService.calculateDimensionStatistics(answerDetails);
+            Map<String, Double> personalityProbabilities = testService.calculatePersonalityProbabilities(answerDetails);
+            
+            TestResponseDTO testDTO = TestResponseDTO.fromEntityWithDetails(answer, mbtiResult, 
+                dimensions, statistics, personalityProbabilities);
             ApiResponse<TestResponseDTO> apiResponse = ApiResponse.success("测试提交成功", testDTO);
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
@@ -147,17 +201,28 @@ public class TestController extends BaseController {
     /**
      * 检查用户是否已完成测试
      */
-    @Route(value = "/completed", method = "GET")
+    @Route(value = "/completed", method = "POST")
     public void checkUserCompletedTest(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
+            if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
 
             // 检查用户是否已登录
             User user = AuthUtils.checkLogin(request, response, this);
             if (user == null) return;
 
-            ApiResponse<Object> apiResponse = ApiResponse.error("该功能已被禁用，请使用POST方式查询");
+            // 解析请求体
+            TestRequestDTO testRequest = parseRequestBody(request, TestRequestDTO.class);
+            // 验证请求数据
+            if (!testRequest.isValidForCheckUserCompleted()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("请求数据不完整");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            // 检查用户是否已完成测试
+            boolean completed = testService.hasUserCompletedTest(user.getUserId(), testRequest.getQuestionnaireId());
+            ApiResponse<Map<String, Boolean>> apiResponse = ApiResponse.success("检查用户完成状态成功", Map.of("completed", completed));
             sendApiResponse(response, apiResponse);
+
         } catch (Exception e) {
             log.error("检查用户完成状态失败", e);
             sendErrorResponse(response, 500, "检查用户完成状态失败: " + e.getMessage(), "/api/test/completed");
@@ -167,16 +232,32 @@ public class TestController extends BaseController {
     /**
      * 获取问卷统计数据
      */
-    @Route(value = "/statistics", method = "GET")
+    @Route(value = "/statistics", method = "POST")
     public void getQuestionnaireStatistics(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
+            if (!AuthUtils.checkHttpMethod(request, response, this, "POST")) return;
 
             // 检查是否为管理员（统计数据只有管理员能查看）
             User user = AuthUtils.checkAdmin(request, response, this);
             if (user == null) return;
 
-            ApiResponse<Object> apiResponse = ApiResponse.error("该功能已被禁用，请使用POST方式查询");
+            // 解析请求体
+            TestRequestDTO testRequest = parseRequestBody(request, TestRequestDTO.class);
+
+            // 验证请求数据
+            if (!testRequest.isValidForGetQuestionnaireStatistics()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("请求数据不完整");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            // 获取问卷统计数据
+            Map<String, Object> statistics = testService.getQuestionnaireStatistics(testRequest.getQuestionnaireId());
+            if (statistics == null || statistics.isEmpty()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("没有统计数据");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            ApiResponse<Map<String, Object>> apiResponse = ApiResponse.success("获取问卷统计数据成功", statistics);
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("获取问卷统计数据失败", e);

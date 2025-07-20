@@ -14,6 +14,8 @@ import org.frostedstar.mbtisystem.servlet.Route;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 用户控制器
@@ -311,8 +313,17 @@ public class UserController extends BaseController {
             if (adminUser == null) return;
             
             // 获取用户列表
-            var userList = userService.findAll();
-            ApiResponse<?> apiResponse = ApiResponse.success("成功获取用户列表", userList);
+            List<User> userList = userService.findAll();
+            if (userList.isEmpty()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("没有用户数据");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            // 转换为响应DTO列表
+            List<UserResponseDTO> userDTOList = userList.stream()
+                .map(UserResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+            ApiResponse<?> apiResponse = ApiResponse.success("成功获取用户列表", userDTOList);
 
             sendApiResponse(response, apiResponse);
             

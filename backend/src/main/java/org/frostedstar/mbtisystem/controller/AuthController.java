@@ -13,6 +13,7 @@ import org.frostedstar.mbtisystem.service.UserService;
 import org.frostedstar.mbtisystem.servlet.Route;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -155,7 +156,7 @@ public class AuthController extends BaseController {
                 log.info("用户注销成功: {}", username);
             }
             
-            ApiResponse<String> apiResponse = ApiResponse.success("注销成功", "注销成功");
+            ApiResponse<Map<String, String>> apiResponse = ApiResponse.success("注销成功", Map.of("result", "注销成功"));
             sendApiResponse(response, apiResponse);
             
         } catch (Exception e) {

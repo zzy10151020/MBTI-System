@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -62,7 +63,7 @@ public class QuestionnaireController extends BaseController {
                         Integer id = Integer.parseInt(pathParts[1]); // pathParts[0] 是空字符串
                         Optional<Questionnaire> questionnaire = questionnaireService.findById(id);
                         if (questionnaire.isPresent()) {
-                            QuestionnaireResponseDTO questionnaireDTO = QuestionnaireResponseDTO.fromEntity(questionnaire.get());
+                            QuestionnaireResponseDTO questionnaireDTO = QuestionnaireResponseDTO.fromEntitySimple(questionnaire.get());
                             ApiResponse<QuestionnaireResponseDTO> apiResponse = ApiResponse.success("成功获取问卷", questionnaireDTO);
                             sendApiResponse(response, apiResponse);
                         } else {
@@ -236,7 +237,7 @@ public class QuestionnaireController extends BaseController {
 
             Questionnaire createdQuestionnaire = questionnaireService.createQuestionnaire(questionnaire);
             
-            QuestionnaireResponseDTO questionnaireDTO = QuestionnaireResponseDTO.fromEntity(createdQuestionnaire);
+            QuestionnaireResponseDTO questionnaireDTO = QuestionnaireResponseDTO.fromEntitySimple(createdQuestionnaire);
             ApiResponse<QuestionnaireResponseDTO> apiResponse = ApiResponse.success("问卷创建成功", questionnaireDTO);
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
@@ -289,7 +290,7 @@ public class QuestionnaireController extends BaseController {
             
             questionnaireService.update(updatedQuestionnaire);
             
-            QuestionnaireResponseDTO questionnaireDTO = QuestionnaireResponseDTO.fromEntity(updatedQuestionnaire);
+            QuestionnaireResponseDTO questionnaireDTO = QuestionnaireResponseDTO.fromEntitySimple(updatedQuestionnaire);
             ApiResponse<QuestionnaireResponseDTO> apiResponse = ApiResponse.success("问卷更新成功", questionnaireDTO);
             sendApiResponse(response, apiResponse);
             
@@ -332,7 +333,7 @@ public class QuestionnaireController extends BaseController {
             
             // 级联删除问卷
             if (questionnaireService.deleteQuestionnaireWithCascade(id)) {
-                ApiResponse<String> apiResponse = ApiResponse.success("问卷删除成功", "问卷删除成功");
+                ApiResponse<Map<String, String>> apiResponse = ApiResponse.success("问卷删除成功", Map.of("result", "问卷删除成功"));
                 sendApiResponse(response, apiResponse);
             }
         } catch (Exception e) {
@@ -358,7 +359,7 @@ public class QuestionnaireController extends BaseController {
                 return;
             }
 
-            ApiResponse<String> apiResponse = ApiResponse.success("问卷发布成功", "问卷发布成功");
+            ApiResponse<Map<String, String>> apiResponse = ApiResponse.success("问卷发布成功", Map.of("result", "问卷发布成功"));
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("发布问卷失败", e);
@@ -383,7 +384,7 @@ public class QuestionnaireController extends BaseController {
                 return;
             }
 
-            ApiResponse<String> apiResponse = ApiResponse.success("问卷撤销发布成功", "问卷撤销发布成功");
+            ApiResponse<Map<String, String>> apiResponse = ApiResponse.success("问卷撤销发布成功", Map.of("result", "问卷撤销发布成功"));
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("撤销发布问卷失败", e);
