@@ -115,9 +115,9 @@ INSERT INTO `option` (`question_id`, `content`, `score`) VALUES
 
 -- S/N
 INSERT INTO `option` (`question_id`, `content`, `score`) VALUES
-(2, '依赖直觉', 1), (2, '依赖现实', -1),
-(6, '相信直觉', 1), (6, '看重经验', -1),
-(10, '关注大局', 1), (10, '关注细节', -1);
+(2, '依赖直觉', -1), (2, '依赖现实', 1),
+(6, '相信直觉', -1), (6, '看重经验', 1),
+(10, '关注大局', -1), (10, '关注细节', 1);
 
 -- T/F
 INSERT INTO `option` (`question_id`, `content`, `score`) VALUES

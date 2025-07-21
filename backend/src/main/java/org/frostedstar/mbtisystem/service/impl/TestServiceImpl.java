@@ -317,33 +317,11 @@ public class TestServiceImpl implements TestService {
         int eCount = 0, sCount = 0, tCount = 0, jCount = 0;
 
         for (AnswerDetail detail : answerDetails) {
-            // 确保Question和Option不为null，否则主动查库
-            Question question = detail.getQuestion();
-            Option option = detail.getOption();
-            if (question == null) {
-                Optional<Question> qOpt = questionDAO.findById(detail.getQuestionId());
-                if (qOpt.isPresent()) {
-                    question = qOpt.get();
-                    detail.setQuestion(question);
-                } else {
-                    continue;
-                }
-            }
-            if (option == null) {
-                Optional<Option> oOpt = optionDAO.findById(detail.getOptionId());
-                if (oOpt.isPresent()) {
-                    option = oOpt.get();
-                    detail.setOption(option);
-                } else {
-                    continue;
-                }
-            }
-
-            String dimension = question.getDimension().toString();
-            byte optionScore = option.getScore();
+            String dimension = detail.getQuestion().getDimension().toString();
+            byte optionScore = detail.getOption().getScore();
 
             switch (dimension) {
-                case "E/I":
+                case "EI":
                     if (optionScore > 0) {
                         eScore += optionScore;
                     } else {
@@ -351,15 +329,15 @@ public class TestServiceImpl implements TestService {
                     }
                     eCount++;
                     break;
-                case "S/N":
+                case "SN":
                     if (optionScore > 0) {
-                        nScore += optionScore;
+                        sScore += optionScore;
                     } else {
-                        sScore += Math.abs(optionScore);
+                        nScore += Math.abs(optionScore);
                     }
                     sCount++;
                     break;
-                case "T/F":
+                case "TF":
                     if (optionScore > 0) {
                         tScore += optionScore;
                     } else {
@@ -367,7 +345,7 @@ public class TestServiceImpl implements TestService {
                     }
                     tCount++;
                     break;
-                case "J/P":
+                case "JP":
                     if (optionScore > 0) {
                         jScore += optionScore;
                     } else {

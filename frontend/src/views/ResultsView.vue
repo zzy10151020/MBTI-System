@@ -155,7 +155,7 @@
                 <div class="dimension-bar">
                   <div 
                     class="dimension-fill"
-                    :style="{ width: `${getDimensionPercentage(percentage)}%` }"
+                    :style="{ width: `${percentage}%` }"
                   ></div>
                 </div>
                 <span class="dimension-value">{{ percentage }}</span>
@@ -302,11 +302,6 @@ const formatDate = (date: string): string => {
   }
   // 兼容字符串格式
   return new Date(date as string).toLocaleString('zh-CN')
-}
-
-const getDimensionPercentage = (score: number): number => {
-  // 数据已经是百分比格式（0-100），直接使用
-  return Math.max(0, Math.min(100, Math.round(score || 0)))
 }
 
 const viewReport = async (answerId: number) => {
@@ -631,13 +626,17 @@ onMounted(() => {
 
 .dimension-scores {
   display: grid;
-  gap: 1rem;
+  gap: 0.6rem;
 }
 
 .dimension-item {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.3rem;
+}
+
+.dimension-item span {
+  font-size: 1rem;
 }
 
 .dimension-label {
@@ -655,7 +654,7 @@ onMounted(() => {
 }
 
 .dimension-fill {
-  height: 100%;
+  height: 90%;
   background: linear-gradient(90deg, var(--primary-teal-light), var(--primary-teal));
   transition: width 0.3s ease;
 }
