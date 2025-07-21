@@ -119,7 +119,7 @@
             "username": "testuser",
             "email": "test@example.com",
             "role": "USER",
-            "createdAt": "2023-xx-xx xx:xx:xx"
+            "createdAt": [2025, 1, 1, 1, 1, 1]
         },
         "success": true
     }
@@ -152,7 +152,7 @@
             "username": "testuser",
             "email": "test@example.com",
             "role": "USER",
-            "createdAt": "2023-xx-xx xx:xx:xx"
+            "createdAt": [2025, 1, 1, 1, 1, 1]
         },
         "success": true
     }
@@ -241,7 +241,7 @@
         "username": "testuser",
         "email": "test@example.com",
         "role": "USER",
-        "createdAt": "2023-xx-xx xx:xx:xx"
+        "createdAt": [2025, 1, 1, 1, 1, 1]
     }
 }
 ```
@@ -271,7 +271,7 @@
         "username": "testuser",
         "email": "newemail@example.com",
         "role": "USER",
-        "createdAt": "2023-xx-xx xx:xx:xx"
+        "createdAt": [2025, 1, 1, 1, 1, 1]
     }
 }
 ```
@@ -282,7 +282,24 @@
 - **描述**: 获取当前登录用户的个人资料
 - **需要认证**: 是
 
+
 **请求体**: 无
+
+**响应示例**:
+```json
+{
+    "success": true,
+    "message": "获取个人资料成功",
+    "data": {
+        "userId": 1,
+        "username": "testuser",
+        "email": "test@example.com",
+        "role": "USER",
+        "createdAt": [2025, 1, 1, 1, 1, 1]
+    },
+    "timestamp": "2023-xx-xx xx:xx:xx"
+}
+```
 
 ### 4. 获取用户列表
 - **URL**: `/api/user/list`
@@ -301,7 +318,7 @@
             "username": "testuser",
             "email": "test@example.com",
             "role": "USER",
-            "createdAt": "2023-xx-xx xx:xx:xx"
+            "createdAt": [2025, 1, 1, 1, 1, 1]
         }
     ]
 }
@@ -317,6 +334,17 @@
 ```json
 {
     "deleteUserId": 1        // 要删除的用户ID
+}
+
+**响应示例**:
+```json
+{
+    "success": true,
+    "message": "用户删除成功",
+    "data": {
+        "deleted": true
+    },
+    "timestamp": "2023-xx-xx xx:xx:xx"
 }
 ```
 
@@ -341,7 +369,7 @@
         "description": "经典的16型人格测试",
         "creatorId": 1,
         "creatorName": "admin",
-        "createdAt": "2023-xx-xx xx:xx:xx",
+        "createdAt": [2025, 1, 1, 1, 1, 1],
         "isPublished": true,
         "questionCount": 60
     }
@@ -358,6 +386,26 @@
 {
     "creatorId": 1           // 创建者用户ID
 }
+
+**响应示例**:
+```json
+{
+    "success": true,
+    "message": "成功获取问卷",
+    "data": [
+        {
+            "questionnaireId": 1,
+            "title": "MBTI人格测试",
+            "description": "经典的16型人格测试",
+            "creatorId": 1,
+            "creatorName": "admin",
+            "createdAt": [2025, 1, 1, 1, 1, 1],
+            "isPublished": true,
+            "questionCount": 60
+        }
+    ],
+    "timestamp": "2023-xx-xx xx:xx:xx"
+}
 ```
 
 ### 3. 获取已发布的问卷列表
@@ -365,11 +413,53 @@
 - **方法**: `GET`
 - **描述**: 获取所有已发布的问卷列表
 
+**响应示例**:
+```json
+{
+    "success": true,
+    "message": "成功获取已发布问卷",
+    "data": [
+        {
+            "questionnaireId": 1,
+            "title": "MBTI人格测试",
+            "description": "经典的16型人格测试",
+            "creatorId": 1,
+            "creatorName": "admin",
+            "createdAt": [2025, 1, 1, 1, 1, 1],
+            "isPublished": true,
+            "questionCount": 60
+        }
+    ],
+    "timestamp": "2023-xx-xx xx:xx:xx"
+}
+```
+
 ### 4. 获取所有问卷列表
 - **URL**: `/api/questionnaire/all`
 - **方法**: `GET`
 - **描述**: 获取所有问卷列表（包括未发布）
 - **需要认证**: 是 (管理员)
+
+**响应示例**:
+```json
+{
+    "success": true,
+    "message": "成功获取所有问卷",
+    "data": [
+        {
+            "questionnaireId": 1,
+            "title": "MBTI人格测试",
+            "description": "经典的16型人格测试",
+            "creatorId": 1,
+            "creatorName": "admin",
+            "createdAt": [2025, 1, 1, 1, 1, 1],
+            "isPublished": true,
+            "questionCount": 60
+        }
+    ],
+    "timestamp": "2023-xx-xx xx:xx:xx"
+}
+```
 
 ### 5. 搜索问卷
 - **URL**: `/api/questionnaire/search`
@@ -380,6 +470,26 @@
 ```json
 {
     "title": "string"        // 搜索关键词
+}
+
+**响应示例**:
+```json
+{
+    "success": true,
+    "message": "问卷查找成功",
+    "data": [
+        {
+            "questionnaireId": 1,
+            "title": "MBTI人格测试",
+            "description": "经典的16型人格测试",
+            "creatorId": 1,
+            "creatorName": "admin",
+            "createdAt": [2025, 1, 1, 1, 1, 1],
+            "isPublished": true,
+            "questionCount": 60
+        }
+    ],
+    "timestamp": "2023-xx-xx xx:xx:xx"
 }
 ```
 
@@ -407,6 +517,24 @@
         }
     ]
 }
+
+**响应示例**:
+```json
+{
+    "success": true,
+    "message": "问卷创建成功",
+    "data": {
+        "questionnaireId": 1,
+        "title": "MBTI人格测试",
+        "description": "经典的16型人格测试",
+        "creatorId": 1,
+        "creatorName": "admin",
+        "createdAt": [2025, 1, 1, 1, 1, 1],
+        "isPublished": false,
+        "questionCount": 60
+    },
+    "timestamp": "2023-xx-xx xx:xx:xx"
+}
 ```
 
 ### 7. 更新问卷
@@ -422,6 +550,24 @@
     "title": "string",       // 新标题
     "description": "string"  // 新描述
 }
+
+**响应示例**:
+```json
+{
+    "success": true,
+    "message": "问卷更新成功",
+    "data": {
+        "questionnaireId": 1,
+        "title": "MBTI人格测试",
+        "description": "经典的16型人格测试",
+        "creatorId": 1,
+        "creatorName": "admin",
+        "createdAt": [2025, 1, 1, 1, 1, 1],
+        "isPublished": false,
+        "questionCount": 60
+    },
+    "timestamp": "2023-xx-xx xx:xx:xx"
+}
 ```
 
 ### 8. 删除问卷
@@ -430,10 +576,23 @@
 - **描述**: 删除问卷
 - **需要认证**: 是
 
+
 **请求体**:
 ```json
 {
     "questionnaireId": 1     // 要删除的问卷ID
+}
+```
+
+**响应示例**:
+```json
+{
+    "success": true,
+    "message": "问卷删除成功",
+    "data": {
+        "deleted": true
+    },
+    "timestamp": "2023-xx-xx xx:xx:xx"
 }
 ```
 
@@ -443,10 +602,23 @@
 - **描述**: 发布问卷，使其对公众可见
 - **需要认证**: 是
 
+
 **请求体**:
 ```json
 {
     "questionnaireId": 1     // 要发布的问卷ID
+}
+```
+
+**响应示例**:
+```json
+{
+    "success": true,
+    "message": "问卷发布成功",
+    "data": {
+        "published": "问卷发布成功"
+    },
+    "timestamp": "2023-xx-xx xx:xx:xx"
 }
 ```
 
@@ -456,10 +628,23 @@
 - **描述**: 取消发布问卷
 - **需要认证**: 是
 
+
 **请求体**:
 ```json
 {
     "questionnaireId": 1     // 要取消发布的问卷ID
+}
+```
+
+**响应示例**:
+```json
+{
+    "success": true,
+    "message": "问卷撤销发布成功",
+    "data": {
+        "unpublished": true
+    },
+    "timestamp": "2023-xx-xx xx:xx:xx"
 }
 ```
 
@@ -486,7 +671,7 @@
         "description": "经典的16型人格测试",
         "creatorId": 1,
         "creatorName": "admin",
-        "createdAt": "2023-xx-xx xx:xx:xx",
+        "createdAt": [2025, 1, 1, 1, 1, 1],
         "isPublished": true,
         "questionCount": 60,
         "questions": [
@@ -530,6 +715,38 @@
 {
     "questionnaireId": 1     // 问卷ID
 }
+
+**响应示例**:
+```json
+{
+    "success": true,
+    "message": "获取题目列表成功",
+    "data": [
+        {
+            "questionId": 1,
+            "questionnaireId": 1,
+            "content": "你更喜欢",
+            "dimension": "EI",
+            "questionOrder": 1,
+            "createdAt": [2025, 1, 1, 1, 1, 1],
+            "options": [
+                {
+                    "optionId": 1,
+                    "questionId": 1,
+                    "content": "独处",
+                    "score": -1
+                },
+                {
+                    "optionId": 2,
+                    "questionId": 1,
+                    "content": "与他人交往",
+                    "score": 1
+                }
+            ]
+        }
+    ],
+    "timestamp": "2023-xx-xx xx:xx:xx"
+}
 ```
 
 ### 3. 根据维度获取题目
@@ -540,7 +757,39 @@
 **请求体**:
 ```json
 {
-    "dimension": "E_I"       // MBTI维度，可选值：E_I, S_N, T_F, J_P
+    "dimension": "EI"       // MBTI维度，可选值：EI, SN, TF, JP
+}
+
+**响应示例**:
+```json
+{
+    "success": true,
+    "message": "获取题目列表成功",
+    "data": [
+        {
+            "questionId": 1,
+            "questionnaireId": 1,
+            "content": "你更喜欢",
+            "dimension": "EI",
+            "questionOrder": 1,
+            "createdAt": [2025, 1, 1, 1, 1, 1],
+            "options": [
+                {
+                    "optionId": 1,
+                    "questionId": 1,
+                    "content": "独处",
+                    "score": -1
+                },
+                {
+                    "optionId": 2,
+                    "questionId": 1,
+                    "content": "与他人交往",
+                    "score": 1
+                }
+            ]
+        }
+    ],
+    "timestamp": "2023-xx-xx xx:xx:xx"
 }
 ```
 
@@ -554,6 +803,36 @@
 {
     "questionId": 1          // 题目ID
 }
+
+**响应示例**:
+```json
+{
+    "success": true,
+    "message": "获取题目详情成功",
+    "data": {
+        "questionId": 1,
+        "questionnaireId": 1,
+        "content": "你更喜欢",
+        "dimension": "EI",
+        "questionOrder": 1,
+        "createdAt": [2025, 1, 1, 1, 1, 1],
+        "options": [
+            {
+                "optionId": 1,
+                "questionId": 1,
+                "content": "独处",
+                "score": -1
+            },
+            {
+                "optionId": 2,
+                "questionId": 1,
+                "content": "与他人交往",
+                "score": 1
+            }
+        ]
+    },
+    "timestamp": "2023-xx-xx xx:xx:xx"
+}
 ```
 
 ### 5. 创建题目
@@ -565,15 +844,46 @@
 **请求体**:
 ```json
 {
-    "questionnaireId": 1,            // 所属问卷ID，必填
-    "questionText": "string",        // 题目文本，必填
-    "questionType": "SINGLE_CHOICE", // 题目类型，必填，可选值：SINGLE_CHOICE, MULTIPLE_CHOICE
-    "options": [                     // 选项列表，必填
+    "questionnaireId": 1,       // 所属问卷ID，必填
+    "content": "string",        // 题目文本，必填
+    "dimension": "string",      // 题目维度，必填
+    "questionOrder": 1          // 题目顺序，必填
+    "options": [                // 选项列表，必填
         {
-            "optionText": "string",  // 选项文本
-            "optionValue": "string"  // 选项值（用于计算）
+            "content": "string",// 选项文本
+            "score": 1          // 分数
         }
     ]
+}
+
+**响应示例**:
+```json
+{
+    "success": true,
+    "message": "题目创建成功",
+    "data": {
+        "questionId": 1,
+        "questionnaireId": 1,
+        "content": "你更喜欢",
+        "dimension": "EI",
+        "questionOrder": 1,
+        "createdAt": [2025, 1, 1, 1, 1, 1],
+        "options": [
+            {
+                "optionId": 1,
+                "questionId": 1,
+                "content": "独处",
+                "score": -1
+            },
+            {
+                "optionId": 2,
+                "questionId": 1,
+                "content": "与他人交往",
+                "score": 1
+            }
+        ]
+    },
+    "timestamp": "2023-xx-xx xx:xx:xx"
 }
 ```
 
@@ -586,19 +896,52 @@
 **请求体**:
 ```json
 {
-    "questionnaireId": 1,    // 问卷ID，必填
-    "questions": [           // 题目列表，必填
+    "questions": [                      // 题目列表，必填
         {
-            "questionText": "string",
-            "questionType": "SINGLE_CHOICE",
-            "options": [
+            "questionnaireId": 1,       // 所属问卷ID，必填
+            "content": "string",        // 题目文本，必填
+            "dimension": "string",      // 题目维度，必填
+            "questionOrder": 1          // 题目顺序，必填
+            "options": [                // 选项列表，必填
                 {
-                    "optionText": "string",
-                    "optionValue": "string"
+                    "content": "string",// 选项文本
+                    "score": 1          // 分数
                 }
             ]
         }
     ]
+}
+
+**响应示例**:
+```json
+{
+    "success": true,
+    "message": "批量创建题目成功",
+    "data": [
+        {
+            "questionId": 1,
+            "questionnaireId": 1,
+            "content": "你更喜欢",
+            "dimension": "EI",
+            "questionOrder": 1,
+            "createdAt": [2025, 1, 1, 1, 1, 1],
+            "options": [
+                {
+                    "optionId": 1,
+                    "questionId": 1,
+                    "content": "独处",
+                    "score": -1
+                },
+                {
+                    "optionId": 2,
+                    "questionId": 1,
+                    "content": "与他人交往",
+                    "score": 1
+                }
+            ]
+        }
+    ],
+    "timestamp": "2023-xx-xx xx:xx:xx"
 }
 ```
 
@@ -611,15 +954,36 @@
 **请求体**:
 ```json
 {
-    "questionId": 1,                 // 题目ID，必填
-    "questionText": "string",        // 新题目文本
-    "questionType": "SINGLE_CHOICE", // 新题目类型
-    "options": [                     // 新选项列表
+    "questionId": 1,            // 所属问题ID，必填
+    "content": "string",        // 题目文本，必填
+    "dimension": "string",      // 题目维度，必填
+    "questionOrder": 1,  // 问题顺序，必填
+    "options": [                // 选项列表，必填
         {
-            "optionText": "string",
-            "optionValue": "string"
+            "content": "string",// 选项文本
+            "score": 1          // 分数
         }
     ]
+}
+
+**响应示例**:
+```json
+{
+    "success": true,
+    "message": "题目更新成功",
+    "data": {
+        "questionId": 1,
+        "questionnaireId": 1,       // 所属问卷ID
+        "content": "string",        // 题目文本
+        "dimension": "string",      // 题目维度
+        "options": [                // 选项列表
+            {
+                "content": "string",// 选项文本
+                "score": 1          // 分数
+            }
+        ]
+    },
+    "timestamp": "2023-xx-xx xx:xx:xx"
 }
 ```
 
@@ -633,6 +997,17 @@
 ```json
 {
     "questionId": 1          // 要删除的题目ID
+}
+
+**响应示例**:
+```json
+{
+    "success": true,
+    "message": "题目删除成功",
+    "data": {
+        "result": "题目删除成功"
+    },
+    "timestamp": "2023-xx-xx xx:xx:xx"
 }
 ```
 
@@ -687,7 +1062,6 @@
         {
             "questionId": 1, // 题目ID
             "optionId": 1,   // 选择的选项ID
-            "selectedOption": "string" // 选项值（可选）
         }
     ]
 }
@@ -699,22 +1073,41 @@
     "success": true,
     "message": "测试提交成功",
     "data": {
-        "testId": 1,
-        "questionnaireId": 1,
+        "answerId": 1,
         "userId": 1,
-        "submittedAt": "2023-xx-xx xx:xx:xx",
-        "result": "INTJ",
-        "resultDescription": "建筑师型人格",
-        "personalityProbabilities": {
-            "E": 0.25,
-            "I": 0.75,
-            "S": 0.30,
-            "N": 0.70,
-            "T": 0.80,
-            "F": 0.20,
-            "J": 0.85,
-            "P": 0.15
-        }
+        "questionnaireId": 1,
+        "title": "MBTI测试",
+        "description": "16人格测试",
+        "answeredAt": [2025, 1, 1, 1, 1, 1],
+        "answerDetails": [{
+            "detailId": 1,
+            "answerId": 1,
+            "questionId": 1,
+            "questionContent": "EI测试",
+            "optionId": 1,
+            "optionContent": "外出",
+            "optionScore": 1
+        }],
+        "mbtiType": "INTJ",
+        "dimensions": {
+            "E_I": "I",
+            "S_N": "N",
+            "T_F": "T",
+            "J_P": "J"
+        },
+        "statistics": {
+            "E_percentage": 0.25,
+            "I_percentage": 0.75,
+            "S_percentage": 0.30,
+            "N_percentage": 0.70,
+            "T_percentage": 0.80,
+            "F_percentage": 0.20,
+            "J_percentage": 0.85,
+            "P_percentage": 0.15,
+        },
+        "personalityProbabilities": [
+            "INTJ": 0.88,           // 返回所有概率大于1%的类型
+        ]
     }
 }
 ```
@@ -763,13 +1156,115 @@
     "message": "获取统计信息成功",
     "data": {
         "questionnaireId": 1,
-        "totalTests": 100,
-        "resultDistribution": {
-            "INTJ": 15,
-            "INFJ": 10,
-            "ISTJ": 20,
-            // ... 其他类型
+        "statistics": [{
+            "totalParticipants": 50,
+            "mbtiDistribution": [{
+                "INFP": 0       // 各个人格的人数
+                // ...
+            }],
+            "latestTestTime": [2025, 1, 1, 1, 1, 1],
+        }]
+    }
+}
+```
+
+### 6. 获取所有测试统计信息
+- **URL**: `/api/test/all-statics`
+- **方法**: `GET`
+- **描述**: 获取所有测试统计信息
+- **需要认证**: 是 (管理员)
+
+**响应示例**:
+```json
+{
+    "success": true,
+    "message": "获取所有问卷统计数据成功",
+    "data": {
+        "mbtiDistribution": {
+            "ISTJ": 1,
+            "ENFP": 1,
+            "ENTP": 1,
+            "ISFJ": 1,
+            "INFP": 1
+        },
+        "latestTestTime": [
+            2025,
+            7,
+            20,
+            10,
+            27,
+            6
+        ],
+        "totalParticipants": 5,
+        "detail": {
+            "1": {
+                "mbtiDistribution": {
+                    "ENTP": 1,
+                    "ISFJ": 1,
+                    "INFP": 1
+                },
+                "latestTestTime": [
+                    2025,
+                    7,
+                    20,
+                    10,
+                    27,
+                    6
+                ],
+                "totalParticipants": 3
+            },
+            "2": {
+                "mbtiDistribution": {
+                    "ISTJ": 1
+                },
+                "latestTestTime": [
+                    2025,
+                    7,
+                    16,
+                    14,
+                    25,
+                    3
+                ],
+                "totalParticipants": 1
+            },
+            "3": {
+                "mbtiDistribution": {
+                    "ENFP": 1
+                },
+                "latestTestTime": [
+                    2025,
+                    7,
+                    16,
+                    14,
+                    25,
+                    3
+                ],
+                "totalParticipants": 1
+            },
+            "4": {
+                "mbtiDistribution": {},
+                "latestTestTime": null,
+                "totalParticipants": 0
+            }
         }
+    },
+    "timestamp": 1753102144934
+}
+```
+
+### 7.获取统计回答数量
+- **URL**: `/api/test/answer-count`
+- **方法**: `GET`
+- **描述**: 获取测试结果数量
+- **需要认证**: 是 (管理员)
+
+**响应示例**:
+```json
+{
+    "success": true,
+    "message": "获取回答数量成功",
+    "data": {
+        "count": 1
     }
 }
 ```

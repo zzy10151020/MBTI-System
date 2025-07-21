@@ -14,6 +14,7 @@ import org.frostedstar.mbtisystem.servlet.Route;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.Map;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -385,7 +386,7 @@ public class UserController extends BaseController {
             // 级联删除用户（包括其答题记录）
             boolean deleted = userService.deleteUserWithCascade(deleteUserId);
             if (deleted) {
-                ApiResponse<String> apiResponse = ApiResponse.success("用户删除成功", "用户 " + targetUsername + " 及其所有答题记录已被删除");
+                ApiResponse<Map<String, Boolean>> apiResponse = ApiResponse.success("用户删除成功", Map.of("deleted", true));
                 sendApiResponse(response, apiResponse);
                 log.info("管理员 {} 级联删除用户成功: {} (ID: {})", adminUser.getUsername(), targetUsername, deleteUserId);
             } else {

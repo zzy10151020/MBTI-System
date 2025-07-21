@@ -43,6 +43,9 @@ public class QuestionnaireDAOImpl implements QuestionnaireDAO {
     
     private static final String SELECT_BY_TITLE_LIKE_SQL = 
         "SELECT questionnaire_id, title, description, creator_id, created_at, is_published FROM questionnaire WHERE title LIKE ? ORDER BY created_at DESC";
+
+    private static final String SELECT_ALL_IDS_SQL = 
+        "SELECT questionnaire_id FROM questionnaire ORDER BY created_at DESC";
     
     @Override
     public Questionnaire save(Questionnaire questionnaire) {
@@ -280,6 +283,32 @@ public class QuestionnaireDAOImpl implements QuestionnaireDAO {
         } catch (SQLException e) {
             log.error("根据标题模糊查找问卷失败", e);
             throw new RuntimeException("根据标题模糊查找问卷失败", e);
+        } finally {
+            DatabaseUtil.closeQuietly(rs, stmt, conn);
+        }
+    }
+
+    @Override
+    public List<Integer> findAllIds() {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        List<Integer> ids = new ArrayList<>();
+        
+        try {
+            conn = DatabaseUtil.getConnection();
+            stmt = conn.prepareStatement(SELECT_ALL_IDS_SQL);
+            rs = stmt.executeQuery();
+            
+            while (rs.next()) {
+                ids.add(rs.getInt("questionnaire_id"));
+            }
+            
+            return ids;
+            
+        } catch (SQLException e) {
+            log.error("查找所有问卷ID失败", e);
+            throw new RuntimeException("查找所有问卷ID失败", e);
         } finally {
             DatabaseUtil.closeQuietly(rs, stmt, conn);
         }

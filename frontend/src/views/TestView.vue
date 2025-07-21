@@ -187,7 +187,6 @@ import {
 import { useQuestionnaireStore } from '@/stores/questionnaireStore'
 import { useUserStore } from '@/stores/userStore'
 import { useTestStore } from '@/stores/testStore'
-import { testApi } from '@/api'
 import type { Questionnaire } from '@/api/types'
 
 const router = useRouter()
@@ -240,52 +239,6 @@ const isAllQuestionsAnswered = computed(() => {
   return Object.keys(selectedAnswers.value).length === totalQuestions.value
 })
 
-// 模拟问题数据
-const getMockQuestions = () => {
-  return [
-    {
-      id: 1,
-      questionText: "在社交场合中，您更倾向于：",
-      options: [
-        { value: "E", text: "主动与他人交谈，享受热闹的氛围" },
-        { value: "I", text: "更愿意与少数熟悉的人深入交流" }
-      ]
-    },
-    {
-      id: 2,
-      questionText: "当面对新信息时，您通常：",
-      options: [
-        { value: "S", text: "关注具体的事实和细节" },
-        { value: "N", text: "寻找潜在的模式和可能性" }
-      ]
-    },
-    {
-      id: 3,
-      questionText: "在做决定时，您更重视：",
-      options: [
-        { value: "T", text: "逻辑分析和客观标准" },
-        { value: "F", text: "个人价值观和他人感受" }
-      ]
-    },
-    {
-      id: 4,
-      questionText: "您更喜欢：",
-      options: [
-        { value: "J", text: "有计划、有条理的生活方式" },
-        { value: "P", text: "灵活、开放的生活方式" }
-      ]
-    },
-    {
-      id: 5,
-      questionText: "在工作中，您更倾向于：",
-      options: [
-        { value: "E", text: "通过团队合作来解决问题" },
-        { value: "I", text: "独立思考后再与他人分享" }
-      ]
-    }
-  ]
-}
-
 // 方法
 const loadTestData = async () => {
   try {
@@ -298,8 +251,8 @@ const loadTestData = async () => {
     }
 
     // 获取问卷信息
-    await questionnaireStore.fetchQuestionnaires()
-    currentQuestionnaire.value = questionnaireStore.questionnaires.find(
+    await questionnaireStore.fetchPublishedQuestionnaires()
+    currentQuestionnaire.value = questionnaireStore.questionnaires_published.find(
       q => q.questionnaireId === parseInt(questionnaireId)
     ) || null
 
@@ -324,31 +277,8 @@ const loadTestData = async () => {
           duration: 2000
         })
       } else {
-        // 如果API失败，使用questionnaireStore的mock数据而不是TestView的模拟数据
-        console.warn('⚠️ API获取问题失败或返回空数据，使用questionnaireStore mock数据')
+        console.warn('⚠️ API获取问题失败或返回空数据')
         
-        if (typeof questionnaireStore.getMockQuestionnaireQuestions === 'function') {
-          const mockData = questionnaireStore.getMockQuestionnaireQuestions(parseInt(questionnaireId))
-          console.log('使用questionnaireStore mock数据:', mockData)
-          questions.value = mockData.questions
-          // 显示降级提示
-          ElNotification({
-            title: '使用离线数据',
-            message: `当前使用模拟数据进行测试，共 ${questions.value.length} 道题目`,
-            type: 'warning',
-            duration: 3000
-          })
-        } else {
-          // 降级到TestView内置的模拟数据
-          console.warn('questionnaireStore.getMockQuestionnaireQuestions 不是函数，使用TestView模拟数据')
-          questions.value = getMockQuestions()
-          ElNotification({
-            title: '使用备用数据',
-            message: `当前使用备用测试数据，共 ${questions.value.length} 道题目`,
-            type: 'info',
-            duration: 3000
-          })
-        }
       }
     } catch (apiError: any) {
       console.error('❌ TestView: API获取问题失败，详细错误:', apiError)
@@ -357,17 +287,6 @@ const loadTestData = async () => {
       console.error('错误响应:', apiError?.response)
       console.error('错误状态:', apiError?.response?.status)
       console.error('错误数据:', apiError?.response?.data)
-      
-      // 使用mock数据作为降级方案
-      
-      if (typeof questionnaireStore.getMockQuestionnaireQuestions === 'function') {
-        const mockData = questionnaireStore.getMockQuestionnaireQuestions(parseInt(questionnaireId))
-        questions.value = mockData.questions
-      } else {
-        // 降级到TestView内置的模拟数据
-        console.warn('questionnaireStore.getMockQuestionnaireQuestions 不是函数，使用TestView模拟数据')
-        questions.value = getMockQuestions()
-      }
     }
     
     // 初始化计时器
@@ -463,38 +382,34 @@ const submitTest = async (isTimeUp = false) => {
       
       // 查找选中的选项
       let selectedOption = null
+      let selectedOptionId = null
       if (question.options && question.options.length > 0) {
         if (question.options[0].optionId !== undefined) {
           // API/questionnaireStore数据结构：{optionId, content, score}
-          // 这里answer是用户选择的选项内容
           selectedOption = question.options.find((opt: any) => opt.content === answer)
+          selectedOptionId = selectedOption?.optionId
         } else {
           // TestView模拟数据结构：{value, text}
-          selectedOption = question.options.find((opt: any) => opt.value === answer)
-          if (selectedOption) {
-            // 为模拟数据生成选项ID
-            const optionIndex = question.options.findIndex((opt: any) => opt.value === answer)
-            selectedOption.optionId = optionIndex + 1
-          }
+          const optionIndex = question.options.findIndex((opt: any) => opt.value === answer)
+          selectedOption = question.options[optionIndex]
+          selectedOptionId = optionIndex !== -1 ? optionIndex + 1 : null
         }
       }
-      
-      if (!selectedOption) {
+      if (!selectedOption || !selectedOptionId) {
         throw new Error(`问题 ${questionId} 的答案无效`)
       }
-      
-      questionAnswers[questionId] = selectedOption.optionId
+      questionAnswers[questionId] = selectedOptionId
     })
 
-    // 转换为API期望的格式
-    const answers = Object.entries(questionAnswers).map(([questionId, optionId]) => ({
+    // 转换为API期望的格式（answerDetails）
+    const answerDetails = Object.entries(questionAnswers).map(([questionId, optionId]) => ({
       questionId: parseInt(questionId),
-      optionId: optionId
+      optionId: optionId as number
     }))
 
     const submitData = {
       questionnaireId: currentQuestionnaire.value!.questionnaireId,
-      answers
+      answerDetails
     }
 
     console.log('提交答案数据:', submitData)
@@ -508,49 +423,17 @@ const submitTest = async (isTimeUp = false) => {
       // 调用testStore的提交方法
       const result = await testStore.submitTestAnswers(submitData)
       
-      // 保存答案ID和MBTI结果以便后续查看
-      sessionStorage.setItem('lastAnswerId', result.answerId.toString())
-      sessionStorage.setItem('lastMbtiType', result.mbtiType || 'UNKNOWN')
-      // 直接使用后端返回的personalityProbabilities，不再进行前端转换
-      if (result.personalityProbabilities) {
-        sessionStorage.setItem('lastPersonalityProbabilities', JSON.stringify(result.personalityProbabilities))
+      const test = result
+      sessionStorage.setItem('lastAnswerId', test.answerId.toString())
+      sessionStorage.setItem('lastMbtiType', test.mbtiType || 'UNKNOWN')
+      if (test.personalityProbabilities) {
+        sessionStorage.setItem('lastPersonalityProbabilities', JSON.stringify(test.personalityProbabilities))
       }
-      
       isCompleted.value = true
-      ElMessage.success(`测试提交成功！您的MBTI类型是：${result.mbtiType}`)
-      
+      ElMessage.success(`测试提交成功！您的MBTI类型是：${test.mbtiType}`)
     } catch (apiError: any) {
-      console.warn('API提交失败，使用模拟提交:', apiError)
-      
-      // API失败时的降级处理 - 但不再前端计算MBTI，而是使用简单的随机类型
-      const fallbackTypes = ['INFP', 'ENFP', 'INFJ', 'ENFJ', 'ISFP', 'ESFP', 'ISFJ', 'ESFJ', 
-                           'INTP', 'ENTP', 'INTJ', 'ENTJ', 'ISTP', 'ESTP', 'ISTJ', 'ESTJ']
-      const randomType = fallbackTypes[Math.floor(Math.random() * fallbackTypes.length)]
-      
-      const mockResult = {
-        mbtiType: randomType,
-        // 模拟personalityProbabilities格式
-        personalityProbabilities: {
-          'E': Math.random() * 0.4 + 0.3, // 30%-70%
-          'I': Math.random() * 0.4 + 0.3,
-          'S': Math.random() * 0.4 + 0.3,
-          'N': Math.random() * 0.4 + 0.3,
-          'T': Math.random() * 0.4 + 0.3,
-          'F': Math.random() * 0.4 + 0.3,
-          'J': Math.random() * 0.4 + 0.3,
-          'P': Math.random() * 0.4 + 0.3
-        }
-      }
-      
-      // 保存模拟结果到testStore
-      const savedResult = testStore.saveMockTestResult(mockResult, submitData.questionnaireId)
-      
-      sessionStorage.setItem('lastAnswerId', savedResult.answerId.toString())
-      sessionStorage.setItem('lastMbtiType', mockResult.mbtiType)
-      sessionStorage.setItem('lastPersonalityProbabilities', JSON.stringify(mockResult.personalityProbabilities))
-      
-      isCompleted.value = true
-      ElMessage.success(`测试提交成功！您的MBTI类型是：${mockResult.mbtiType}`)
+      console.warn('API提交失败:', apiError)
+      ElMessage.error(apiError.message || '提交测试失败，请稍后重试')
     }
 
   } catch (err: any) {

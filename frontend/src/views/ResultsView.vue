@@ -25,7 +25,7 @@
           </div>
           <div class="stat-content">
             <h3>最新类型</h3>
-            <p>{{ formatDate(testStore.latestTestResult.createdAt || '') }}</p>
+            <p>{{ formatDate(testStore.latestTestResult.answeredAt || '') }}</p>
           </div>
         </div>
       </div>
@@ -43,7 +43,7 @@
             <div class="result-header">
               <div class="result-info">
                 <h3 class="result-title">{{ result.title || '未知问卷' }}</h3>
-                <p class="result-date">{{ formatDate(result.createdAt || '') }}</p>
+                <p class="result-date">{{ formatDate(result.answeredAt || '') }}</p>
               </div>
               <div class="result-actions">
                 <el-dropdown @command="handleAction">
@@ -69,10 +69,10 @@
             
             <div class="result-content">
               <div class="mbti-display">
-                <div class="mbti-type">{{ result.mbtiType || 'INFP' }}</div>
+                <div class="mbti-type">{{ result.mbtiType || '' }}</div>
                 <div class="mbti-letters">
                   <span 
-                    v-for="(letter, index) in (result.mbtiType || 'INFP').split('')" 
+                    v-for="(letter, index) in (result.mbtiType || '').split('')" 
                     :key="index"
                     class="mbti-letter"
                   >
@@ -82,7 +82,7 @@
               </div>
               
               <div class="result-summary">
-                <p>{{ getMbtiDescription(result.mbtiType || 'INFP') }}</p>
+                <p>{{ getMbtiDescription(result.mbtiType || '') }}</p>
               </div>
             </div>
             
@@ -146,21 +146,19 @@
       <div v-if="currentReport" class="report-content">
         <div class="report-header">
           <div class="report-mbti">
+            <h2>{{ currentReport.username || '匿名用户' }}的MBTI报告</h2>
             <h2>{{ currentReport.mbtiType }}</h2>
             <div class="dimension-scores">
-              <div 
-                v-for="(score, dimension) in currentReport.dimensionScores || currentReport.dimensions"
-                :key="dimension"
-                class="dimension-item"
-              >
+              <div v-for="(percentage, dimension) in currentReport.statistics"
+                :key="dimension" class="dimension-item">
                 <span class="dimension-label">{{ dimension }}</span>
                 <div class="dimension-bar">
                   <div 
                     class="dimension-fill"
-                    :style="{ width: `${getDimensionPercentage(score)}%` }"
+                    :style="{ width: `${getDimensionPercentage(percentage)}%` }"
                   ></div>
                 </div>
-                <span class="dimension-value">{{ score }}</span>
+                <span class="dimension-value">{{ percentage }}</span>
               </div>
             </div>
           </div>
@@ -188,7 +186,7 @@
           <h3>成长挑战</h3>
           <div class="trait-tags">
             <el-tag 
-              v-for="challenge in currentReport.challenges || []" 
+              v-for="challenge in currentReport.weaknesses || []" 
               :key="challenge"
               type="warning"
             >
@@ -233,7 +231,19 @@ import {
 } from '@element-plus/icons-vue'
 import { useTestStore } from '@/stores/testStore'
 import { useUserStore } from '@/stores/userStore'
-import type { MbtiReport } from '@/api/types'
+
+interface MbtiReport {
+  username: string
+  mbtiType: string
+  dimensions: Record<string, string>
+  statistics: Record<string, number>
+  personalityProbabilities: Record<string, number>
+  description: string
+  strengths: string[]
+  weaknesses?: string[]
+  careers?: string[]
+  answeredAt?: string | Date
+}
 
 const router = useRouter()
 const route = useRoute()
@@ -276,15 +286,22 @@ const getMbtiDescription = (mbtiType: string): string => {
   return mbtiDescriptions[mbtiType] || '独特的性格类型，具有自己的优势和特点。'
 }
 
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+const formatDate = (date: string): string => {
+  if (!date) return ''
+  if (Array.isArray(date) && date.length >= 3) {
+    // 月份要减1
+    const d = new Date(
+      date[0],
+      date[1] - 1,
+      date[2],
+      date[3] || 0,
+      date[4] || 0,
+      date[5] || 0
+    )
+    return d.toLocaleString('zh-CN')
+  }
+  // 兼容字符串格式
+  return new Date(date as string).toLocaleString('zh-CN')
 }
 
 const getDimensionPercentage = (score: number): number => {
@@ -295,7 +312,10 @@ const getDimensionPercentage = (score: number): number => {
 const viewReport = async (answerId: number) => {
   try {
     const report = await testStore.fetchMbtiReport(answerId)
-    currentReport.value = report
+    currentReport.value = {
+      ...report,
+      username: userStore.user?.username || '匿名用户',
+    }
     showReportDialog.value = true
   } catch (error) {
     ElMessage.error('获取报告失败')
@@ -407,7 +427,7 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 2rem;
+  padding: 2rem 8rem;
   background-color: var(--color-background-soft);
 }
 

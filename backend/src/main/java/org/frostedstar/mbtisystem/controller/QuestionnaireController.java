@@ -361,7 +361,7 @@ public class QuestionnaireController extends BaseController {
             
             // 级联删除问卷
             if (questionnaireService.deleteQuestionnaireWithCascade(id)) {
-                ApiResponse<Map<String, String>> apiResponse = ApiResponse.success("问卷删除成功", Map.of("result", "问卷删除成功"));
+                ApiResponse<Map<String, Boolean>> apiResponse = ApiResponse.success("问卷删除成功", Map.of("deleted", true));
                 sendApiResponse(response, apiResponse);
             }
         } catch (Exception e) {
@@ -387,7 +387,7 @@ public class QuestionnaireController extends BaseController {
                 return;
             }
 
-            ApiResponse<Map<String, String>> apiResponse = ApiResponse.success("问卷发布成功", Map.of("result", "问卷发布成功"));
+            ApiResponse<Map<String, Boolean>> apiResponse = ApiResponse.success("问卷发布成功", Map.of("published", true));
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("发布问卷失败", e);
@@ -412,7 +412,7 @@ public class QuestionnaireController extends BaseController {
                 return;
             }
 
-            ApiResponse<Map<String, String>> apiResponse = ApiResponse.success("问卷撤销发布成功", Map.of("result", "问卷撤销发布成功"));
+            ApiResponse<Map<String, Boolean>> apiResponse = ApiResponse.success("问卷撤销发布成功", Map.of("unpublished", true));
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("撤销发布问卷失败", e);

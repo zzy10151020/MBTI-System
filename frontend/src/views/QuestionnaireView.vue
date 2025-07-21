@@ -8,7 +8,7 @@
         <p class="page-subtitle">探索你的性格类型，发现真实的自己</p>
       </div>
 
-      <div class="questionnaire-grid" v-if="questionnaireStore.questionnaires.length > 0">
+      <div class="questionnaire-grid" v-if="questionnaireStore.questionnaires_published.length > 0">
         <!-- 大图片区域 - 占据第一列前两行 -->
         <div class="featured-image">
           <div class="image-content">
@@ -84,7 +84,7 @@
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :total="questionnaireStore.questionnaires.length"
+          :total="questionnaireStore.questionnaires_published.length"
           layout="total, sizes, prev, pager, next, jumper"
           :background="true"
           @size-change="handleSizeChange"
@@ -150,13 +150,13 @@ const completedQuestionnaires = ref<Set<number>>(new Set())
 
 // 计算属性
 const totalPages = computed(() => {
-  return Math.ceil(questionnaireStore.questionnaires.length / pageSize.value)
+  return Math.ceil(questionnaireStore.questionnaires_published.length / pageSize.value)
 })
 
 const currentPageQuestionnaires = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
   const end = start + pageSize.value
-  return questionnaireStore.questionnaires.slice(start, end)
+  return questionnaireStore.questionnaires_published.slice(start, end)
 })
 
 const emptySlots = computed(() => {
@@ -167,7 +167,7 @@ const emptySlots = computed(() => {
 
 // 方法
 const fetchQuestionnaires = async () => {
-  await questionnaireStore.fetchQuestionnaires()
+  await questionnaireStore.fetchPublishedQuestionnaires()
   // 问卷加载完成后检查用户完成状态
   await checkAllQuestionnairesCompletion()
 }
@@ -177,8 +177,8 @@ const checkAllQuestionnairesCompletion = async () => {
   if (!userStore.isLoggedIn) return
   
   const completedSet = new Set<number>()
-  
-  for (const questionnaire of questionnaireStore.questionnaires) {
+
+  for (const questionnaire of questionnaireStore.questionnaires_published) {
     try {
       const result = await testStore.checkTestCompleted(questionnaire.questionnaireId)
       if (result.completed) {

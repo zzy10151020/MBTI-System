@@ -23,4 +23,9 @@ public interface QuestionnaireDAO extends BaseDAO<Questionnaire, Integer> {
      * 根据标题模糊查找问卷
      */
     List<Questionnaire> findByTitleLike(String title);
+
+    /**
+     * 查找所有问卷Id
+     */
+    List<Integer> findAllIds();
 }

@@ -46,6 +46,16 @@ public interface TestService {
      * 获取问卷的统计数据
      */
     Map<String, Object> getQuestionnaireStatistics(Integer questionnaireId);
+
+    /**
+     * 获取所有测试结果的统计数据
+     */
+    Map<String, Object> getAllQuestionnaireStatistics();
+
+    /**
+     * 统计测试数量
+     */
+    long countAnswers();
     
     /**
      * 计算维度统计信息（各维度倾向）

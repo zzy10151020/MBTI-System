@@ -1,106 +1,41 @@
 import service from './axios'
-import type { 
-  ApiResponse,
-  LoginRequest, 
-  LoginResponse, 
-  RegisterRequest, 
-  RegisterResponse,
-  User,
+import type {
+  LoginRequest,
+  RegisterRequest,
   CheckUsernameRequest,
   CheckEmailRequest,
-  CheckUsernameResponse,
-  CheckEmailResponse
 } from './types'
 
-/**
- * 认证相关API
- */
 export const authApi = {
-  /**
-   * 用户登录
-   * @param data 登录请求数据
-   */
-  async login(data: LoginRequest): Promise<LoginResponse> {
-    const response = await service.post<any, ApiResponse<LoginResponse>>('/api/auth/login', data)
-    
-    // 登录成功后保存用户信息到localStorage
-    if (response.success && response.data) {
-      localStorage.setItem('userInfo', JSON.stringify(response.data.user))
-    }
+  // 用户登录
+  login: async (data: LoginRequest): Promise<any> => {
+    const response = await service.post('/api/auth/login', data)
     return response.data!
   },
 
-  /**
-   * 用户注册
-   * @param data 注册请求数据
-   */
-  async register(data: RegisterRequest): Promise<RegisterResponse> {
-    const response = await service.post<any, ApiResponse<RegisterResponse>>('/api/auth/register', data)
+  // 用户注册
+  register: async (data: RegisterRequest): Promise<any> => {
+    const response = await service.post('/api/auth/register', data)
     return response.data!
   },
 
-  /**
-   * 退出登录
-   */
-  async logout(): Promise<void> {
-    try {
-      await service.post('/api/auth/logout')
-    } catch (error) {
-      console.error('注销请求失败:', error)
-    } finally {
-      // 无论请求是否成功，都清除本地数据
-      localStorage.removeItem('userInfo')
-    }
-  },
-
-  /**
-   * 检查用户名是否存在
-   * @param data 检查用户名请求数据
-   */
-  async checkUsername(data: CheckUsernameRequest): Promise<CheckUsernameResponse> {
-    const response = await service.post<any, ApiResponse<CheckUsernameResponse>>('/api/auth/checkUsername', data)
+  // 用户登出
+  logout: async (): Promise<any> => {
+    const response = await service.post('/api/auth/logout')
     return response.data!
   },
 
-  /**
-   * 检查邮箱是否存在
-   * @param data 检查邮箱请求数据
-   */
-  async checkEmail(data: CheckEmailRequest): Promise<CheckEmailResponse> {
-    const response = await service.post<any, ApiResponse<CheckEmailResponse>>('/api/auth/checkEmail', data)
+  // 检查用户名是否存在
+  checkUsername: async (data: CheckUsernameRequest): Promise<any> => {
+    const response = await service.post('/api/auth/check-username', data)
     return response.data!
   },
 
-  /**
-   * 检查是否已登录
-   */
-  isLoggedIn(): boolean {
-    const userInfo = localStorage.getItem('userInfo')
-    return !!userInfo
+  // 检查邮箱是否存在
+  checkEmail: async (data: CheckEmailRequest): Promise<any> => {
+    const response = await service.post('/api/auth/check-email', data)
+    return response.data!
   },
-
-  /**
-   * 获取当前用户信息
-   */
-  getCurrentUser(): User | null {
-    const userInfo = localStorage.getItem('userInfo')
-    return userInfo ? JSON.parse(userInfo) : null
-  },
-
-  /**
-   * 设置用户信息
-   * @param user 用户信息
-   */
-  setUserInfo(user: User): void {
-    localStorage.setItem('userInfo', JSON.stringify(user))
-  },
-
-  /**
-   * 清除用户信息
-   */
-  clearUserInfo(): void {
-    localStorage.removeItem('userInfo')
-  }
 }
 
 export default authApi

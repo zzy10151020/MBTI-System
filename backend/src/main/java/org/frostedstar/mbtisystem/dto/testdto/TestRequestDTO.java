@@ -91,6 +91,5 @@ public class TestRequestDTO {
     public static class AnswerDetailRequestDTO {
         private Integer questionId;
         private Integer optionId;
-        private String selectedOption;
     }
 }

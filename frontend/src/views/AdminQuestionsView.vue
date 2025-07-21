@@ -39,7 +39,7 @@
           <el-table-column prop="content" label="问题内容" min-width="300">
             <template #default="{ row }">
               <div class="question-content">
-                <p class="question-text">{{ row.questionText }}</p>
+                <p class="question-text">{{ row.content }}</p>
                 <el-tag size="small" :type="getDimensionTagType(row.dimension)">
                   {{ getDimensionLabel(row.dimension) }}
                 </el-tag>
@@ -52,11 +52,12 @@
               <div class="options-list">
                 <div 
                   v-for="option in row.options" 
-                  :key="option.optionId"
+                  :key="option.optionId || option.optionValue || option.content"
                   class="option-item"
                 >
-                  <span class="option-content">{{ option.optionText }}</span>
+                  <span class="option-content">{{ option.content || option.optionText }}</span>
                   <el-tag 
+                    v-if="option.score !== undefined"
                     size="small" 
                     :type="option.score > 0 ? 'success' : 'warning'"
                     class="score-tag"
@@ -111,9 +112,9 @@
         :rules="questionRules"
         label-width="100px"
       >
-        <el-form-item label="问题内容" prop="questionText">
+        <el-form-item label="问题内容" prop="content">
           <el-input 
-            v-model="questionForm.questionText" 
+            v-model="questionForm.content" 
             type="textarea"
             :rows="3"
             placeholder="请输入问题内容"
@@ -122,19 +123,12 @@
           />
         </el-form-item>
         
-        <el-form-item label="问题类型" prop="questionType">
-          <el-select v-model="questionForm.questionType" placeholder="请选择问题类型">
-            <el-option label="单选题" value="SINGLE_CHOICE" />
-            <el-option label="多选题" value="MULTIPLE_CHOICE" />
-          </el-select>
-        </el-form-item>
-        
         <el-form-item label="MBTI维度" prop="dimension">
           <el-select v-model="questionForm.dimension" placeholder="请选择MBTI维度">
-            <el-option label="外向性/内向性 (E/I)" value="E/I" />
-            <el-option label="感觉/直觉 (S/N)" value="S/N" />
-            <el-option label="思考/情感 (T/F)" value="T/F" />
-            <el-option label="判断/知觉 (J/P)" value="J/P" />
+            <el-option label="外向性/内向性 (EI)" value="EI" />
+            <el-option label="感觉/直觉 (SN)" value="SN" />
+            <el-option label="思考/情感 (TF)" value="TF" />
+            <el-option label="判断/知觉 (JP)" value="JP" />
           </el-select>
         </el-form-item>
         
@@ -157,7 +151,7 @@
           >
             <el-form-item 
               :label="`选项 ${String.fromCharCode(65 + index)}`"
-              :prop="`options.${index}.optionText`"
+              :prop="`options.${index}.content`"
               :rules="[
                 { required: true, message: '请输入选项内容', trigger: 'blur' },
                 { min: 1, max: 500, message: '选项内容长度应在1-500个字符', trigger: 'blur' }
@@ -165,14 +159,21 @@
             >
               <div class="option-input-group">
                 <el-input 
-                  v-model="option.optionText" 
+                  v-model="option.content" 
                   placeholder="选项内容"
                   class="option-content-input"
                 />
-                <el-input 
-                  v-model="option.optionValue" 
-                  placeholder="选项值"
+                <el-slider
+                  v-model="option.score"
+                  :min="-10"
+                  :max="10"
+                  :step="1"
+                  show-input
                   class="option-score-input"
+                  style="width: 180px;"
+                  :marks="sliderMarks"
+                  :tooltip-visible="true"
+                  :format-tooltip="formatSliderTooltip"
                 />
                 <el-button 
                   v-if="questionForm.options.length > 2"
@@ -225,7 +226,7 @@ import {
   Plus,
   Delete
 } from '@element-plus/icons-vue'
-import { questionApi } from '@/api'
+import { useQuestionStore } from '@/stores/questionStore'
 import type { Question, CreateQuestionRequest, UpdateQuestionRequest } from '@/api/types'
 
 const router = useRouter()
@@ -235,9 +236,9 @@ const route = useRoute()
 const questionnaireId = computed(() => parseInt(route.params.id as string))
 const questionnaireTitle = computed(() => route.query.title as string || '')
 
-// 响应式状态
-const questions = ref<Question[]>([])
-const loading = ref(false)
+const questionStore = useQuestionStore()
+const questions = computed(() => questionStore.questions)
+const loading = computed(() => questionStore.loading)
 const saving = ref(false)
 
 // 弹窗状态
@@ -248,31 +249,32 @@ const editingQuestionId = ref<number | null>(null)
 // 表单相关
 const questionFormRef = ref<any>(null)
 
-// 创建一个扩展的表单类型，包含dimension和questionOrder字段
-interface ExtendedQuestionForm extends CreateQuestionRequest {
-  dimension?: string
-  questionOrder?: number
+interface OptionForm {
+  content: string
+  score: number
 }
-
-const questionForm = ref<ExtendedQuestionForm>({
+interface QuestionForm {
+  questionnaireId: number
+  content: string
+  dimension: string
+  questionOrder: number
+  options: OptionForm[]
+}
+const questionForm = ref<QuestionForm>({
   questionnaireId: 0, // 将在onMounted中设置
-  questionText: '',
-  questionType: 'SINGLE_CHOICE',
+  content: '',
   dimension: '',
   questionOrder: 1,
   options: [
-    { optionText: '', optionValue: 'A' },
-    { optionText: '', optionValue: 'B' }
+    { content: '', score: 1 },
+    { content: '', score: -1 }
   ]
 })
 
 const questionRules = {
-  questionText: [
+  content: [
     { required: true, message: '请输入问题内容', trigger: 'blur' },
     { min: 5, max: 1000, message: '问题内容长度应在5-1000个字符', trigger: 'blur' }
-  ],
-  questionType: [
-    { required: true, message: '请选择问题类型', trigger: 'change' }
   ],
   dimension: [
     { required: true, message: '请选择MBTI维度', trigger: 'change' }
@@ -282,27 +284,19 @@ const questionRules = {
   ]
 }
 
+// 滑块 marks 和 tooltip 格式化
+const sliderMarks = {
+  '-10': '-10',
+  '0': '0',
+  '10': '10'
+}
+const formatSliderTooltip = (val: number) => `${val > 0 ? '+' : ''}${val}`
+
 // 生命周期
 onMounted(async () => {
-  // 设置问卷ID
   questionForm.value.questionnaireId = questionnaireId.value
-  await fetchQuestions()
+  await questionStore.fetchQuestions(questionnaireId.value)
 })
-
-// 方法
-const fetchQuestions = async () => {
-  try {
-    loading.value = true
-    questions.value = await questionApi.getQuestionsByQuestionnaire({ 
-      questionnaireId: questionnaireId.value 
-    })
-  } catch (error: any) {
-    console.error('获取问题列表失败:', error)
-    ElMessage.error('获取问题列表失败')
-  } finally {
-    loading.value = false
-  }
-}
 
 const getDimensionLabel = (dimension: string) => {
   const labels: Record<string, string> = {
@@ -327,8 +321,8 @@ const getDimensionTagType = (dimension: string): "primary" | "success" | "warnin
 const addOption = () => {
   const nextLetter = String.fromCharCode(65 + questionForm.value.options.length) // A, B, C, D...
   questionForm.value.options.push({ 
-    optionText: '', 
-    optionValue: nextLetter 
+    content: '', 
+    score: 0 
   })
 }
 
@@ -341,13 +335,12 @@ const editQuestion = (question: Question) => {
   editingQuestionId.value = question.questionId!
   questionForm.value = {
     questionnaireId: questionnaireId.value,
-    questionText: question.questionText,
-    questionType: question.questionType,
+    content: question.content,
     dimension: question.dimension,
     questionOrder: question.questionOrder,
     options: question.options.map(opt => ({
-      optionText: opt.optionText,
-      optionValue: opt.optionValue
+      content: opt.content,
+      score: opt.score
     }))
   }
   showCreateDialog.value = true
@@ -356,33 +349,32 @@ const editQuestion = (question: Question) => {
 const saveQuestion = async () => {
   try {
     await questionFormRef.value?.validate()
-    
     saving.value = true
-    
     if (isEditing.value && editingQuestionId.value) {
       // 更新问题
-      const updateData: UpdateQuestionRequest = {
+      const updateData: UpdateQuestionRequest & { questionnaireId: number } = {
         questionId: editingQuestionId.value,
-        questionText: questionForm.value.questionText,
-        questionType: questionForm.value.questionType,
-        options: questionForm.value.options
+        content: questionForm.value.content,
+        dimension: questionForm.value.dimension,
+        questionOrder: questionForm.value.questionOrder,
+        options: questionForm.value.options,
+        questionnaireId: questionnaireId.value
       }
-      await questionApi.updateQuestion(updateData)
+      await questionStore.updateQuestion(updateData)
       ElMessage.success('问题更新成功')
     } else {
       // 创建问题
       const createData: CreateQuestionRequest = {
         questionnaireId: questionnaireId.value,
-        questionText: questionForm.value.questionText,
-        questionType: questionForm.value.questionType,
+        content: questionForm.value.content,
+        dimension: questionForm.value.dimension,
+        questionOrder: questionForm.value.questionOrder,
         options: questionForm.value.options
       }
-      await questionApi.createQuestion(createData)
+      await questionStore.createQuestion(createData)
       ElMessage.success('问题创建成功')
     }
-    
     resetForm()
-    await fetchQuestions()
   } catch (error: any) {
     console.error('保存问题失败:', error)
     ElMessage.error(error.message || '保存失败')
@@ -393,9 +385,8 @@ const saveQuestion = async () => {
 
 const deleteQuestion = async (questionId: number) => {
   try {
-    await questionApi.deleteQuestion({ questionId })
+    await questionStore.deleteQuestion(questionId, questionnaireId.value)
     ElMessage.success('删除成功')
-    await fetchQuestions()
   } catch (error: any) {
     console.error('删除问题失败:', error)
     ElMessage.error(error.message || '删除失败')
@@ -408,13 +399,12 @@ const resetForm = () => {
   editingQuestionId.value = null
   questionForm.value = {
     questionnaireId: questionnaireId.value,
-    questionText: '',
-    questionType: 'SINGLE_CHOICE',
+    content: '',
     dimension: '',
     questionOrder: (questions.value.length || 0) + 1,
     options: [
-      { optionText: '', optionValue: '1' },
-      { optionText: '', optionValue: '-1' }
+      { content: '', score: 1 },
+      { content: '', score: -1 }
     ]
   }
   questionFormRef.value?.resetFields()

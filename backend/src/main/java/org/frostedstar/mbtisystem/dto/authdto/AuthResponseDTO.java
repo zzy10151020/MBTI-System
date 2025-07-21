@@ -17,9 +17,7 @@ public class AuthResponseDTO {
     
     // 响应相关字段
     private String sessionId;
-    private String message;
     private UserResponseDTO user;
-    private boolean success;
     
     /**
      * 创建登录成功响应
@@ -28,8 +26,6 @@ public class AuthResponseDTO {
         return AuthResponseDTO.builder()
                 .user(user)
                 .sessionId(sessionId)
-                .message("登录成功")
-                .success(true)
                 .build();
     }
     
@@ -38,8 +34,6 @@ public class AuthResponseDTO {
      */
     public static AuthResponseDTO loginFailure(String message) {
         return AuthResponseDTO.builder()
-                .message(message)
-                .success(false)
                 .build();
     }
     
@@ -49,8 +43,6 @@ public class AuthResponseDTO {
     public static AuthResponseDTO registerSuccess(UserResponseDTO user, String message) {
         return AuthResponseDTO.builder()
                 .user(user)
-                .message(message != null ? message : "注册成功")
-                .success(true)
                 .build();
     }
     
@@ -59,8 +51,6 @@ public class AuthResponseDTO {
      */
     public static AuthResponseDTO registerFailure(String message) {
         return AuthResponseDTO.builder()
-                .message(message)
-                .success(false)
                 .build();
     }
 }

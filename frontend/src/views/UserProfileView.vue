@@ -18,9 +18,6 @@
             <el-button type="primary" @click="editProfile">
               编辑资料
             </el-button>
-            <el-button @click="goToResults">
-              查看测试结果
-            </el-button>
           </div>
         </div>
       </div>
@@ -53,7 +50,7 @@
           </div>
           <div class="stat-content">
             <h3>最新类型</h3>
-            <p>{{ formatDate(testStore.latestTestResult.createdAt) }}</p>
+            <p>{{ formatDate(testStore.latestTestResult.answeredAt) }}</p>
           </div>
         </div>
 
@@ -105,27 +102,27 @@
       <!-- 管理员统计面板 -->
       <div v-if="userStore.user?.role === 'ADMIN'" class="admin-section">
         <h2 class="section-title">管理员统计</h2>
-        <div class="admin-stats" v-if="testStore.statistics">
+        <div class="admin-stats">
           <div class="admin-stat-card">
-            <h3>{{ testStore.statistics.totalAnswers }}</h3>
-            <p>总测试次数</p>
+            <h3>{{ testStore.testStatisticses?.totalParticipants || 0 }}</h3>
+            <p>总测试人次</p>
           </div>
           <div class="admin-stat-card">
-            <h3>{{ testStore.statistics.totalQuestionnaires }}</h3>
+            <h3>{{ allCount }}</h3>
             <p>问卷总数</p>
           </div>
           <div class="admin-stat-card">
-            <h3>{{ testStore.statistics.publishedQuestionnaires }}</h3>
+            <h3>{{ publishedCount }}</h3>
             <p>已发布问卷</p>
           </div>
         </div>
         
         <!-- MBTI类型分布图表 -->
-        <div class="chart-section" v-if="testStore.statistics">
+        <div class="chart-section" v-if="testStore.testStatisticses">
           <h3>MBTI类型分布</h3>
           <div class="mbti-distribution">
             <div 
-              v-for="(count, type) in testStore.statistics.mbtiDistribution" 
+              v-for="(count, type) in testStore.testStatisticses.mbtiDistribution" 
               :key="type"
               class="mbti-item"
             >
@@ -134,9 +131,9 @@
                 <div 
                   class="mbti-fill"
                   :style="{ 
-                    width: testStore.statistics ? 
-                      `${(count / Math.max(...Object.values(testStore.statistics.mbtiDistribution).map(v => Number(v) || 0))) * 100}%` : 
-                      '0%' 
+                    width: testStore.testStatisticses ? 
+                      `${(count / Math.max(...Object.values(testStore.testStatisticses.mbtiDistribution).map(v => Number(v) || 0))) * 100}%` : 
+                      '0%'
                   }"
                 ></div>
               </div>
@@ -197,13 +194,13 @@ import {
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/userStore'
 import { useTestStore } from '@/stores/testStore'
-import { userApi } from '@/api'
-import type { UpdateProfileRequest } from '@/api/types'
+import { useQuestionnaireStore } from '@/stores/questionnaireStore'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 const testStore = useTestStore()
+const questionnaireStore = useQuestionnaireStore()
 
 // 响应式状态
 const showEditDialog = ref(false)
@@ -233,18 +230,53 @@ const currentUid = computed(() => {
   return route.params.uid || userStore.user?.userId?.toString()
 })
 
+const publishedCount = computed(() => {
+  return questionnaireStore.questionnaires_published.length || 0
+})
+
+const allCount = computed(() => {
+  return questionnaireStore.questionnaires_all.length || 0
+})
+
 const daysSinceJoin = computed(() => {
-  if (!userStore.user?.createdAt) return 0
-  const joinDate = new Date(userStore.user.createdAt)
+  const createdAt = userStore.user?.createdAt
+  if (!createdAt) return 0
+  let joinDate: Date
+  if (Array.isArray(createdAt) && createdAt.length >= 3) {
+    // 兼容 LocalDateTime 数组格式
+    joinDate = new Date(
+      createdAt[0],
+      createdAt[1] - 1,
+      createdAt[2],
+      createdAt[3] || 0,
+      createdAt[4] || 0,
+      createdAt[5] || 0
+    )
+  } else {
+    joinDate = new Date(createdAt as string)
+  }
   const now = new Date()
   const diffTime = Math.abs(now.getTime() - joinDate.getTime())
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 })
 
 // 格式化日期
-const formatDate = (dateString: string | undefined) => {
-  if (!dateString) return '未知'
-  return new Date(dateString).toLocaleDateString('zh-CN')
+const formatDate = (date: string | undefined) => {
+  if (!date) return ''
+  if (Array.isArray(date) && date.length >= 3) {
+    // 月份要减1
+    const d = new Date(
+      date[0],
+      date[1] - 1,
+      date[2],
+      date[3] || 0,
+      date[4] || 0,
+      date[5] || 0
+    )
+    return d.toLocaleString('zh-CN')
+  }
+  // 兼容字符串格式
+  return new Date(date as string).toLocaleString('zh-CN')
 }
 
 // 生命周期
@@ -257,7 +289,7 @@ onMounted(async () => {
   
   // 如果是管理员，获取统计信息
   if (userStore.user?.role === 'ADMIN') {
-    await testStore.fetchTestStatistics()
+    await testStore.fetchAllTestStatistics()
   }
 })
 
@@ -277,12 +309,7 @@ const saveProfile = async () => {
     await editFormRef.value?.validate()
     
     saving.value = true
-    
-    const updateData: UpdateProfileRequest = {
-      email: editForm.value.email
-    }
-    
-    const updatedUser = await userApi.updateProfile(updateData)
+    const updatedUser = await userStore.updateProfile(editForm.value.email)
     userStore.user = updatedUser
     
     ElMessage.success('个人资料更新成功')
@@ -366,12 +393,12 @@ const exportData = async () => {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 2rem;
+  padding: 2rem 8rem;
   background-color: var(--color-background-soft);
 }
 
 .profile-card {
-  max-width: 90rem;
+  max-width: 100rem;
   width: 100%;
   background-color: var(--color-background);
   border-radius: 1.6rem;
@@ -409,7 +436,7 @@ const exportData = async () => {
 
 .user-info h1 {
   margin: 0 0 0.5rem 0;
-  font-size: 2.4rem;
+  font-size: 1.8rem;
   color: var(--color-text-primary);
 }
 
@@ -417,18 +444,36 @@ const exportData = async () => {
   margin: 0 0 0.5rem 0;
   color: var(--primary-teal);
   font-weight: 600;
+  font-size: 0.8rem;
+  width: fit-content;
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.4rem;
+  background-color: rgba(32, 178, 170, 0.1);
+  border: 0.1rem solid var(--primary-teal);
 }
 
 .join-date {
   margin: 0;
   color: var(--color-text-secondary);
-  font-size: 1.3rem;
+  font-size: 1rem;
 }
 
 .profile-actions {
   display: flex;
   gap: 1rem;
   flex-shrink: 0;
+}
+
+:deep(.el-button--primary) {
+  background-color: var(--primary-teal) !important;
+  border-color: var(--primary-teal) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-button--primary:hover) {
+  background-color: var(--primary-teal-dark) !important;
+  border-color: var(--primary-teal-dark) !important;
+  color: #ffffff !important;
 }
 
 /* 统计卡片 */
@@ -506,14 +551,14 @@ const exportData = async () => {
 
 .action-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(25rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
   gap: 2rem;
 }
 
 .action-item {
   background-color: var(--color-background-soft);
-  border-radius: 1.2rem;
-  padding: 2.5rem;
+  border-radius: 1rem;
+  padding: 2rem;
   text-align: center;
   cursor: pointer;
   border: 1px solid var(--color-border);
@@ -527,32 +572,32 @@ const exportData = async () => {
 }
 
 .action-icon {
-  width: 6rem;
-  height: 6rem;
+  width: 5rem;
+  height: 5rem;
   border-radius: 50%;
   background-color: var(--primary-teal-light);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 1.5rem;
+  margin: 0 auto 1rem;
 }
 
 .action-icon .el-icon {
-  font-size: 2.5rem;
+  font-size: 2rem;
   color: var(--primary-teal);
 }
 
 .action-item h3 {
   margin: 0 0 1rem 0;
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   color: var(--color-text-primary);
 }
 
 .action-item p {
   margin: 0;
   color: var(--color-text-secondary);
-  font-size: 1.3rem;
-  line-height: 1.5;
+  font-size: 1rem;
+  line-height: 1.3;
 }
 
 /* 管理员统计 */
@@ -593,6 +638,7 @@ const exportData = async () => {
 .chart-section h3 {
   margin-bottom: 2rem;
   color: var(--color-text-primary);
+  font-size: 1.8rem;
 }
 
 .mbti-distribution {
@@ -612,12 +658,13 @@ const exportData = async () => {
 
 .mbti-type {
   font-weight: bold;
+  font-size: 1.4rem;
   color: var(--primary-teal);
   text-align: center;
 }
 
 .mbti-bar {
-  height: 2rem;
+  height: 1.2rem;
   background-color: var(--color-border);
   border-radius: 1rem;
   overflow: hidden;
@@ -631,6 +678,7 @@ const exportData = async () => {
 
 .mbti-count {
   text-align: center;
+  font-size: 1.4rem;
   font-weight: 600;
   color: var(--color-text-primary);
 }

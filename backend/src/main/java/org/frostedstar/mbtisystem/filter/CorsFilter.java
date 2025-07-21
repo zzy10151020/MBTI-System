@@ -31,7 +31,7 @@ public class CorsFilter implements Filter {
         String origin = httpRequest.getHeader("Origin");
         
         // 设置 CORS 头 - 允许特定域名（开发环境）
-        if (origin != null && (origin.startsWith("http://localhost:") || 
+        if (origin != null && (origin.startsWith("http://localhost:5173") || 
                               origin.startsWith("http://127.0.0.1:") ||
                               origin.startsWith("https://example.com"))) {
             httpResponse.setHeader("Access-Control-Allow-Origin", origin);

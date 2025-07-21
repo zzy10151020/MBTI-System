@@ -24,7 +24,7 @@
             <el-icon><Document /></el-icon>
           </div>
           <div class="stat-content">
-            <h3>{{ questionnaires.length }}</h3>
+            <h3>{{ questionnaireStore.questionnaires_all.length }}</h3>
             <p>问卷总数</p>
           </div>
         </div>
@@ -79,7 +79,7 @@
         <el-table
           :data="filteredQuestionnaires"
           style="width: 100%"
-          v-loading="loading"
+          v-loading="questionnaireStore.loading"
         >
           <el-table-column prop="questionnaireId" label="ID" width="80" />
           
@@ -339,17 +339,21 @@ import {
   View,
   Edit,
   UserFilled,
-  Search
 } from '@element-plus/icons-vue'
-import { questionnaireApi } from '@/api'
-import type { Questionnaire, CreateQuestionnaireRequest } from '@/api/types'
+import type { 
+  Questionnaire, 
+  CreateQuestionnaireRequest, 
+  UpdateQuestionnaireRequest 
+} from '@/api/types'
+import { useQuestionnaireStore } from '@/stores/questionnaireStore'
+import { useTestStore } from '@/stores/testStore'
 
 const router = useRouter()
 const route = useRoute()
+const questionnaireStore = useQuestionnaireStore()
+const testStore = useTestStore()
 
 // 响应式状态
-const questionnaires = ref<Questionnaire[]>([])
-const loading = ref(false)
 const searchKeyword = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
@@ -400,19 +404,23 @@ const editRules = {
 
 // 计算属性
 const publishedCount = computed(() => {
-  return questionnaires.value.filter(q => q.isPublished).length
+  return questionnaireStore.questionnaires_all.filter(q => q.isPublished).length
 })
 
 const draftCount = computed(() => {
-  return questionnaires.value.filter(q => !q.isPublished).length
+  return questionnaireStore.questionnaires_all.filter(q => !q.isPublished).length
 })
 
-const totalAnswers = computed(() => {
-  return questionnaires.value.reduce((sum, q) => sum + (q.questionCount || 0), 0)
+const totalAnswers = ref(0)
+
+onMounted(async () => {
+  await questionnaireStore.fetchAllQuestionnaires()
+  // 获取总答题数
+  totalAnswers.value = await testStore.getAnswerCount()
 })
 
 const filteredQuestionnaires = computed(() => {
-  let filtered = questionnaires.value
+  let filtered = questionnaireStore.questionnaires_all
   
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase()
@@ -431,26 +439,25 @@ const filteredQuestionnaires = computed(() => {
 
 // 生命周期
 onMounted(async () => {
-  await fetchQuestionnaires()
+  await questionnaireStore.fetchAllQuestionnaires()
 })
 
-// 方法
-const fetchQuestionnaires = async () => {
-  try {
-    loading.value = true
-    const response = await questionnaireApi.getAllQuestionnaires()
-    questionnaires.value = response
-    totalItems.value = response.length
-  } catch (error: any) {
-    console.error('获取问卷列表失败:', error)
-    ElMessage.error('获取问卷列表失败')
-  } finally {
-    loading.value = false
+const formatDate = (date: string | number[] | null | undefined) => {
+  if (!date) return ''
+  if (Array.isArray(date) && date.length >= 3) {
+    // 月份要减1
+    const d = new Date(
+      date[0],
+      date[1] - 1,
+      date[2],
+      date[3] || 0,
+      date[4] || 0,
+      date[5] || 0
+    )
+    return d.toLocaleString('zh-CN')
   }
-}
-
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleString('zh-CN')
+  // 兼容字符串格式
+  return new Date(date as string).toLocaleString('zh-CN')
 }
 
 const handleSearch = () => {
@@ -470,7 +477,7 @@ const handleCurrentChange = (newPage: number) => {
 }
 
 const updatePagination = () => {
-  const filtered = questionnaires.value.filter(q => {
+  const filtered = questionnaireStore.questionnaires_all.filter(q => {
     if (!searchKeyword.value) return true
     const keyword = searchKeyword.value.toLowerCase()
     return q.title.toLowerCase().includes(keyword) ||
@@ -491,14 +498,13 @@ const createQuestionnaire = async () => {
       description: createForm.value.description
     }
     
-    await questionnaireApi.createQuestionnaire(createData)
-    
-    ElMessage.success('问卷创建成功')
+    await questionnaireStore.createQuestionnaire(createData)
+
+    // 刷新列表
+    await questionnaireStore.fetchAllQuestionnaires()
     showCreateDialog.value = false
     createForm.value = { title: '', description: '' }
-    
-    // 刷新列表
-    await fetchQuestionnaires()
+    creating.value = false
   } catch (error: any) {
     console.error('创建问卷失败:', error)
     ElMessage.error(error.message || '创建失败')
@@ -521,22 +527,17 @@ const updateQuestionnaire = async () => {
     await editFormRef.value?.validate()
     
     editing.value = true
-    
-    const updateData = {
+
+    const updateData: UpdateQuestionnaireRequest = {
       questionnaireId: selectedQuestionnaire.value!.questionnaireId,
       title: editForm.value.title,
       description: editForm.value.description
     }
     
-    const updatedQuestionnaire = await questionnaireApi.updateQuestionnaire(updateData)
+    await questionnaireStore.updateQuestionnaire(updateData)
     
-    // 更新本地数据
-    const index = questionnaires.value.findIndex(q => q.questionnaireId === selectedQuestionnaire.value!.questionnaireId)
-    if (index !== -1) {
-      questionnaires.value[index] = updatedQuestionnaire
-    }
-    
-    ElMessage.success('问卷更新成功')
+    // 刷新列表
+    await questionnaireStore.fetchAllQuestionnaires()
     showEditDialog.value = false
     editForm.value = { title: '', description: '' }
     selectedQuestionnaire.value = null
@@ -562,21 +563,13 @@ const togglePublishStatus = async (questionnaire: Questionnaire) => {
     )
     
     // 调用API切换发布状态
-    const updateData = {
-      questionnaireId: questionnaire.questionnaireId,
-      title: questionnaire.title,
-      description: questionnaire.description,
-      isPublished: !questionnaire.isPublished
+    if (questionnaire.isPublished) {
+      await questionnaireStore.unpublishQuestionnaire(questionnaire.questionnaireId)
+      await questionnaireStore.fetchAllQuestionnaires()
+    } else {
+      await questionnaireStore.publishQuestionnaire(questionnaire.questionnaireId)
+      await questionnaireStore.fetchAllQuestionnaires()
     }
-    const updatedQuestionnaire = await questionnaireApi.updateQuestionnaire(updateData)
-    
-    // 更新本地状态
-    const index = questionnaires.value.findIndex(q => q.questionnaireId === questionnaire.questionnaireId)
-    if (index !== -1) {
-      questionnaires.value[index] = updatedQuestionnaire
-    }
-    
-    ElMessage.success(`${action}成功`)
   } catch (error: any) {
     if (error.message && error.message !== 'cancel') {
       console.error(`${questionnaire.isPublished ? '取消发布' : '发布'}失败:`, error)
@@ -602,14 +595,9 @@ const viewDetails = (questionnaire: Questionnaire) => {
 
 const deleteQuestionnaire = async (questionnaireId: number) => {
   try {
-    // 调用删除API
-    await questionnaireApi.deleteQuestionnaire({ questionnaireId })
-    
-    // 从本地列表中移除
-    questionnaires.value = questionnaires.value.filter(q => q.questionnaireId !== questionnaireId)
-    
-    ElMessage.success('删除成功')
-    updatePagination()
+    await questionnaireStore.deleteQuestionnaire(questionnaireId)
+    // 刷新列表
+    await questionnaireStore.fetchPublishedQuestionnaires()
   } catch (error: any) {
     console.error('删除问卷失败:', error)
     ElMessage.error(error.message || '删除失败')

@@ -20,6 +20,7 @@ import java.util.*;
  */
 @Slf4j
 public class TestServiceImpl implements TestService {
+    private final org.frostedstar.mbtisystem.dao.QuestionnaireDAO questionnaireDAO = org.frostedstar.mbtisystem.dao.DaoFactory.getQuestionnaireDao();
     
     private final QuestionDAO questionDAO;
     private final OptionDAO optionDAO;
@@ -103,8 +104,7 @@ public class TestServiceImpl implements TestService {
         // 为每个答案加载详情和关联信息
         for (Answer answer : answers) {
             // 加载问卷信息
-            Optional<org.frostedstar.mbtisystem.entity.Questionnaire> questionnaireOpt = 
-                org.frostedstar.mbtisystem.dao.DaoFactory.getQuestionnaireDao().findById(answer.getQuestionnaireId());
+            Optional<Questionnaire> questionnaireOpt = questionnaireDAO.findById(answer.getQuestionnaireId());
             questionnaireOpt.ifPresent(answer::setQuestionnaire);
             
             // 加载回答详情
@@ -113,13 +113,11 @@ public class TestServiceImpl implements TestService {
             // 为每个详情加载关联的问题和选项信息
             for (AnswerDetail detail : details) {
                 // 加载问题信息
-                Optional<org.frostedstar.mbtisystem.entity.Question> questionOpt = 
-                    questionDAO.findById(detail.getQuestionId());
+                Optional<Question> questionOpt = questionDAO.findById(detail.getQuestionId());
                 questionOpt.ifPresent(detail::setQuestion);
                 
                 // 加载选项信息
-                Optional<org.frostedstar.mbtisystem.entity.Option> optionOpt = 
-                    optionDAO.findById(detail.getOptionId());
+                Optional<Option> optionOpt = optionDAO.findById(detail.getOptionId());
                 optionOpt.ifPresent(detail::setOption);
             }
             
@@ -208,11 +206,11 @@ public class TestServiceImpl implements TestService {
     
     @Override
     public Map<String, Object> getQuestionnaireStatistics(Integer questionnaireId) {
-        Map<String, Object> statistics = new HashMap<>();
+        Map<String, Object> testStatistics = new HashMap<>();
         
         // 统计参与测试的人数
         List<Answer> answers = answerDAO.findByQuestionnaireId(questionnaireId);
-        statistics.put("totalParticipants", answers.size());
+        testStatistics.put("totalParticipants", answers.size());
         
         // 统计 MBTI 类型分布
         Map<String, Integer> mbtiDistribution = new HashMap<>();
@@ -223,7 +221,7 @@ public class TestServiceImpl implements TestService {
             mbtiDistribution.put(mbtiType, mbtiDistribution.getOrDefault(mbtiType, 0) + 1);
         }
         
-        statistics.put("mbtiDistribution", mbtiDistribution);
+        testStatistics.put("mbtiDistribution", mbtiDistribution);
         
         // 统计最近完成测试的时间
         if (!answers.isEmpty()) {
@@ -231,10 +229,63 @@ public class TestServiceImpl implements TestService {
                     .map(Answer::getAnsweredAt)
                     .max(LocalDateTime::compareTo)
                     .orElse(null);
-            statistics.put("latestTestTime", latestTest);
+            testStatistics.put("latestTestTime", latestTest);
         }
-        
-        return statistics;
+
+        return testStatistics;
+    }
+
+    @Override
+    public Map<String, Object> getAllQuestionnaireStatistics() {
+        // 汇总所有问卷的统计数据，并返回总和和每个问卷的详细统计
+        Map<String, Object> allStatistics = new HashMap<>();
+        List<Integer> questionnaireIds = questionnaireDAO.findAllIds();
+        int totalParticipants = 0;
+        Map<String, Integer> totalMbtiDistribution = new HashMap<>();
+        LocalDateTime latestTestTime = null;
+        Map<String, Object> detail = new HashMap<>();
+        for (Integer questionnaireId : questionnaireIds) {
+            Map<String, Object> statistics = getQuestionnaireStatistics(questionnaireId);
+            int participants = (int) statistics.getOrDefault("totalParticipants", 0);
+            totalParticipants += participants;
+            // 合并 mbtiDistribution
+            Map<String, Integer> mbtiDist = Collections.emptyMap();
+            Object mbtiObj = statistics.getOrDefault("mbtiDistribution", Collections.emptyMap());
+            if (mbtiObj instanceof Map<?, ?>) {
+                Map<?, ?> rawMap = (Map<?, ?>) mbtiObj;
+                Map<String, Integer> safeMap = new HashMap<>();
+                for (Map.Entry<?, ?> entry : rawMap.entrySet()) {
+                    if (entry.getKey() instanceof String && entry.getValue() instanceof Integer) {
+                        safeMap.put((String) entry.getKey(), (Integer) entry.getValue());
+                    }
+                }
+                mbtiDist = safeMap;
+            }
+            for (Map.Entry<String, Integer> entry : mbtiDist.entrySet()) {
+                totalMbtiDistribution.put(entry.getKey(), totalMbtiDistribution.getOrDefault(entry.getKey(), 0) + entry.getValue());
+            }
+            // 取最新时间
+            LocalDateTime testTime = (LocalDateTime) statistics.get("latestTestTime");
+            if (testTime != null && (latestTestTime == null || testTime.isAfter(latestTestTime))) {
+                latestTestTime = testTime;
+            }
+            // 记录每个问卷的详细统计
+            Map<String, Object> result = new HashMap<>();
+            result.put("totalParticipants", participants);
+            result.put("mbtiDistribution", mbtiDist);
+            result.put("latestTestTime", testTime);
+            detail.put(String.valueOf(questionnaireId), result);
+        }
+        allStatistics.put("totalParticipants", totalParticipants);
+        allStatistics.put("mbtiDistribution", totalMbtiDistribution);
+        allStatistics.put("latestTestTime", latestTestTime);
+        allStatistics.put("detail", detail);
+        return Collections.unmodifiableMap(allStatistics);
+    }
+
+    @Override
+    public long countAnswers() {
+        return answerDAO.count();
     }
     
     @Override
@@ -256,23 +307,41 @@ public class TestServiceImpl implements TestService {
         if (answerDetails == null || answerDetails.isEmpty()) {
             return Map.of();
         }
-        
+
         // 统计每个维度的得分
         int eScore = 0, iScore = 0;  // E/I 维度
-        int sScore = 0, nScore = 0;  // S/N 维度  
+        int sScore = 0, nScore = 0;  // S/N 维度
         int tScore = 0, fScore = 0;  // T/F 维度
         int jScore = 0, pScore = 0;  // J/P 维度
-        
+
         int eCount = 0, sCount = 0, tCount = 0, jCount = 0;
-        
+
         for (AnswerDetail detail : answerDetails) {
-            if (detail.getQuestion() == null || detail.getOption() == null) {
-                continue;
+            // 确保Question和Option不为null，否则主动查库
+            Question question = detail.getQuestion();
+            Option option = detail.getOption();
+            if (question == null) {
+                Optional<Question> qOpt = questionDAO.findById(detail.getQuestionId());
+                if (qOpt.isPresent()) {
+                    question = qOpt.get();
+                    detail.setQuestion(question);
+                } else {
+                    continue;
+                }
             }
-            
-            String dimension = detail.getQuestion().getDimension().toString();
-            byte optionScore = detail.getOption().getScore();
-            
+            if (option == null) {
+                Optional<Option> oOpt = optionDAO.findById(detail.getOptionId());
+                if (oOpt.isPresent()) {
+                    option = oOpt.get();
+                    detail.setOption(option);
+                } else {
+                    continue;
+                }
+            }
+
+            String dimension = question.getDimension().toString();
+            byte optionScore = option.getScore();
+
             switch (dimension) {
                 case "E/I":
                     if (optionScore > 0) {
@@ -308,10 +377,10 @@ public class TestServiceImpl implements TestService {
                     break;
             }
         }
-        
+
         // 计算百分比
         Map<String, Object> statistics = new HashMap<>();
-        
+
         if (eCount > 0) {
             int totalEI = eScore + iScore;
             if (totalEI > 0) {
@@ -319,7 +388,7 @@ public class TestServiceImpl implements TestService {
                 statistics.put("I_percentage", Math.round(iScore * 100.0 / totalEI));
             }
         }
-        
+
         if (sCount > 0) {
             int totalSN = sScore + nScore;
             if (totalSN > 0) {
@@ -327,7 +396,7 @@ public class TestServiceImpl implements TestService {
                 statistics.put("N_percentage", Math.round(nScore * 100.0 / totalSN));
             }
         }
-        
+
         if (tCount > 0) {
             int totalTF = tScore + fScore;
             if (totalTF > 0) {
@@ -335,7 +404,7 @@ public class TestServiceImpl implements TestService {
                 statistics.put("F_percentage", Math.round(fScore * 100.0 / totalTF));
             }
         }
-        
+
         if (jCount > 0) {
             int totalJP = jScore + pScore;
             if (totalJP > 0) {
@@ -343,7 +412,7 @@ public class TestServiceImpl implements TestService {
                 statistics.put("P_percentage", Math.round(pScore * 100.0 / totalJP));
             }
         }
-        
+
         return statistics;
     }
     

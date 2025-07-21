@@ -2,35 +2,47 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { questionnaireApi, type Questionnaire } from '@/api'
-import { questionApi } from '@/api/question'
+import type {
+  CreateQuestionnaireRequest,
+  UpdateQuestionnaireRequest,
+} from '@/api/types'
 
 export const useQuestionnaireStore = defineStore('questionnaire', () => {
   // 状态
-  const questionnaires = ref<Questionnaire[]>([])
+  const questionnaires_all = ref<Questionnaire[]>([])
+  const questionnaires_published = ref<Questionnaire[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
   // 计算属性
-  const activeQuestionnaires = computed(() => {
-    return questionnaires.value.filter(q => q.isPublished)
-  })
-
   const getQuestionnaireById = computed(() => {
-    return (id: number) => questionnaires.value.find(q => q.questionnaireId === id)
+    return (id: number) => questionnaires_all.value.find(q => q.questionnaireId === id)
   })
 
   // 操作方法
-  const fetchQuestionnaires = async (uid?: number) => {
+  const fetchPublishedQuestionnaires = async () => {
     try {
       loading.value = true
       error.value = null
-      questionnaires.value = await questionnaireApi.getPublishedQuestionnaires()
+      const response = await questionnaireApi.getPublishedQuestionnaires()
+      questionnaires_published.value = response || []
     } catch (err: any) {
-      console.warn('API获取问卷失败，使用模拟数据:', err)
-      
-      // 如果API失败，使用模拟数据进行展示
-      questionnaires.value = getMockQuestionnaires()
-      error.value = null // 不显示错误，因为有降级方案
+      error.value = err.message || '获取问卷列表失败'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const fetchAllQuestionnaires = async () => {
+    try {
+      loading.value = true
+      error.value = null
+      const response = await questionnaireApi.getAllQuestionnaires()
+      questionnaires_all.value = response || []
+    } catch (err: any) {
+      error.value = err.message || '获取所有问卷失败'
+      return null
     } finally {
       loading.value = false
     }
@@ -45,12 +57,6 @@ export const useQuestionnaireStore = defineStore('questionnaire', () => {
     } catch (err: any) {
       console.warn('API获取问卷详情失败:', err)
       error.value = err.message || '获取问卷详情失败'
-      
-      // 返回mock数据
-      const mockDetail = questionnaires.value.find(q => q.questionnaireId === id)
-      if (mockDetail) {
-        return mockDetail
-      }
       throw err
     } finally {
       loading.value = false
@@ -64,223 +70,151 @@ export const useQuestionnaireStore = defineStore('questionnaire', () => {
       error.value = null
       
       // 使用questionApi获取问题列表
-      const questions = await questionApi.getQuestionsByQuestionnaire({ questionnaireId: id })
-      
-      // 构造符合前端期望的数据结构
-      const result = {
-        questionnaireId: id,
-        title: '问卷测试', // 这里可以通过其他API获取问卷基本信息，或从mock数据获取
-        description: '问卷描述',
-        questions: questions
-      }
-      
-      return result
+      const questionnaire = await questionnaireApi.getQuestionnaireDetail({ questionnaireId: id })
+      return questionnaire
     } catch (err: any) {
       console.error('questionnaireStore: questionApi获取问题失败:', err)
       error.value = null
-      
-      // 返回mock问题数据
-      const mockData = getMockQuestionnaireQuestions(id)
-      return mockData
+      return null
     } finally {
       loading.value = false
     }
   }
 
-  // 模拟数据 - 用于开发测试
-  const getMockQuestionnaires = (): Questionnaire[] => {
-    return [
-      {
-        questionnaireId: 1,
-        title: '经典MBTI性格测试',
-        description: '最权威的MBTI性格类型测试，帮你深入了解自己的性格特征和行为模式',
-        creatorId: 1,
-        creatorName: 'admin',
-        createdAt: '2025-07-01T08:00:00',
-        isPublished: true
-      },
-      {
-        questionnaireId: 2,
-        title: '职场性格分析',
-        description: '专为职场人士设计的性格测试，了解你在工作中的优势和发展方向',
-        creatorId: 1,
-        creatorName: 'admin',
-        createdAt: '2025-07-01T09:00:00',
-        isPublished: true
-      },
-      {
-        questionnaireId: 3,
-        title: '情感倾向测试',
-        description: '探索你的情感处理方式和人际交往偏好，提升人际关系质量',
-        creatorId: 1,
-        creatorName: 'admin',
-        createdAt: '2025-07-01T10:00:00',
-        isPublished: true
-      },
-      {
-        questionnaireId: 4,
-        title: '学习风格评估',
-        description: '了解你的学习偏好和认知方式，优化学习效率和方法',
-        creatorId: 1,
-        creatorName: 'admin',
-        createdAt: '2025-07-01T11:00:00',
-        isPublished: true
-      },
-      {
-        questionnaireId: 5,
-        title: '领导力风格测试',
-        description: '评估你的领导潜力和管理风格，助力职业发展',
-        creatorId: 1,
-        creatorName: 'admin',
-        createdAt: '2025-07-01T12:00:00',
-        isPublished: true
-      },
-      {
-        questionnaireId: 6,
-        title: '创造力评估',
-        description: '测试你的创新思维和创造力水平，发现你的创意潜能',
-        creatorId: 1,
-        creatorName: 'admin',
-        createdAt: '2025-07-01T13:00:00',
-        isPublished: true
-      },
-      {
-        questionnaireId: 7,
-        title: '沟通风格评估',
-        description: '了解你的沟通偏好和风格，提升人际交往能力',
-        creatorId: 1,
-        creatorName: 'admin',
-        createdAt: '2025-07-01T14:00:00',
-        isPublished: true
-      },
-      {
-        questionnaireId: 8,
-        title: '压力应对测试',
-        description: '评估你在压力下的反应模式和应对策略',
-        creatorId: 1,
-        creatorName: 'admin',
-        createdAt: '2025-07-01T15:00:00',
-        isPublished: true
-      },
-      {
-        questionnaireId: 9,
-        title: '团队协作能力',
-        description: '测试你在团队中的角色定位和协作风格',
-        creatorId: 1,
-        creatorName: 'admin',
-        createdAt: '2025-07-01T16:00:00',
-        isPublished: true
-      },
-      {
-        questionnaireId: 10,
-        title: '决策风格分析',
-        description: '了解你的决策过程和思维模式',
-        creatorId: 1,
-        creatorName: 'admin',
-        createdAt: '2025-07-01T17:00:00',
-        isPublished: true
-      },
-      {
-        questionnaireId: 11,
-        title: '时间管理能力',
-        description: '评估你的时间管理风格和效率',
-        creatorId: 1,
-        creatorName: 'admin',
-        createdAt: '2025-07-01T18:00:00',
-        isPublished: true
-      },
-      {
-        questionnaireId: 12,
-        title: '情绪智商测试',
-        description: '测试你的情绪感知和管理能力',
-        creatorId: 1,
-        creatorName: 'admin',
-        createdAt: '2025-07-01T19:00:00',
-        isPublished: true
+  // 创建问卷
+  const createQuestionnaire = async (data: CreateQuestionnaireRequest) => {
+    try {
+      loading.value = true
+      error.value = null
+      const response = await questionnaireApi.createQuestionnaire(data)
+      if (!response) {
+        throw new Error('创建问卷失败，未返回有效数据')
       }
-    ]
-  }
-
-  // Mock问卷问题数据
-  const getMockQuestionnaireQuestions = (questionnaireId: number) => {
-    return {
-      questionnaireId,
-      title: '经典MBTI性格测试',
-      description: '最权威的MBTI性格类型测试',
-      questions: [
-        {
-          questionId: 1,
-          content: '在社交场合中，你更倾向于：',
-          dimension: 'E/I',
-          questionOrder: 1,
-          options: [
-            { optionId: 1, content: '主动与他人交谈', score: 1 },
-            { optionId: 2, content: '等待他人主动接近', score: -1 }
-          ]
-        },
-        {
-          questionId: 2,
-          content: '当面对新信息时，你更关注：',
-          dimension: 'S/N',
-          questionOrder: 2,
-          options: [
-            { optionId: 3, content: '具体的事实和细节', score: -1 },
-            { optionId: 4, content: '整体的概念和可能性', score: 1 }
-          ]
-        },
-        {
-          questionId: 3,
-          content: '在做决定时，你更依赖：',
-          dimension: 'T/F',
-          questionOrder: 3,
-          options: [
-            { optionId: 5, content: '逻辑分析和客观标准', score: 1 },
-            { optionId: 6, content: '个人价值和他人感受', score: -1 }
-          ]
-        },
-        {
-          questionId: 4,
-          content: '对于计划安排，你更喜欢：',
-          dimension: 'J/P',
-          questionOrder: 4,
-          options: [
-            { optionId: 7, content: '制定详细计划并严格执行', score: 1 },
-            { optionId: 8, content: '保持灵活性，随时调整', score: -1 }
-          ]
-        }
-      ]
+      ElMessage.success('问卷创建成功')
+    } catch (err: any) {
+      console.error('创建问卷失败:', err)
+      ElMessage.error('创建问卷失败')
+    } finally {
+      loading.value = false
     }
   }
 
-  // 更新问卷回答状态（注意：新的Questionnaire类型中没有hasAnswered和answerCount字段）
-  const updateAnswerStatus = (questionnaireId: number, hasAnswered: boolean) => {
-    // 这个功能暂时移除，因为后端DTO中没有相应字段
-    console.log(`问卷 ${questionnaireId} 回答状态更新为: ${hasAnswered}`)
+  // 更新问卷
+  const updateQuestionnaire = async (data: UpdateQuestionnaireRequest) => {
+    try {
+      loading.value = true
+      error.value = null
+      
+      // 调用API更新问卷
+      const updatedQuestionnaire = await questionnaireApi.updateQuestionnaire(data)
+      // 更新本地状态
+      const index = questionnaires_all.value.findIndex(q => q.questionnaireId === data.questionnaireId)
+      if (index !== -1) {
+        questionnaires_all.value[index] = updatedQuestionnaire
+      } else {
+        console.warn(`问卷 ${data.questionnaireId} 未找到，无法更新`)
+      }
+      ElMessage.success('问卷已成功更新')
+    } catch (err: any) {
+      console.error('更新问卷失败:', err)
+      ElMessage.error('更新问卷失败')
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 删除问卷
+  const deleteQuestionnaire = async (questionnaireId: number) => {
+    try {
+      loading.value = true
+      error.value = null
+      await questionnaireApi.deleteQuestionnaire({ questionnaireId })
+      questionnaires_all.value = questionnaires_all.value.filter(q => q.questionnaireId !== questionnaireId)
+      ElMessage.success('问卷已成功删除')
+    } catch (err: any) {
+      console.error('删除问卷失败:', err)
+      ElMessage.error('删除问卷失败')
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 发布问卷
+  const publishQuestionnaire = async (questionnaireId: number) => {
+    try {
+      loading.value = true
+      error.value = null
+      
+      // 调用API发布问卷
+      const updatedQuestionnaire = await questionnaireApi.publishQuestionnaire({ questionnaireId })
+      // 更新本地状态
+      const index = questionnaires_all.value.findIndex(q => q.questionnaireId === questionnaireId)
+      if (index !== -1) {
+        questionnaires_all.value[index].isPublished = updatedQuestionnaire.isPublished
+      } else {
+        console.warn(`问卷 ${questionnaireId} 未找到，无法更新状态`)
+      }
+      ElMessage.success('问卷已成功发布')
+    } catch (err: any) {
+      console.error('发布问卷失败:', err)
+      ElMessage.error('发布问卷失败')
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 撤销发布问卷
+  const unpublishQuestionnaire = async (questionnaireId: number) => {
+    try {
+      loading.value = true
+      error.value = null
+      
+      // 调用API撤销发布问卷
+      const updatedQuestionnaire = await questionnaireApi.unpublishQuestionnaire({ questionnaireId })
+      // 更新本地状态
+      const index = questionnaires_all.value.findIndex(q => q.questionnaireId === questionnaireId)
+      if (index !== -1) {
+        questionnaires_all.value[index].isPublished = updatedQuestionnaire.isPublished === false ? false : questionnaires_all.value[index].isPublished
+      } else {
+        console.warn(`问卷 ${questionnaireId} 未找到，无法更新状态`)
+      }
+      ElMessage.success('问卷已成功撤销发布')
+    } catch (err: any) {
+      console.error('撤销发布问卷失败:', err)
+      ElMessage.error('撤销发布问卷失败')
+    } finally {
+      loading.value = false
+    }
   }
 
   // 清空状态
   const reset = () => {
-    questionnaires.value = []
+    questionnaires_all.value = []
+    questionnaires_published.value = []
     loading.value = false
     error.value = null
   }
 
   return {
     // 状态
-    questionnaires,
+    questionnaires_all,
+    questionnaires_published,
     loading,
     error,
     
     // 计算属性
-    activeQuestionnaires,
     getQuestionnaireById,
     
     // 方法
-    fetchQuestionnaires,
+    fetchPublishedQuestionnaires,
+    fetchAllQuestionnaires,
     fetchQuestionnaireDetail,
     fetchQuestionnaireQuestions,
-    getMockQuestionnaireQuestions,
-    updateAnswerStatus,
+    createQuestionnaire,
+    updateQuestionnaire,
+    deleteQuestionnaire,
+    publishQuestionnaire,
+    unpublishQuestionnaire,
     reset
   }
 })

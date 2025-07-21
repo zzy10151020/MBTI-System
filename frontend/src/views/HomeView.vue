@@ -260,7 +260,6 @@ const goToSlide = (index: number) => {
   transform: translateY(0);
 }
 
-
 .carousel-section {
   margin-top: 2rem;
   position: relative;

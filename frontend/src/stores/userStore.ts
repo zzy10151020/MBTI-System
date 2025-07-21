@@ -23,7 +23,7 @@ export const useUserStore = defineStore('user', () => {
   // Session调试方法（保留但默认不输出）
   const debugSession = () => {
     // 可在console控制台中进行调试
-    console.group('🔐 用户Session状态')
+    console.group('用户Session状态')
     console.log('Pinia用户状态:', {
       user: user.value,
       isLoggedIn: isLoggedIn.value,
@@ -36,7 +36,7 @@ export const useUserStore = defineStore('user', () => {
 
   // 检查登录状态
   const checkLoginStatus = () => {
-    const userInfo = authApi.getCurrentUser()
+    const userInfo = getCurrentUser()
     const hasSession = CookieHelper.hasValidSession()
     
     // 只有在有session cookie的情况下才认为是登录状态
@@ -67,28 +67,25 @@ export const useUserStore = defineStore('user', () => {
         password
       }
       const result = await authApi.login(loginData)
-      
-      // 检查响应数据格式 - 新的Session认证返回用户信息和sessionId
-      if (!result.user) {
+      // 检查响应数据格式 - 新的Session认证直接返回用户信息
+      if (!result) {
         console.error('登录响应中缺少用户信息:', result)
         ElMessage.error('登录响应格式错误')
         return false
       }
-      
       // 等待一小段时间确保cookie设置完成
       await new Promise(resolve => setTimeout(resolve, 100))
-      
       // 验证session cookie是否正确设置
       if (!CookieHelper.hasValidSession()) {
-        console.error('⚠️ 登录成功但未检测到session cookie')
+        console.error('登录成功但未检测到session cookie')
         ElMessage.error('登录状态异常，请重试')
         return false
       }
-      
       // 保存用户信息到本地存储和store
-      user.value = result.user
+      user.value = result
       isLoggedIn.value = true
-      
+      setUserInfo(result)
+      await fetchUserProfile() // 刷新用户信息
       ElMessage.success('登录成功！')
       return true
     } catch (error: any) {
@@ -126,13 +123,13 @@ export const useUserStore = defineStore('user', () => {
   // 获取用户信息
   const fetchUserProfile = async (): Promise<void> => {
     try {
-      if (!authApi.isLoggedIn()) {
+      if (!checkLogin()) {
         return
       }
       
-      user.value = await userApi.getProfile()
-      // 同时更新本地存储
-      authApi.setUserInfo(user.value)
+      const result = await userApi.getProfile()
+      user.value = result
+      setUserInfo(result)
     } catch (error: any) {
       console.error('获取用户信息失败:', error)
       // 如果是401错误，说明Session过期，自动登出
@@ -143,21 +140,19 @@ export const useUserStore = defineStore('user', () => {
   }
 
   // 更新用户信息
-  const updateProfile = async (email: string): Promise<boolean> => {
+  const updateProfile = async (email: string): Promise<User> => {
     try {
       loading.value = true
       
-      const updatedUser = await userApi.updateProfile({ email })
-      user.value = updatedUser
-      // 同时更新本地存储
-      authApi.setUserInfo(updatedUser)
-      
+      const result = await userApi.updateUser({ email })
+      user.value = result
+      setUserInfo(result)
       ElMessage.success('更新成功！')
-      return true
+      return result
     } catch (error: any) {
       console.error('更新用户信息失败:', error)
       ElMessage.error(error.message || '更新失败，请重试')
-      return false
+      return {} as User
     } finally {
       loading.value = false
     }
@@ -167,9 +162,13 @@ export const useUserStore = defineStore('user', () => {
   const changePassword = async (oldPassword: string, newPassword: string): Promise<boolean> => {
     try {
       loading.value = true
-      
-      await userApi.updateProfile({ currentPassword: oldPassword, newPassword })
-      
+
+      const result = await userApi.updateUser({ currentPassword: oldPassword, newPassword })
+      if (!result) {
+        console.error('修改密码响应中缺少用户信息:', result)
+        ElMessage.error('修改密码响应格式错误')
+        return false
+      }
       ElMessage.success('密码修改成功！')
       return true
     } catch (error: any) {
@@ -198,8 +197,23 @@ export const useUserStore = defineStore('user', () => {
 
   // 初始化时检查登录状态
   const initialize = async (): Promise<void> => {
-    if (checkLoginStatus()) {
-      await fetchUserProfile()
+    try {
+      // 每次刷新都用 session 校验
+      const result = await userApi.getProfile()
+      if (result) {
+        user.value = result
+        isLoggedIn.value = true
+        setUserInfo(result)
+      } else {
+        user.value = null
+        isLoggedIn.value = false
+        clearUserInfo()
+      }
+    } catch (error: any) {
+      // 401未登录或session失效
+      user.value = null
+      isLoggedIn.value = false
+      clearUserInfo()
     }
   }
 
@@ -207,7 +221,7 @@ export const useUserStore = defineStore('user', () => {
   const checkUsernameExists = async (username: string): Promise<boolean> => {
     try {
       const result = await authApi.checkUsername({ username })
-      return result.exists
+      return result
     } catch (error: any) {
       console.error('检查用户名失败:', error)
       return false
@@ -218,7 +232,7 @@ export const useUserStore = defineStore('user', () => {
   const checkEmailExists = async (email: string): Promise<boolean> => {
     try {
       const result = await authApi.checkEmail({ email })
-      return result.exists
+      return result
     } catch (error: any) {
       console.error('检查邮箱失败:', error)
       return false
@@ -233,6 +247,37 @@ export const useUserStore = defineStore('user', () => {
   // 检查是否为管理员
   const isAdmin = (): boolean => {
     return user.value?.role === 'ADMIN'
+  }
+
+  /**
+   * 检查是否已登录
+   */
+  const checkLogin = (): boolean => {
+    const userInfo = localStorage.getItem('userInfo')
+    return !!userInfo
+  }
+
+  /**
+   * 获取当前用户信息
+   */
+  const getCurrentUser = (): User | null => {
+    const userInfo = localStorage.getItem('userInfo')
+    return userInfo ? JSON.parse(userInfo) : null
+  }
+
+  /**
+   * 设置用户信息
+   * @param user 用户信息
+   */
+  const setUserInfo = (user: User): void => {
+    localStorage.setItem('userInfo', JSON.stringify(user))
+  }
+
+  /**
+   * 清除用户信息
+   */
+  const clearUserInfo = (): void => {
+    localStorage.removeItem('userInfo')
   }
 
   return {
@@ -259,6 +304,15 @@ export const useUserStore = defineStore('user', () => {
     checkEmailExists,
     getUserRole,
     isAdmin,
-    debugSession
+    debugSession,
+    checkLogin,
+    getCurrentUser,
+    setUserInfo,
+    clearUserInfo
+  }
+}, {
+  persist: {
+    key: 'userStore',
+    storage: localStorage
   }
 })

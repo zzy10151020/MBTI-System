@@ -264,4 +264,58 @@ public class TestController extends BaseController {
             sendErrorResponse(response, 500, "获取问卷统计数据失败: " + e.getMessage(), "/api/test/statistics");
         }
     }
+
+    /**
+     * 获取所有问卷统计数据
+     */
+    @Route(value = "/all-statistics", method = "GET")
+    public void getAllQuestionnaireStatistics(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        try {
+            if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
+
+            // 检查是否为管理员（统计数据只有管理员能查看）
+            User user = AuthUtils.checkAdmin(request, response, this);
+            if (user == null) return;
+
+            // 获取所有问卷统计数据
+            Map<String, Object> allStatistics = testService.getAllQuestionnaireStatistics();
+            if (allStatistics == null || allStatistics.isEmpty()) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("没有统计数据");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            ApiResponse<Map<String, Object>> apiResponse = ApiResponse.success("获取所有问卷统计数据成功", allStatistics);
+            sendApiResponse(response, apiResponse);
+        } catch (Exception e) {
+            log.error("获取所有问卷统计数据失败", e);
+            sendErrorResponse(response, 500, "获取所有问卷统计数据失败: " + e.getMessage(), "/api/test/all-statistics");
+        }
+    }
+
+    /**
+     * 统计回答数量
+     */
+    @Route(value = "/answer-count", method = "GET")
+    public void getAnswerCount(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        try {
+            if (!AuthUtils.checkHttpMethod(request, response, this, "GET")) return;
+
+            // 检查是否为管理员（统计数据只有管理员能查看）
+            User user = AuthUtils.checkAdmin(request, response, this);
+            if (user == null) return;
+
+            // 获取回答数量
+            long answerCount = testService.countAnswers();
+            if (answerCount == 0) {
+                ApiResponse<Object> apiResponse = ApiResponse.error("没有回答数据");
+                sendApiResponse(response, apiResponse);
+                return;
+            }
+            ApiResponse<Map<String, Long>> apiResponse = ApiResponse.success("获取回答数量成功", Map.of("count", answerCount));
+            sendApiResponse(response, apiResponse);
+        } catch (Exception e) {
+            log.error("获取回答数量失败", e);
+            sendErrorResponse(response, 500, "获取回答数量失败: " + e.getMessage(), "/api/test/answer-count");
+        }
+    }
 }

@@ -369,7 +369,7 @@ public class QuestionController extends BaseController {
                 return;
             }
             
-            ApiResponse<Map<String, String>> apiResponse = ApiResponse.success("问题删除成功", Map.of("result", "问题删除成功"));
+            ApiResponse<Map<String, Boolean>> apiResponse = ApiResponse.success("问题删除成功", Map.of("deleted", true));
             sendApiResponse(response, apiResponse);
         } catch (Exception e) {
             log.error("删除问题失败", e);
