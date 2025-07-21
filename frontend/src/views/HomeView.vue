@@ -102,14 +102,14 @@ const currentUid = computed(() => {
 const carouselItems = ref([
   {
     id: 1,
-    leftTitle: '内向 (I)',
-    leftDescription: '倾向于内向思考，从独处中获得能量',
-    leftBgColor: '#E0F7FA',
-    leftBgImage: 'MBTI_LETTER/I.png',
-    rightTitle: '外向 (E)',
-    rightDescription: '倾向于外向交流，从互动中获得能量',
-    rightBgColor: '#B2EBF2',
-    rightBgImage: 'MBTI_LETTER/E.png'
+    leftTitle: '外向 (E)',
+    leftDescription: '倾向于外向交流，从互动中获得能量',
+    leftBgColor: '#B2EBF2',
+    leftBgImage: 'MBTI_LETTER/E.png',
+    rightTitle: '内向 (I)',
+    rightDescription: '倾向于内向思考，从独处中获得能量',
+    rightBgColor: '#E0F7FA',
+    rightBgImage: 'MBTI_LETTER/I.png'
   },
   {
     id: 2,
