@@ -145,22 +145,37 @@
     >
       <div v-if="currentReport" class="report-content">
         <div class="report-header">
-          <div class="report-mbti">
-            <h2>{{ currentReport.username || '匿名用户' }}的MBTI报告</h2>
-            <h2>{{ currentReport.mbtiType }}</h2>
-            <div class="dimension-scores">
-              <div v-for="(percentage, dimension) in currentReport.statistics"
-                :key="dimension" class="dimension-item">
-                <span class="dimension-label">{{ dimension }}</span>
-                <div class="dimension-bar">
-                  <div 
-                    class="dimension-fill"
-                    :style="{ width: `${percentage}%` }"
-                  ></div>
-                </div>
-                <span class="dimension-value">{{ percentage }}</span>
+          <h2 class="report-title">{{ currentReport.username || '匿名用户' }}的MBTI报告</h2>
+        </div>
+        <div class="report-mbti">
+          <h2>{{ currentReport.mbtiType }}</h2>
+          <div class="dimension-scores">
+            <div v-for="(percentage, dimension) in currentReport.statistics"
+              :key="dimension" class="dimension-item">
+              <span class="dimension-label">{{ dimension }}</span>
+              <div class="dimension-bar">
+                <el-progress :percentage="percentage"
+                  type="line" :stroke-width="10"
+                  color="var(--primary-teal)"/>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div class="mbti-probabilities">
+          <h4>性格概率</h4>
+          <div class="probability-items">
+            <el-progress v-for="(probability, trait) in currentReport.personalityProbabilities"
+              :key="trait" type="dashboard"
+              :percentage="probability"
+              :stroke-width="20" color="var(--primary-teal)">
+              <template #default>
+                <div class="progress-label">
+                  <span>{{ trait }}</span>
+                  <span>{{ probability }}%</span>
+                </div>
+              </template>
+            </el-progress>
           </div>
         </div>
 
@@ -612,8 +627,22 @@ onMounted(() => {
 
 .report-header {
   text-align: center;
-  margin-bottom: 2rem;
-  padding-bottom: 2rem;
+}
+
+.report-title {
+  font-size: 2.4rem;
+  color: var(--color-text-primary);
+  font-weight: bold;
+  margin: 0 0 2rem 0;
+}
+
+.report-mbti {
+  display: grid;
+  grid-template-columns: 10rem 1fr;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -622,11 +651,13 @@ onMounted(() => {
   color: var(--primary-teal);
   margin: 0 0 1rem 0;
   font-weight: bold;
+  margin-left: 1rem;
 }
 
 .dimension-scores {
+  width: 95%;
   display: grid;
-  gap: 0.6rem;
+  gap: 0.4rem;
 }
 
 .dimension-item {
@@ -647,23 +678,45 @@ onMounted(() => {
 
 .dimension-bar {
   flex: 1;
-  height: 0.8rem;
+  height: 1rem;
   background-color: var(--color-background-soft);
   border-radius: 0.4rem;
   overflow: hidden;
 }
 
-.dimension-fill {
-  height: 90%;
-  background: linear-gradient(90deg, var(--primary-teal-light), var(--primary-teal));
-  transition: width 0.3s ease;
+.mbti-probabilities {
+  grid-area: span 1 / span 2;
+  margin: 0.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.dimension-value {
-  width: 2rem;
-  text-align: right;
+.mbti-probabilities h4 {
+  grid-column: span 1 / span 4;
+  font-size: 1.6rem;
   font-weight: bold;
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
+  margin: 0 1rem 0 0;
+}
+
+.probability-items {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.progress-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--color-text-primary);
 }
 
 .report-section {
