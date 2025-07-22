@@ -59,9 +59,11 @@
             <el-button 
               type="primary" 
               size="default" 
+              :disabled="isQuestionnaireCompleted(questionnaire.questionnaireId)"
               @click.stop="startTest(questionnaire)"
             >
-              开始测试
+              <template v-if="isQuestionnaireCompleted(questionnaire.questionnaireId)">已完成</template>
+              <template v-else>开始测试</template>
             </el-button>
           </div>
         </div>
@@ -405,7 +407,7 @@ const checkCompletedTest = () => {
 
 /* 问卷卡片 */
 .questionnaire-item {
-  position: relative; /* 为绝对定位的badge提供相对定位参考 */
+  position: relative; /* 为绝对定位的badge和按钮提供相对定位参考 */
   background-color: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: 1.6rem;
@@ -524,9 +526,16 @@ const checkCompletedTest = () => {
 
 /* 卡片底部 */
 .item-footer {
+  position: absolute;
+  right: 1.5rem;
+  bottom: 1.5rem;
   display: flex;
   justify-content: flex-end;
   font-size: 1.2rem;
+  width: auto;
+  background: none;
+  box-shadow: none;
+  z-index: 3;
 }
 
 /* 空白卡片 */

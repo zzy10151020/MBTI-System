@@ -376,9 +376,8 @@ export const useTestStore = defineStore('test', () => {
   }
 
   // 删除测试结果 (模拟)
-  const deleteTestResult = async (answerId: number) => {
-    testResults.value = testResults.value.filter(r => r.answerId !== answerId)
-    ElMessage.success('测试结果已删除')
+  const deleteTestResult = async () => {
+    ElMessage.info('暂不支持删除测试结果功能，遵照内心的选择即可(˃ ⌑ ˂ഃ )')
   }
 
   // 检查用户是否已完成测试

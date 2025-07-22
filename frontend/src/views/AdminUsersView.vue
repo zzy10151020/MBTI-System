@@ -108,6 +108,9 @@
             <el-option label="管理员" value="ADMIN" />
           </el-select>
         </el-form-item>
+      <el-form-item label="密码" prop="password">
+        <el-input v-model="editForm.password" type="password" show-password placeholder="如需重置请输入新密码" />
+      </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -124,7 +127,6 @@ import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/userStore'
-import userApi from '@/api/user'
 import type { User } from '@/api/types'
 
 const userStore = useUserStore()
@@ -150,11 +152,13 @@ const editForm = ref<{
   username: string
   email: string
   role: 'ADMIN' | 'USER'
+  password?: string
 }>({
   userId: 0,
   username: '',
   email: '',
-  role: 'USER'
+  role: 'USER',
+  password: ''
 })
 
 const createRules: Record<string, any[]> = {
@@ -173,11 +177,14 @@ const createRules: Record<string, any[]> = {
 }
 const editRules: Record<string, any[]> = {
   email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { message: '请输入邮箱', trigger: 'blur' },
     { type: 'email', message: '邮箱格式不正确', trigger: 'blur' }
   ],
   role: [
-    { required: true, message: '请选择角色', trigger: 'change' }
+    { message: '请选择角色', trigger: 'change' }
+  ], 
+  password: [
+    { min: 6, max: 32, message: '密码长度应在6-32个字符', trigger: 'blur' }
   ]
 }
 
@@ -224,7 +231,20 @@ const handleCurrentChange = (page: number) => {
 
 const formatDate = (date: string) => {
   if (!date) return ''
-  return new Date(date).toLocaleString('zh-CN')
+  if (Array.isArray(date) && date.length >= 3) {
+    // 月份要减1
+    const d = new Date(
+      date[0],
+      date[1] - 1,
+      date[2],
+      date[3] || 0,
+      date[4] || 0,
+      date[5] || 0
+    )
+    return d.toLocaleString('zh-CN')
+  }
+  // 兼容字符串格式
+  return new Date(date as string).toLocaleString('zh-CN')
 }
 
 const createUser = async () => {
@@ -254,6 +274,7 @@ const editUser = async (user?: User) => {
     editForm.value.username = user.username
     editForm.value.email = user.email
     editForm.value.role = user.role
+    editForm.value.password = '' // 清空密码输入框
     showEditDialog.value = true
     return
   }
@@ -268,6 +289,9 @@ const editUser = async (user?: User) => {
     }
     if (editForm.value.role !== undefined && editForm.value.role !== originalUser?.role) {
       updateData.role = editForm.value.role
+    }
+    if (editForm.value.password && editForm.value.password.length >= 6) {
+      updateData.password = editForm.value.password
     }
     if (Object.keys(updateData).length === 0) {
       ElMessage.info('未做任何更改')

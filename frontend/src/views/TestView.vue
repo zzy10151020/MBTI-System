@@ -277,11 +277,11 @@ const loadTestData = async () => {
           duration: 2000
         })
       } else {
-        console.warn('⚠️ API获取问题失败或返回空数据')
+        console.warn('API获取问题失败或返回空数据')
         
       }
     } catch (apiError: any) {
-      console.error('❌ TestView: API获取问题失败，详细错误:', apiError)
+      console.error('TestView: API获取问题失败，详细错误:', apiError)
       console.error('错误类型:', typeof apiError)
       console.error('错误消息:', apiError?.message)
       console.error('错误响应:', apiError?.response)

@@ -55,9 +55,6 @@
                       <el-dropdown-item :command="{action: 'view', id: result.answerId}">
                         查看报告
                       </el-dropdown-item>
-                      <el-dropdown-item :command="{action: 'retake', id: result.questionnaireId}">
-                        重新测试
-                      </el-dropdown-item>
                       <el-dropdown-item :command="{action: 'delete', id: result.answerId}" divided>
                         删除记录
                       </el-dropdown-item>
@@ -339,22 +336,6 @@ const handleAction = async (command: {action: string, id: number}) => {
     case 'view':
       await viewReport(id)
       break
-    case 'retake':
-      ElMessageBox.confirm(
-        '重新测试将删除当前结果，是否继续？',
-        '确认重新测试',
-        {
-          confirmButtonText: '确认',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }
-      ).then(async () => {
-        const success = await testStore.retakeTest(id)
-        if (success) {
-          goToTest(id)
-        }
-      })
-      break
     case 'delete':
       ElMessageBox.confirm(
         '确定要删除这条测试记录吗？此操作不可恢复。',
@@ -365,7 +346,7 @@ const handleAction = async (command: {action: string, id: number}) => {
           type: 'warning'
         }
       ).then(async () => {
-        await testStore.deleteTestResult(id)
+        await testStore.deleteTestResult()
       })
       break
   }
