@@ -437,10 +437,11 @@ public class TestServiceImpl implements TestService {
             probabilities.put(type, Math.round(prob * 100 * 100.0) / 100.0); // 保留两位小数
         }
         
-        // 按概率降序排序，只返回概率大于1%的类型
+        // 按概率降序排序，只返回概率最高的前8个类型（且概率大于1%）
         return probabilities.entrySet().stream()
                 .filter(entry -> entry.getValue() >= 1.0)
                 .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+                .limit(8)
                 .collect(java.util.LinkedHashMap::new,
                         (map, entry) -> map.put(entry.getKey(), entry.getValue()),
                         java.util.LinkedHashMap::putAll);

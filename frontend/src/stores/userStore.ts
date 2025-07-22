@@ -67,10 +67,10 @@ export const useUserStore = defineStore('user', () => {
         password
       }
       const result = await authApi.login(loginData)
-      // 检查响应数据格式 - 新的Session认证直接返回用户信息
-      if (!result) {
-        console.error('登录响应中缺少用户信息:', result)
-        ElMessage.error('登录响应格式错误')
+
+      if (result.data.userId === null || result.data.sessionId === null) {
+        console.error('登录响应中缺少用户信息:', result.message)
+        ElMessage.error(`${result.message}`)
         return false
       }
       // 等待一小段时间确保cookie设置完成
@@ -127,7 +127,7 @@ export const useUserStore = defineStore('user', () => {
       }
       
       const result = await userApi.getProfile()
-      user.value = result
+      user.value = result.data
       setUserInfo(result)
     } catch (error: any) {
       console.error('获取用户信息失败:', error)
@@ -139,12 +139,12 @@ export const useUserStore = defineStore('user', () => {
   }
 
   // 更新用户信息
-  const updateProfile = async (email: string): Promise<User> => {
+  const updateUser = async (email: string): Promise<any> => {
     try {
       loading.value = true
       
       const result = await userApi.updateUser({ email })
-      user.value = result
+      user.value = result.data
       setUserInfo(result)
       ElMessage.success('更新成功！')
       return result
@@ -157,15 +157,36 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  // 根据ID更新用户信息
+  const updateUserById = async (userId: number, data: Partial<User>): Promise<boolean> => {
+    try {
+      loading.value = true
+
+      const result = await userApi.updateUserById({ updateUserId: userId, ...data })
+      if (!result.data) {
+        console.error('更新用户信息响应中缺少用户信息:', result)
+        ElMessage.error(result.message || '更新用户信息失败，请重试')
+        return false
+      }
+      return true
+    } catch (error: any) {
+      console.error('更新用户信息失败:', error)
+      ElMessage.error(error.message || '更新用户信息失败，请重试')
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
   // 修改密码
   const changePassword = async (oldPassword: string, newPassword: string): Promise<boolean> => {
     try {
       loading.value = true
 
       const result = await userApi.updateUser({ currentPassword: oldPassword, newPassword })
-      if (!result) {
+      if (!result.data) {
         console.error('修改密码响应中缺少用户信息:', result)
-        ElMessage.error('修改密码响应格式错误')
+        ElMessage.error(result.message || '修改密码失败，请重试')
         return false
       }
       ElMessage.success('密码修改成功！')
@@ -184,6 +205,11 @@ export const useUserStore = defineStore('user', () => {
     try {
       // 调用后端注销接口
       await authApi.logout()
+      // 清除本地存储的用户信息
+      clearUserInfo()
+      // 更新状态
+      user.value = null
+      isLoggedIn.value = false
     } catch (error) {
       console.error('注销请求失败:', error)
     } finally {
@@ -199,8 +225,8 @@ export const useUserStore = defineStore('user', () => {
     try {
       // 每次刷新都用 session 校验
       const result = await userApi.getProfile()
-      if (result) {
-        user.value = result
+      if (result.data) {
+        user.value = result.data
         isLoggedIn.value = true
         setUserInfo(result)
       } else {
@@ -220,7 +246,7 @@ export const useUserStore = defineStore('user', () => {
   const checkUsernameExists = async (username: string): Promise<boolean> => {
     try {
       const result = await authApi.checkUsername({ username })
-      return result
+      return result.data
     } catch (error: any) {
       console.error('检查用户名失败:', error)
       return false
@@ -231,7 +257,7 @@ export const useUserStore = defineStore('user', () => {
   const checkEmailExists = async (email: string): Promise<boolean> => {
     try {
       const result = await authApi.checkEmail({ email })
-      return result
+      return result.data
     } catch (error: any) {
       console.error('检查邮箱失败:', error)
       return false
@@ -242,7 +268,7 @@ export const useUserStore = defineStore('user', () => {
   const getUserList = async (): Promise<User[]> => {
     try {
       const result = await userApi.getUserList()
-      return result
+      return result.data
     } catch (error: any) {
       console.error('获取用户列表失败:', error)
       ElMessage.error(error.message || '获取用户列表失败，请稍后重试')
@@ -320,7 +346,8 @@ export const useUserStore = defineStore('user', () => {
     register,
     logout,
     fetchUserProfile,
-    updateProfile,
+    updateUser,
+    updateUserById,
     checkLoginStatus,
     initialize,
     changePassword,

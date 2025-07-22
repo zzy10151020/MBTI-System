@@ -34,7 +34,7 @@ public class OptionRequestDTO {
     private String content;
     
     /**
-     * 选项分数 (-1 或 1)
+     * 选项分数 (-10 到 10)
      */
     private Byte score;
 
@@ -67,10 +67,10 @@ public class OptionRequestDTO {
     }
     
     /**
-     * 验证分数值 (只能是 -1 或 1)
+     * 验证分数值 (只能是 -10 到 10)
      */
     private boolean isValidScore(Byte score) {
-        return score != null && (score == -1 || score == 1);
+        return score != null && (score >= -10 && score <= 10);
     }
     
     /**

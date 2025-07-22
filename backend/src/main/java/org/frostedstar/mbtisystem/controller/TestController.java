@@ -179,16 +179,25 @@ public class TestController extends BaseController {
             
             // 提交测试结果
             Answer answer = testService.submitTest(user.getUserId(), testRequest.getQuestionnaireId(), answerDetails);
-            
+
+            // 重新加载带有完整信息的 answer
+            Optional<Answer> answerWithDetailsOpt = testService.getTestResultDetail(answer.getAnswerId());
+            if (answerWithDetailsOpt.isEmpty()) {
+                sendErrorResponse(response, 500, "保存后无法获取答题详情", "/api/test");
+                return;
+            }
+            Answer answerWithDetails = answerWithDetailsOpt.get();
+            List<AnswerDetail> fullDetails = answerWithDetails.getDetails();
+
             // 计算MBTI结果
-            String mbtiResult = testService.calculateMBTIResult(answerDetails);
-            
+            String mbtiResult = testService.calculateMBTIResult(fullDetails);
+
             // 在Controller层使用Service计算结果
             Map<String, String> dimensions = testService.calculateDimensions(mbtiResult);
-            Map<String, Object> statistics = testService.calculateDimensionStatistics(answerDetails);
-            Map<String, Double> personalityProbabilities = testService.calculatePersonalityProbabilities(answerDetails);
-            
-            TestResponseDTO testDTO = TestResponseDTO.fromEntityWithDetails(answer, mbtiResult, 
+            Map<String, Object> statistics = testService.calculateDimensionStatistics(fullDetails);
+            Map<String, Double> personalityProbabilities = testService.calculatePersonalityProbabilities(fullDetails);
+
+            TestResponseDTO testDTO = TestResponseDTO.fromEntityWithDetails(answerWithDetails, mbtiResult, 
                 dimensions, statistics, personalityProbabilities);
             ApiResponse<TestResponseDTO> apiResponse = ApiResponse.success("测试提交成功", testDTO);
             sendApiResponse(response, apiResponse);

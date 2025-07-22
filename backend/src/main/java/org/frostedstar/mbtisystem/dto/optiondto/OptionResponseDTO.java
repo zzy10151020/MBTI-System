@@ -20,8 +20,8 @@ public class OptionResponseDTO {
     private Integer optionId;
     private Integer questionId;
     private String content;
-    private Byte score; // -1 或 1，表示选项的分数
-    
+    private Byte score; // -10 到 10，表示选项的分数
+
     /**
      * 从Option实体转换为OptionResponseDTO
      */

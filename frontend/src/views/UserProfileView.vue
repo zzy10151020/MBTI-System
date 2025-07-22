@@ -323,7 +323,7 @@ const saveProfile = async () => {
     await editFormRef.value?.validate()
     
     saving.value = true
-    const updatedUser = await userStore.updateProfile(editForm.value.email)
+    const updatedUser = await userStore.updateUser(editForm.value.email)
     userStore.user = updatedUser
     
     ElMessage.success('个人资料更新成功')

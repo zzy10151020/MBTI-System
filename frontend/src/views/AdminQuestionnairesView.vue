@@ -498,11 +498,16 @@ const createQuestionnaire = async () => {
       description: createForm.value.description
     }
     
-    await questionnaireStore.createQuestionnaire(createData)
+    const result = await questionnaireStore.createQuestionnaire(createData)
+    if (!result) {
+      ElMessage.error('创建问卷失败，请稍后再试')
+      return
+    }
 
     // 刷新列表
     await questionnaireStore.fetchAllQuestionnaires()
     showCreateDialog.value = false
+    ElMessage.success('问卷创建成功')
     createForm.value = { title: '', description: '' }
     creating.value = false
   } catch (error: any) {
@@ -534,11 +539,16 @@ const updateQuestionnaire = async () => {
       description: editForm.value.description
     }
     
-    await questionnaireStore.updateQuestionnaire(updateData)
+    const result = await questionnaireStore.updateQuestionnaire(updateData)
+    if (!result) {
+      ElMessage.error('更新问卷失败，请稍后再试')
+      return
+    }
     
     // 刷新列表
     await questionnaireStore.fetchAllQuestionnaires()
     showEditDialog.value = false
+    ElMessage.success('问卷更新成功')
     editForm.value = { title: '', description: '' }
     selectedQuestionnaire.value = null
   } catch (error: any) {
@@ -564,11 +574,21 @@ const togglePublishStatus = async (questionnaire: Questionnaire) => {
     
     // 调用API切换发布状态
     if (questionnaire.isPublished) {
-      await questionnaireStore.unpublishQuestionnaire(questionnaire.questionnaireId)
+      const result = await questionnaireStore.unpublishQuestionnaire(questionnaire.questionnaireId)
+      if (!result) {
+        ElMessage.error('取消发布失败，请稍后再试')
+        return
+      }
       await questionnaireStore.fetchAllQuestionnaires()
+      ElMessage.success('问卷已取消发布')
     } else {
-      await questionnaireStore.publishQuestionnaire(questionnaire.questionnaireId)
+      const result = await questionnaireStore.publishQuestionnaire(questionnaire.questionnaireId)
+      if (!result) {
+        ElMessage.error('发布问卷失败，请稍后再试')
+        return
+      }
       await questionnaireStore.fetchAllQuestionnaires()
+      ElMessage.success('问卷已发布')
     }
   } catch (error: any) {
     if (error.message && error.message !== 'cancel') {
@@ -595,9 +615,14 @@ const viewDetails = (questionnaire: Questionnaire) => {
 
 const deleteQuestionnaire = async (questionnaireId: number) => {
   try {
-    await questionnaireStore.deleteQuestionnaire(questionnaireId)
+    const result = await questionnaireStore.deleteQuestionnaire(questionnaireId)
+    if (!result) {
+      ElMessage.error('删除问卷失败，请稍后再试')
+      return
+    }
     // 刷新列表
     await questionnaireStore.fetchPublishedQuestionnaires()
+    ElMessage.success('问卷删除成功')
   } catch (error: any) {
     console.error('删除问卷失败:', error)
     ElMessage.error(error.message || '删除失败')

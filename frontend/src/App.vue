@@ -1,9 +1,8 @@
 <template>
   <div id="app">
-    <header class="app-header">
+    <header class="app-header" v-if="showHeader">
       <Header />
     </header>
-    
     <main class="main-content">
       <RouterView />
     </main>
@@ -15,13 +14,20 @@
 </template>
 
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
 import Header from '@/components/Header.vue'
 import LoginMiniMask from '@/components/LoginMiniMask.vue'
 import RegisterMiniMask from '@/components/RegisterMiniMask.vue'
 import { useUiStateStore } from '@/stores/uiStateStore'
+import { useRoute } from 'vue-router'
+import { computed } from 'vue'
 
 const uiState = useUiStateStore()
+const route = useRoute()
+const showHeader = computed(() => {
+  // 匹配 /test 或 /test/123 这种路径
+  const testMatch = /^\/test(\/(\d+))?$/.test(route.path)
+  return !testMatch
+})
 </script>
 
 <style scoped>

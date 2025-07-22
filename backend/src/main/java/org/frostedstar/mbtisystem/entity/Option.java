@@ -17,5 +17,5 @@ public class Option {
     private Integer optionId;
     private Integer questionId;
     private String content;
-    private Byte score;  // -1 或 1
+    private Byte score;  // -10 到 10
 }

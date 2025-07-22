@@ -37,10 +37,12 @@ export interface CheckEmailRequest {
 }
 
 export interface UpdateUserRequest {
+  updateUserId?: number         // 要更新的用户ID
   username?: string       // 更新的用户名
   email?: string          // 更新的邮箱地址
   currentPassword?: string // 当前密码（用于验证）
   newPassword?: string     // 新密码（如果需要更新）
+  role?: "ADMIN" | "USER"  // 更新的用户角色
 }
 
 export interface DeleteUserRequest {

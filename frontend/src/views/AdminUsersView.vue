@@ -112,7 +112,7 @@
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="showEditDialog = false">取消</el-button>
-          <el-button type="primary" @click="updateUser" style="background-color: var(--primary-teal); border-color: var(--primary-teal); color: #fff;">保存</el-button>
+          <el-button type="primary" @click="editUser()" style="background-color: var(--primary-teal); border-color: var(--primary-teal); color: #fff;">保存</el-button>
         </span>
       </template>
     </el-dialog>
@@ -145,14 +145,19 @@ const createForm = ref({
   email: '',
   password: ''
 })
-const editForm = ref({
+const editForm = ref<{
+  userId: number
+  username: string
+  email: string
+  role: 'ADMIN' | 'USER'
+}>({
   userId: 0,
   username: '',
   email: '',
   role: 'USER'
 })
 
-const createRules = {
+const createRules: Record<string, any[]> = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
     { min: 2, max: 32, message: '用户名长度应在2-32个字符', trigger: 'blur' }
@@ -166,7 +171,7 @@ const createRules = {
     { min: 6, max: 32, message: '密码长度应在6-32个字符', trigger: 'blur' }
   ],
 }
-const editRules = {
+const editRules: Record<string, any[]> = {
   email: [
     { required: true, message: '请输入邮箱', trigger: 'blur' },
     { type: 'email', message: '邮箱格式不正确', trigger: 'blur' }
@@ -226,11 +231,11 @@ const createUser = async () => {
   await createFormRef.value?.validate()
   loading.value = true
   try {
-    await userStore.register({
-      username: createForm.value.username,
-      password: createForm.value.password,
-      email: createForm.value.email
-    })
+    await userStore.register(
+      createForm.value.username,
+      createForm.value.password,
+      createForm.value.email
+    )
     ElMessage.success('用户创建成功')
     showCreateDialog.value = false
     createForm.value = { username: '', email: '', password: '' }
@@ -242,21 +247,36 @@ const createUser = async () => {
   }
 }
 
-const editUser = (user: User) => {
-  editForm.value = { ...user }
-  showEditDialog.value = true
-}
-
-const updateUser = async () => {
-  await editFormRef.value?.validate()
+const editUser = async (user?: User) => {
+  if (user) {
+    // 只保留可编辑字段
+    editForm.value.userId = user.userId
+    editForm.value.username = user.username
+    editForm.value.email = user.email
+    editForm.value.role = user.role
+    showEditDialog.value = true
+    return
+  }
+  // 保存编辑，只传递被允许修改的字段
   loading.value = true
   try {
-    await userApi.updateUser({
-      userId: editForm.value.userId,
-      email: editForm.value.email,
-      role: editForm.value.role
-    })
-    ElMessage.success('用户信息已更新')
+    // 只提交被更改的字段
+    const updateData: Record<string, any> = {}
+    const originalUser = users.value.find(u => u.userId === editForm.value.userId)
+    if (editForm.value.email !== undefined && editForm.value.email !== originalUser?.email) {
+      updateData.email = editForm.value.email
+    }
+    if (editForm.value.role !== undefined && editForm.value.role !== originalUser?.role) {
+      updateData.role = editForm.value.role
+    }
+    if (Object.keys(updateData).length === 0) {
+      ElMessage.info('未做任何更改')
+      return
+    }
+    const response = await userStore.updateUserById(editForm.value.userId, updateData)
+    if (response) {
+      ElMessage.success('用户信息已更新')
+    }
     showEditDialog.value = false
     fetchUsers()
   } catch (e: any) {

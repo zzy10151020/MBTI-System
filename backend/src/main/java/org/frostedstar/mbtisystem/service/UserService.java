@@ -43,6 +43,11 @@ public interface UserService extends BaseService<User, Integer> {
      * 修改密码
      */
     boolean changePassword(Integer userId, String oldPassword, String newPassword);
+
+    /**
+     * 管理员重置用户密码
+     */
+    boolean resetPasswordByAdmin(Integer userId, String newPassword);
     
     /**
      * 级联删除用户（同时删除用户的所有答题记录）

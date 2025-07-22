@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { ElMessage } from 'element-plus'
 import { questionnaireApi, type Questionnaire } from '@/api'
 import type {
   CreateQuestionnaireRequest,
@@ -20,29 +19,32 @@ export const useQuestionnaireStore = defineStore('questionnaire', () => {
   })
 
   // 操作方法
-  const fetchPublishedQuestionnaires = async () => {
+  const fetchPublishedQuestionnaires = async (): Promise<boolean> => {
     try {
       loading.value = true
       error.value = null
       const response = await questionnaireApi.getPublishedQuestionnaires()
-      questionnaires_published.value = response || []
+      questionnaires_published.value = response.data || []
+      return true
     } catch (err: any) {
-      error.value = err.message || '获取问卷列表失败'
-      return null
+      error.value = err.message || '获取已发布问卷列表失败'
+      throw err
     } finally {
       loading.value = false
     }
   }
 
-  const fetchAllQuestionnaires = async () => {
+  // 获取所有问卷
+  const fetchAllQuestionnaires = async (): Promise<boolean> => {
     try {
       loading.value = true
       error.value = null
       const response = await questionnaireApi.getAllQuestionnaires()
-      questionnaires_all.value = response || []
+      questionnaires_all.value = response.data || []
+      return true
     } catch (err: any) {
       error.value = err.message || '获取所有问卷失败'
-      return null
+      throw err
     } finally {
       loading.value = false
     }
@@ -53,11 +55,12 @@ export const useQuestionnaireStore = defineStore('questionnaire', () => {
     try {
       loading.value = true
       error.value = null
-      return await questionnaireApi.getQuestionnaireDetail({ questionnaireId: id })
+      const response = await questionnaireApi.getQuestionnaireDetail({ questionnaireId: id })
+      return response.data
     } catch (err: any) {
       console.warn('API获取问卷详情失败:', err)
       error.value = err.message || '获取问卷详情失败'
-      throw err
+      return null
     } finally {
       loading.value = false
     }
@@ -70,8 +73,8 @@ export const useQuestionnaireStore = defineStore('questionnaire', () => {
       error.value = null
       
       // 使用questionApi获取问题列表
-      const questionnaire = await questionnaireApi.getQuestionnaireDetail({ questionnaireId: id })
-      return questionnaire
+      const response = await questionnaireApi.getQuestionnaireDetail({ questionnaireId: id })
+      return response.data
     } catch (err: any) {
       console.error('questionnaireStore: questionApi获取问题失败:', err)
       error.value = null
@@ -82,42 +85,44 @@ export const useQuestionnaireStore = defineStore('questionnaire', () => {
   }
 
   // 创建问卷
-  const createQuestionnaire = async (data: CreateQuestionnaireRequest) => {
+  const createQuestionnaire = async (data: CreateQuestionnaireRequest): Promise<boolean> => {
     try {
       loading.value = true
       error.value = null
       const response = await questionnaireApi.createQuestionnaire(data)
-      if (!response) {
+      if (!response.data) {
         throw new Error('创建问卷失败，未返回有效数据')
       }
-      ElMessage.success('问卷创建成功')
+      return true
     } catch (err: any) {
       console.error('创建问卷失败:', err)
-      ElMessage.error('创建问卷失败')
+      throw err
     } finally {
       loading.value = false
     }
   }
 
   // 更新问卷
-  const updateQuestionnaire = async (data: UpdateQuestionnaireRequest) => {
+  const updateQuestionnaire = async (data: UpdateQuestionnaireRequest): Promise<boolean> => {
     try {
       loading.value = true
       error.value = null
       
       // 调用API更新问卷
-      const updatedQuestionnaire = await questionnaireApi.updateQuestionnaire(data)
+      const response = await questionnaireApi.updateQuestionnaire(data)
+      const updatedQuestionnaire = response.data
       // 更新本地状态
       const index = questionnaires_all.value.findIndex(q => q.questionnaireId === data.questionnaireId)
       if (index !== -1) {
         questionnaires_all.value[index] = updatedQuestionnaire
       } else {
         console.warn(`问卷 ${data.questionnaireId} 未找到，无法更新`)
+        throw new Error(`问卷 ${data.questionnaireId} 未找到，无法更新`)
       }
-      ElMessage.success('问卷已成功更新')
+      return true
     } catch (err: any) {
       console.error('更新问卷失败:', err)
-      ElMessage.error('更新问卷失败')
+      throw err
     } finally {
       loading.value = false
     }
@@ -130,58 +135,62 @@ export const useQuestionnaireStore = defineStore('questionnaire', () => {
       error.value = null
       await questionnaireApi.deleteQuestionnaire({ questionnaireId })
       questionnaires_all.value = questionnaires_all.value.filter(q => q.questionnaireId !== questionnaireId)
-      ElMessage.success('问卷已成功删除')
+      return true
     } catch (err: any) {
       console.error('删除问卷失败:', err)
-      ElMessage.error('删除问卷失败')
+      throw err
     } finally {
       loading.value = false
     }
   }
 
   // 发布问卷
-  const publishQuestionnaire = async (questionnaireId: number) => {
+  const publishQuestionnaire = async (questionnaireId: number): Promise<boolean> => {
     try {
       loading.value = true
       error.value = null
       
       // 调用API发布问卷
-      const updatedQuestionnaire = await questionnaireApi.publishQuestionnaire({ questionnaireId })
+      const response = await questionnaireApi.publishQuestionnaire({ questionnaireId })
+      const updatedQuestionnaire = response.data
       // 更新本地状态
       const index = questionnaires_all.value.findIndex(q => q.questionnaireId === questionnaireId)
       if (index !== -1) {
         questionnaires_all.value[index].isPublished = updatedQuestionnaire.isPublished
       } else {
         console.warn(`问卷 ${questionnaireId} 未找到，无法更新状态`)
+        return false
       }
-      ElMessage.success('问卷已成功发布')
+      return true
     } catch (err: any) {
       console.error('发布问卷失败:', err)
-      ElMessage.error('发布问卷失败')
+      throw err
     } finally {
       loading.value = false
     }
   }
 
   // 撤销发布问卷
-  const unpublishQuestionnaire = async (questionnaireId: number) => {
+  const unpublishQuestionnaire = async (questionnaireId: number): Promise<boolean> => {
     try {
       loading.value = true
       error.value = null
       
       // 调用API撤销发布问卷
-      const updatedQuestionnaire = await questionnaireApi.unpublishQuestionnaire({ questionnaireId })
+      const response = await questionnaireApi.unpublishQuestionnaire({ questionnaireId })
+      const updatedQuestionnaire = response.data
       // 更新本地状态
       const index = questionnaires_all.value.findIndex(q => q.questionnaireId === questionnaireId)
       if (index !== -1) {
         questionnaires_all.value[index].isPublished = updatedQuestionnaire.isPublished === false ? false : questionnaires_all.value[index].isPublished
       } else {
         console.warn(`问卷 ${questionnaireId} 未找到，无法更新状态`)
+        return false
       }
-      ElMessage.success('问卷已成功撤销发布')
+      return true
     } catch (err: any) {
       console.error('撤销发布问卷失败:', err)
-      ElMessage.error('撤销发布问卷失败')
+      throw err
     } finally {
       loading.value = false
     }

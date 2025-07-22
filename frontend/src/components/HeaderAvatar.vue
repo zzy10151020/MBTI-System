@@ -50,7 +50,7 @@
         </div>
         <div class="menu-divider"></div>
         <div class="menu-actions">
-          <div class="menu-item action-item">
+          <div class="menu-item action-item" @click="handleSwitchAccount">
             <el-icon class="action-icon"><Switch /></el-icon>
             <span>更改账号</span>
           </div>
@@ -109,23 +109,30 @@ const handleSignup = () => {
   uiStateStore.openRegister()
 }
 
+const handleSwitchAccount = () => {
+  // 首先关闭头像菜单
+  isAvatarClick.value = false
+  
+  // 确保用户已登录
+  if (!userStore.isLoggedIn) {
+    console.warn('用户未登录，无法切换账号')
+    return
+  }
+  
+  // 调用用户登出方法
+  userStore.logout()
+
+  uiStateStore.openLogin()
+}
+
 const handleLogout = () => {
   userStore.logout()
   isAvatarClick.value = false
-  
-  // 退出登录后跳转到不带 uid 的路由
-  const currentRoute = router.currentRoute.value
-  if (currentRoute.name === 'home') {
-    router.push({ name: 'home' })
-  } else if (currentRoute.name === 'questionnaires') {
-    router.push({ name: 'questionnaires' })
-  } else if (currentRoute.name === 'results') {
-    router.push({ name: 'questionnaires' }) // 退出后返回问卷页
-  } else if (currentRoute.name === 'test') {
-    router.push({ name: 'questionnaires' }) // 退出后返回问卷页
-  } else if (currentRoute.name === 'profile') {
-    router.push({ name: 'questionnaires' }) // 退出后返回问卷页
-  }
+  router.push({ name: 'home' }).then(() => {
+    console.log('成功登出并跳转到首页')
+  }).catch((error) => {
+    console.error('登出失败:', error)
+  })
 }
 
 const goToUserSpace = () => {

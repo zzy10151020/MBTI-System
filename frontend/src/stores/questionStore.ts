@@ -15,7 +15,7 @@ export const useQuestionStore = defineStore('question', () => {
     error.value = null
     try {
       const result = await questionApi.getQuestionsByQuestionnaire({ questionnaireId })
-      questions.value = result
+      questions.value = result.data || []
     } catch (err: any) {
       error.value = err.message || '获取问题失败'
     } finally {

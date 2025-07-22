@@ -53,6 +53,9 @@ public class UserRequestDTO {
     @JsonIgnore
     private String newPassword;
 
+    // 要更新的用户ID
+    private Integer updateUserId;
+
     // 要获取详情的用户ID
     private Integer getUserProfileId;
     
@@ -121,7 +124,14 @@ public class UserRequestDTO {
         
         return hasUpdateField;
     }
-    
+
+    /**
+     * 根据用户ID更新用户信息
+     */
+    public boolean isValidForUpdateById() {
+        return updateUserId != null && updateUserId > 0 && isValidForUpdateUser(); // 要更新的用户ID必须大于0
+    }
+
     /**
      * 删除用户请求验证 - 管理员删除其他用户
      */

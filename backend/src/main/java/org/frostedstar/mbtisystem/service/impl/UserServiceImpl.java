@@ -118,6 +118,23 @@ public class UserServiceImpl implements UserService {
         
         return false;
     }
+
+    @Override
+    public boolean resetPasswordByAdmin(Integer userId, String newPassword) {
+        if (userId == null || newPassword == null || newPassword.trim().isEmpty()) {
+            return false;
+        }
+        Optional<User> userOpt = findById(userId);
+        if (userOpt.isEmpty()) {
+            return false;
+        }
+        User user = userOpt.get();
+        // 生成新盐和加密密码
+        String newSalt = PasswordUtil.generateSalt();
+        String hashed = PasswordUtil.hashPassword(newPassword, newSalt);
+        user.setPasswordHash(hashed);
+        return update(user);
+    }
     
     @Override
     public User save(User user) {

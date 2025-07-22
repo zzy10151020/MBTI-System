@@ -30,8 +30,8 @@ export const useTestStore = defineStore('test', () => {
       loading.value = true
       error.value = null
       
-      const results = await testApi.getAllTests()
-      testResults.value = results || []
+      const response = await testApi.getAllTests()
+      testResults.value = response.data || []
       
     } catch (err: any) {
       console.error('获取测试结果失败:', err)
@@ -50,9 +50,8 @@ export const useTestStore = defineStore('test', () => {
       loading.value = true
       error.value = null
       
-      const result = await testApi.getTestById(answerId)
-      currentTestDetail.value = result
-
+      const response = await testApi.getTestById(answerId)
+      currentTestDetail.value = response.data
       return currentTestDetail.value
     } catch (err: any) {
       console.error('获取测试详情失败:', err)
@@ -80,14 +79,14 @@ export const useTestStore = defineStore('test', () => {
       }
       
       // 调用API提交答案
-      const result = await testApi.submitTest(submitData)
+              const response = await testApi.submitTest(submitData)
       
       // 刷新测试结果列表
       await fetchTestResults()
 
       ElMessage.success('答案提交成功')
       
-      return result
+              return response.data
     } catch (error: any) {
       console.error('提交答案失败:', error)
       ElMessage.error(error.message || '提交答案失败，请重试')
@@ -243,7 +242,8 @@ export const useTestStore = defineStore('test', () => {
         return
       }
       const requestData = { questionnaireId: questionnaireId }
-      const stats = await testApi.getTestStatistics(requestData)
+      const response = await testApi.getTestStatistics(requestData)
+      const stats = response.data
       currentTestStatistics.value = {
         ...stats,
         totalParticipants: stats.statistics.totalParticipants || 0,
@@ -267,7 +267,8 @@ export const useTestStore = defineStore('test', () => {
       loading.value = true
       error.value = null
       
-      const stats = await testApi.getAllTestStatistics()
+      const response = await testApi.getAllTestStatistics()
+      const stats = response.data
       testStatisticses.value = {
         ...stats,
         totalParticipants: stats.totalParticipants || 0,
@@ -383,8 +384,8 @@ export const useTestStore = defineStore('test', () => {
   // 检查用户是否已完成测试
   const checkTestCompleted = async (questionnaireId: number) => {
     try {
-      const result = await testApi.checkTestCompleted({ questionnaireId })
-      return result
+      const response = await testApi.checkTestCompleted({ questionnaireId })
+      return response.data
     } catch (error: any) {
       console.error('检查测试完成状态失败:', error)
       return { completed: false }
@@ -393,9 +394,9 @@ export const useTestStore = defineStore('test', () => {
 
   const getAnswerCount = async () => {
     try {
-      const result = await testApi.getTestAnswerCount()
-      console.log('获取测试答案数量:', result.count)
-      return result.count || 0
+      const response = await testApi.getTestAnswerCount()
+      console.log('获取测试答案数量:', response.data.count)
+      return response.data.count || 0
     } catch(error) {
       ElMessage.error("获取数量失败")
       return 0

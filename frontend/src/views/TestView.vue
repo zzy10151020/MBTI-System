@@ -588,13 +588,14 @@ watch(() => userStore.isLoggedIn, (isLoggedIn) => {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 2rem 8rem;
+  padding: 2rem 8rem 1rem 8rem;
   background-color: var(--color-background-soft);
 }
 
 .test-card {
   max-width: 80rem;
   width: 100%;
+  height: 90vh;
   background-color: var(--color-background);
   border-radius: 1.6rem;
   box-shadow: 0 0.8rem 3.2rem rgba(0, 0, 0, 0.1);
@@ -615,8 +616,8 @@ watch(() => userStore.isLoggedIn, (isLoggedIn) => {
   background-color: var(--color-background-soft) !important;
   border: 1px solid var(--color-border) !important;
   color: var(--color-text-secondary) !important;
-  font-size: 1.2rem !important;
-  padding: 0.8rem 1.6rem !important;
+  font-size: 1rem !important;
+  padding: 0.4rem 1rem !important;
   border-radius: 0.8rem !important;
   transition: all 0.3s ease !important;
 }
@@ -630,8 +631,8 @@ watch(() => userStore.isLoggedIn, (isLoggedIn) => {
 
 /* 问卷信息区域 */
 .questionnaire-info {
-  margin-bottom: 1rem;
-  margin-top: 4rem; /* 为返回按钮留出空间 */
+  margin-bottom: 0.5rem;
+  margin-top: 1rem; /* 为返回按钮留出空间 */
 }
 
 .info-header {
@@ -640,7 +641,7 @@ watch(() => userStore.isLoggedIn, (isLoggedIn) => {
 }
 
 .questionnaire-title {
-  font-size: 2.4rem;
+  font-size: 2rem;
   color: var(--color-text-primary);
   font-weight: 600;
   margin-bottom: 0.2rem;
@@ -648,14 +649,14 @@ watch(() => userStore.isLoggedIn, (isLoggedIn) => {
 }
 
 .questionnaire-description {
-  font-size: 1.4rem;
+  font-size: 1rem;
   color: var(--color-text-secondary);
-  line-height: 1.6;
+  line-height: 1.2;
   margin: 0;
 }
 
 .test-progress {
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 
 .progress-text {
@@ -668,26 +669,26 @@ watch(() => userStore.isLoggedIn, (isLoggedIn) => {
 
 /* 问题区域 */
 .question-section {
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 
 .question-header {
-  margin-bottom: 2rem;
+  margin-bottom: 0.5rem;
 }
 
 .question-title {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   color: var(--primary-teal);
   font-weight: 600;
   margin: 0;
 }
 
 .question-content {
-  margin-bottom: 3rem;
+  margin-bottom: 1rem;
 }
 
 .question-text {
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   color: var(--color-text-primary);
   font-weight: 500;
   margin: 0 0 2rem 0;
@@ -696,14 +697,15 @@ watch(() => userStore.isLoggedIn, (isLoggedIn) => {
 
 .options-container {
   display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  flex-direction: row;
+  gap: 1rem;
 }
 
 .option-item {
+  width: 50%;
   border: 2px solid var(--color-border);
   border-radius: 1.2rem;
-  padding: 2rem;
+  padding: 1rem 2rem;
   cursor: pointer;
   transition: all 0.3s ease;
   background-color: var(--color-background);
@@ -712,13 +714,13 @@ watch(() => userStore.isLoggedIn, (isLoggedIn) => {
 .option-item:hover {
   border-color: var(--primary-teal-light);
   background-color: var(--primary-teal-light);
-  transform: translateY(-0.2rem);
+  transform: translateY(-0.1rem);
 }
 
 .option-item.selected {
   border-color: var(--primary-teal);
   background-color: var(--primary-teal-light);
-  box-shadow: 0 0.4rem 1.2rem rgba(32, 178, 170, 0.2);
+  box-shadow: 0 0.4rem 1rem rgba(32, 178, 170, 0.2);
 }
 
 .option-item.option-a.selected {
@@ -736,8 +738,8 @@ watch(() => userStore.isLoggedIn, (isLoggedIn) => {
 }
 
 .option-label {
-  width: 3rem;
-  height: 3rem;
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   background-color: var(--primary-teal);
   color: white;
@@ -745,7 +747,7 @@ watch(() => userStore.isLoggedIn, (isLoggedIn) => {
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  font-size: 1.4rem;
+  font-size: 1rem;
   flex-shrink: 0;
 }
 
@@ -755,7 +757,7 @@ watch(() => userStore.isLoggedIn, (isLoggedIn) => {
 }
 
 .option-text {
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   color: var(--color-text-primary);
   line-height: 1.5;
   flex: 1;
@@ -763,8 +765,12 @@ watch(() => userStore.isLoggedIn, (isLoggedIn) => {
 
 /* 操作按钮区域 */
 .question-actions {
+  position: absolute;
+  bottom: 2.5rem;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  width: 82%;
   gap: 1rem;
 }
 
