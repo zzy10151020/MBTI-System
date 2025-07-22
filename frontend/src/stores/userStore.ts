@@ -49,7 +49,7 @@ export const useUserStore = defineStore('user', () => {
       user.value = null
       isLoggedIn.value = false
       if (userInfo && !hasSession) {
-        console.warn('⚠️ 检测到本地用户信息但无session cookie，可能session已过期')
+        console.warn('检测到本地用户信息但无session cookie，可能session已过期')
         localStorage.removeItem('userInfo')
       }
     }
@@ -86,7 +86,6 @@ export const useUserStore = defineStore('user', () => {
       isLoggedIn.value = true
       setUserInfo(result)
       await fetchUserProfile() // 刷新用户信息
-      ElMessage.success('登录成功！')
       return true
     } catch (error: any) {
       console.error('登录失败详细信息:', {
@@ -239,6 +238,31 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  // 获取用户列表
+  const getUserList = async (): Promise<User[]> => {
+    try {
+      const result = await userApi.getUserList()
+      return result
+    } catch (error: any) {
+      console.error('获取用户列表失败:', error)
+      ElMessage.error(error.message || '获取用户列表失败，请稍后重试')
+      return []
+    }
+  }
+
+  // 删除用户
+  const deleteUser = async (userId: number): Promise<void> => {
+    try {
+      loading.value = true
+      await userApi.deleteUser({ deleteUserId: userId })
+    } catch (error: any) {
+      console.error('删除用户失败:', error)
+      ElMessage.error(error.message || '删除用户失败，请稍后重试')
+    } finally {
+      loading.value = false
+    }
+  }
+
   // 获取当前用户角色
   const getUserRole = (): string | null => {
     return user.value?.role || null
@@ -302,6 +326,8 @@ export const useUserStore = defineStore('user', () => {
     changePassword,
     checkUsernameExists,
     checkEmailExists,
+    getUserList,
+    deleteUser,
     getUserRole,
     isAdmin,
     debugSession,

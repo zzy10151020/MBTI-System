@@ -175,15 +175,17 @@
                   :tooltip-visible="true"
                   :format-tooltip="formatSliderTooltip"
                 />
-                <el-button 
-                  v-if="questionForm.options.length > 2"
-                  text 
-                  type="danger" 
-                  @click="removeOption(index)"
-                  class="remove-option-btn"
-                >
-                  <el-icon><Delete /></el-icon>
-                </el-button>
+                <div class="remove-option-btn-placeholder">
+                  <el-button 
+                    v-if="questionForm.options.length > 2"
+                    text 
+                    type="danger" 
+                    @click="removeOption(index)"
+                    class="remove-option-btn"
+                  >
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </div>
               </div>
             </el-form-item>
           </div>
@@ -529,15 +531,25 @@ const resetForm = () => {
 .option-input-group {
   display: flex;
   align-items: center;
+  width: 90%;
   gap: 1rem;
 }
 
 .option-content-input {
-  flex: 1;
+  width: 10rem;
 }
 
 .option-score-input {
-  width: 120px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.remove-option-btn-placeholder {
+  width: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .remove-option-btn {

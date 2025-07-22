@@ -4,6 +4,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.Scanner;
 
 /**
  * 密码加密工具类
@@ -64,5 +65,23 @@ public class PasswordUtil {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("--- 密碼雜湊生成工具 ---");
+        System.out.print("請輸入要加密的密碼: ");
+        String password = scanner.nextLine();
+
+        if (password != null && !password.trim().isEmpty()) {
+            String hashedPassword = hashPassword(password.trim());
+            System.out.println("\n生成的密碼雜湊值 (可直接用於SQL):");
+            System.out.println(hashedPassword);
+            System.out.println(verifyPassword(password, hashedPassword));
+        } else {
+            System.out.println("密碼不能為空!");
+        }
+        
+        scanner.close();
     }
 }

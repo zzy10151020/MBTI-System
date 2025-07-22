@@ -59,9 +59,23 @@
             <el-icon><Management /></el-icon>
           </div>
           <div class="stat-content">
-            <h3>管理面板</h3>
+            <h3>管理问卷</h3>
             <p>
-              <el-button text type="primary" @click="goToAdmin">
+              <el-button text type="primary" @click="goToAdminQuestionnaires">
+                查看统计
+              </el-button>
+            </p>
+          </div>
+        </div>
+
+        <div class="stat-card" v-if="userStore.user?.role === 'ADMIN'">
+          <div class="stat-icon">
+            <el-icon><Management /></el-icon>
+          </div>
+          <div class="stat-content">
+            <h3>管理用户</h3>
+            <p>
+              <el-button text type="primary" @click="goToAdminUsers">
                 查看统计
               </el-button>
             </p>
@@ -338,11 +352,19 @@ const goToResults = () => {
   }
 }
 
-const goToAdmin = () => {
+const goToAdminQuestionnaires = () => {
   if (currentUid.value) {
     router.push({ name: 'admin-questionnaires', params: { uid: currentUid.value } })
   } else {
     router.push({ name: 'admin-questionnaires' })
+  }
+}
+
+const goToAdminUsers = () => {
+  if (currentUid.value) {
+    router.push({ name: 'admin-users', params: { uid: currentUid.value } })
+  } else {
+    router.push({ name: 'admin-users' })
   }
 }
 
@@ -479,7 +501,7 @@ const exportData = async () => {
 /* 统计卡片 */
 .stats-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
   gap: 2rem;
   margin-bottom: 3rem;
 }
@@ -525,7 +547,7 @@ const exportData = async () => {
 
 .stat-content h3 {
   margin: 0 0 0.5rem 0;
-  font-size: 2rem;
+  font-size: 1.6rem;
   color: var(--color-text-primary);
 }
 

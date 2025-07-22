@@ -24,7 +24,7 @@
                 v-model="registerForm.username"
                 placeholder="请输入用户名"
                 :prefix-icon="User"
-                clearable
+                clearable size="default"
                 @keyup.enter="handleRegister"
               />
             </el-form-item>
@@ -35,7 +35,7 @@
                 placeholder="请输入邮箱地址"
                 :prefix-icon="Message"
                 type="email"
-                clearable
+                clearable size="default"
                 @keyup.enter="handleRegister"
               />
             </el-form-item>
@@ -47,7 +47,7 @@
                 :prefix-icon="Lock"
                 type="password"
                 show-password
-                clearable
+                clearable size="default"
                 @keyup.enter="handleRegister"
               />
             </el-form-item>
@@ -59,7 +59,7 @@
                 :prefix-icon="Lock"
                 type="password"
                 show-password
-                clearable
+                clearable size="default"
                 @keyup.enter="handleRegister"
               />
             </el-form-item>
@@ -230,9 +230,10 @@ const resetForm = () => {
 /* 注册容器 */
 .register-container {
   width: 90%;
-  max-width: 45rem;
+  max-width: 40rem;
+  max-height: 95vh;
   background-color: var(--color-background);
-  border-radius: 1.6rem;
+  border-radius: 1.2rem;
   box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.3);
   overflow: hidden;
   position: relative;
@@ -241,7 +242,7 @@ const resetForm = () => {
 
 /* 注册头部 */
 .register-header {
-  padding: 3rem 3rem 2rem;
+  padding: 0.5rem 2rem;
   text-align: center;
   background: linear-gradient(135deg, var(--primary-teal) 0%, var(--primary-teal-dark) 100%);
   color: #ffffff;
@@ -249,13 +250,13 @@ const resetForm = () => {
 }
 
 .register-title {
-  font-size: 2.4rem;
+  font-size: 1.8rem;
   font-weight: 600;
-  margin: 0 0 0.8rem 0;
+  margin: 0 0 0.6rem 0;
 }
 
 .register-subtitle {
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   margin: 0;
   opacity: 0.9;
   font-weight: 400;
@@ -263,13 +264,13 @@ const resetForm = () => {
 
 .close-btn {
   position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
+  top: 1rem;
+  right: 1rem;
   background: rgba(255, 255, 255, 0.2);
   border: none;
   border-radius: 50%;
-  width: 3rem;
-  height: 3rem;
+  width: 2rem;
+  height: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -285,7 +286,7 @@ const resetForm = () => {
 
 /* 注册内容 */
 .register-content {
-  padding: 3rem;
+  padding: 1rem 3rem;
 }
 
 /* 表单样式 */
@@ -296,7 +297,7 @@ const resetForm = () => {
 }
 
 :deep(.el-input__wrapper) {
-  border-radius: 0.8rem !important;
+  border-radius: 0.6rem !important;
   box-shadow: 0 0 0 1px var(--color-border) inset !important;
   transition: all 0.3s ease !important;
 }
@@ -310,19 +311,22 @@ const resetForm = () => {
 }
 
 :deep(.el-input__inner) {
-  font-size: 1.4rem !important;
-  padding: 1.2rem 1.5rem !important;
+  font-size: 1rem !important;
+  padding: 1rem 0.8rem !important;
 }
 
 /* 注册按钮 */
 .register-actions {
-  margin-top: 2rem;
+  margin-top: 1.2rem;
 }
 
 .register-btn {
-  width: 100% !important;
-  height: 4.8rem !important;
-  font-size: 1.6rem !important;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60% !important;
+  height: 2rem !important;
+  font-size: 1.2rem !important;
   font-weight: 600 !important;
   border-radius: 0.8rem !important;
   background: linear-gradient(135deg, var(--primary-teal) 0%, var(--primary-teal-dark) 100%) !important;
@@ -331,24 +335,19 @@ const resetForm = () => {
 }
 
 :deep(.register-btn:hover) {
-  transform: translateY(-0.2rem) !important;
-  box-shadow: 0 0.8rem 2rem rgba(32, 178, 170, 0.4) !important;
-}
-
-:deep(.register-btn:active) {
-  transform: translateY(0) !important;
+  box-shadow: 0 0.6rem 0.8rem rgba(32, 178, 170, 0.4) !important;
 }
 
 /* 注册底部 */
 .register-footer {
   text-align: center;
-  margin-top: 2rem;
+  margin-top: 1rem;
 }
 
 .login-link {
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 0.5rem 0;
   color: var(--color-text-secondary);
-  font-size: 1.3rem;
+  font-size: 1rem;
 }
 
 .login-link a {
@@ -365,9 +364,9 @@ const resetForm = () => {
 }
 
 .terms-notice {
-  font-size: 1.2rem;
+  font-size: 1rem;
   color: var(--color-text-soft);
-  line-height: 1.6;
+  line-height: 1.2;
 }
 
 .terms-notice a {

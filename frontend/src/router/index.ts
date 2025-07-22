@@ -8,6 +8,7 @@ import ResultsView from '../views/ResultsView.vue'
 import UserProfileView from '../views/UserProfileView.vue'
 import AdminQuestionnairesView from '../views/AdminQuestionnairesView.vue'
 import AdminQuestionsView from '../views/AdminQuestionsView.vue'
+import AdminUsersView from '../views/AdminUsersView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 import ErrorView from '../views/ErrorView.vue'
 
@@ -49,6 +50,12 @@ const router = createRouter({
       path: '/admin/questionnaires/:id/questions/:uid(\\d+)?',
       name: 'admin-questions',
       component: AdminQuestionsView,
+      meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/admin/users/:uid(\\d+)?',
+      name: 'admin-users',
+      component: AdminUsersView,
       meta: { requiresAuth: true, requiresAdmin: true }
     },
     {

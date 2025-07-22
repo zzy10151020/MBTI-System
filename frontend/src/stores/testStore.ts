@@ -359,7 +359,7 @@ export const useTestStore = defineStore('test', () => {
       dimensions,
       statistics,
       personalityProbabilities,
-      description: mbtiDescription.description,
+      description: mbtiDescription.description || '暂无描述信息',
       traits: mbtiDescription.strengths || [],
       strengths: mbtiDescription.strengths || [],
       weaknesses: mbtiDescription.weaknesses || [],
