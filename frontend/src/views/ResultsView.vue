@@ -235,7 +235,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
@@ -371,11 +371,67 @@ const handleAction = async (command: {action: string, id: number}) => {
   }
 }
 
-const downloadReport = () => {
+// 下载报告为PDF
+const downloadReport = async () => {
   if (!currentReport.value) return
-  
-  // 这里可以实现报告下载功能
-  ElMessage.info('报告下载功能开发中...')
+  const [{ default: jsPDF }, html2canvas] = await Promise.all([
+    import('jspdf'),
+    import('html2canvas')
+  ])
+  await nextTick()
+  const reportDom = document.querySelector('.report-content') as HTMLElement
+  if (!reportDom) {
+    ElMessage.error('报告内容未找到，无法导出')
+    return
+  }
+  // 1. 临时移除max-height/overflow，展开全部内容
+  const originalMaxHeight = reportDom.style.maxHeight
+  const originalOverflow = reportDom.style.overflowY
+  reportDom.style.maxHeight = 'none'
+  reportDom.style.overflowY = 'visible'
+  // 2. 截图
+  try {
+    await nextTick() // 确保样式生效
+    const canvas = await html2canvas.default(reportDom, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#fff'
+    })
+    // 3. 恢复样式
+    reportDom.style.maxHeight = originalMaxHeight
+    reportDom.style.overflowY = originalOverflow
+    const imgData = canvas.toDataURL('image/png')
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
+    const pageWidth = 210
+    const pageHeight = 297
+    // 只插入一页，图片宽度适应A4，纵向自适应
+    const imgProps = pdf.getImageProperties(imgData)
+    const imgWidth = pageWidth - 20 // 左右边距各10mm
+    const imgHeight = (imgProps.height * imgWidth) / imgProps.width
+    // 若图片高度大于A4高度-20mm，则缩小图片高度适应A4（等比缩放）
+    let finalImgWidth = imgWidth
+    let finalImgHeight = imgHeight
+    if (imgHeight > pageHeight - 20) {
+      finalImgHeight = pageHeight - 20
+      finalImgWidth = (imgProps.width * finalImgHeight) / imgProps.height
+    }
+    pdf.addImage(
+      imgData,
+      'PNG',
+      (pageWidth - finalImgWidth) / 2,
+      10,
+      finalImgWidth,
+      finalImgHeight
+    )
+    const filename = `${currentReport.value.username || 'MBTI报告'}_${currentReport.value.mbtiType || ''}.pdf`
+    pdf.save(filename)
+    ElMessage.success('报告已下载')
+  } catch (e) {
+    // 恢复样式
+    reportDom.style.maxHeight = originalMaxHeight
+    reportDom.style.overflowY = originalOverflow
+    ElMessage.error('导出PDF失败')
+  }
 }
 
 const goToQuestionnaires = () => {
@@ -696,7 +752,6 @@ onMounted(() => {
 }
 
 .mbti-probabilities h4 {
-  grid-column: span 1 / span 4;
   font-size: 1.6rem;
   font-weight: bold;
   color: var(--color-text-primary);
@@ -704,16 +759,20 @@ onMounted(() => {
 }
 
 .probability-items {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  width: 30rem;
+  gap: 1rem;
+  transform: translateX(-2rem);
+  margin: 0 auto;
+  margin-bottom: 1rem;
 }
 
 .progress-label {
   display: flex;
   flex-direction: column;
-  align-items: center;
   font-size: 1rem;
   font-weight: bold;
   color: var(--color-text-primary);
