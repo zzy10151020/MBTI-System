@@ -69,7 +69,68 @@
   - 作用：封装项目中常用的通用方法和工具函数，如字符串处理、加密解密、时间日期处理等，便于代码复用和维护。
 
 ## 目录结构
-- `src/main/java/org/frostedstar/mbtisystem/`：核心 Java 代码
+- `src/main/java/org/frostedstar/mbtisystem/`：核心 Java 代码，包含以下常见包：
+  - `controller/`：控制器层，负责接收和响应前端请求，进行参数校验、权限校验，并调用 Service 层处理业务逻辑。
+    - `AuthController.java`：处理用户认证相关接口（如登录、注册）。
+    - `UserController.java`：用户管理相关接口。
+    - `QuestionController.java`：MBTI 测试题相关接口。
+    - `QuestionnaireController.java`：问卷管理相关接口。
+    - `TestController.java`：测试记录与结果相关接口。
+    - `BaseController.java`：控制器通用父类，封装通用响应、异常处理等。
+    - `AuthUtils.java`：认证辅助工具类。
+  - `service/`：服务层，承载系统核心业务逻辑，负责业务流程编排、事务控制、复杂数据处理等。
+    - `UserService.java`：用户相关业务接口，定义用户注册、登录、信息管理等操作。
+    - `TestService.java`：测试记录与结果相关业务接口，定义测试流程、结果统计等操作。
+    - `QuestionService.java`：题目相关业务接口，定义题目增删改查、题库管理等操作。
+    - `QuestionnaireService.java`：问卷相关业务接口，定义问卷创建、发布、查询等操作。
+    - `ServiceFactory.java`：服务工厂，统一管理和获取 Service 实例。
+    - `BaseService.java`：服务层通用父接口，定义通用业务方法。
+    - `impl/`：具体实现类包。
+      - `UserServiceImpl.java`：用户业务接口实现。
+      - `TestServiceImpl.java`：测试业务接口实现。
+      - `QuestionServiceImpl.java`：题目业务接口实现。
+      - `QuestionnaireServiceImpl.java`：问卷业务接口实现。
+  - `dao/`：数据访问层，专注于与数据库的交互，负责数据的增删改查操作，屏蔽底层数据库细节。
+    - `UserDAO.java`：用户数据访问接口，定义用户表的增删改查操作。
+    - `TestDAO.java`：测试记录数据访问接口，定义测试记录表的操作。
+    - `QuestionDAO.java`：题目数据访问接口，定义题目表的操作。
+    - `QuestionnaireDAO.java`：问卷数据访问接口，定义问卷表的操作。
+    - `OptionDAO.java`：选项数据访问接口，定义选项表的操作。
+    - `AnswerDAO.java`：答卷数据访问接口，定义答卷表的操作。
+    - `AnswerDetailDAO.java`：答题详情数据访问接口，定义答题明细表的操作。
+    - `DaoFactory.java`：DAO 工厂，统一管理和获取 DAO 实例。
+    - `BaseDAO.java`：DAO 层通用父接口，定义通用数据访问方法。
+    - `impl/`：具体实现类包。
+      - `UserDAOImpl.java`：用户数据访问接口实现。
+      - `TestDAOImpl.java`：测试记录数据访问接口实现。
+      - `QuestionDAOImpl.java`：题目数据访问接口实现。
+      - `QuestionnaireDAOImpl.java`：问卷数据访问接口实现。
+      - `OptionDAOImpl.java`：选项数据访问接口实现。
+      - `AnswerDAOImpl.java`：答卷数据访问接口实现。
+      - `AnswerDetailDAOImpl.java`：答题详情数据访问接口实现。
+  - `entity/`：实体类包，用于映射数据库表结构，反映数据库中的数据模型。
+    - `User.java`：用户实体，映射用户表，包含用户的基本信息（如用户名、密码、邮箱、注册时间等）。
+    - `Questionnaire.java`：问卷实体，映射问卷表，包含问卷的基本信息、创建者、创建时间等。
+    - `Question.java`：题目实体，映射题目表，包含题目内容、所属问卷、题目类型等。
+    - `Option.java`：选项实体，映射选项表，包含选项内容、分值、所属题目等。
+    - `Answer.java`：答卷实体，映射用户提交的答卷，包含答卷所属用户、问卷、提交时间等。
+    - `AnswerDetail.java`：答题详情实体，映射答题明细表，记录每道题的作答情况。
+  - `dto/`：数据传输对象包，用于在各层之间传递结构化数据，封装请求参数和响应结果。
+    - `ApiResponse.java`：通用响应 DTO，封装统一的 API 响应结构。
+    - `ErrorResponse.java`：错误响应 DTO，封装错误信息。
+    - `PageResponse.java`：分页响应 DTO，封装分页数据结构。
+    - `authdto/`：认证相关 DTO 子包。
+    - `optiondto/`：选项相关 DTO 子包。
+    - `questiondto/`：题目相关 DTO 子包。
+    - `questionnairedto/`：问卷相关 DTO 子包。
+    - `testdto/`：测试相关 DTO 子包。
+    - `userdto/`：用户相关 DTO 子包。
+  - `filter/`：过滤器包，用于对进入系统的请求进行预处理，如权限校验、登录验证、日志记录、跨域处理等。
+    - `CorsFilter.java`：跨域请求处理过滤器，统一处理跨域访问。
+    - `CharacterEncodingFilter.java`：字符编码统一过滤器，保证请求和响应的编码一致。
+  - `util/`：工具类包，封装常用的通用方法和工具函数，如字符串处理、加密解密、时间日期处理等。
+    - `DatabaseUtil.java`：数据库连接与操作工具类，简化数据库操作流程。
+    - `PasswordUtil.java`：密码加密与校验工具类，提供安全的密码处理方法。
 - `src/main/resources/`：配置文件与 SQL 脚本
 - `introductions/`：接口文档与说明
 - `target/`：编译输出目录
