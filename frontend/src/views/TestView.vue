@@ -801,7 +801,7 @@ watch(() => userStore.isLoggedIn, (isLoggedIn) => {
 /* 完成状态 */
 .completion-section {
   text-align: center;
-  padding: 4rem 2rem;
+  padding: 0 2rem;
 }
 
 .completion-content {
@@ -810,9 +810,8 @@ watch(() => userStore.isLoggedIn, (isLoggedIn) => {
 }
 
 .completion-icon {
-  font-size: 6rem;
+  font-size: 5rem;
   color: var(--primary-teal);
-  margin-bottom: 2rem;
 }
 
 .completion-title {
@@ -826,7 +825,7 @@ watch(() => userStore.isLoggedIn, (isLoggedIn) => {
   font-size: 1.4rem;
   color: var(--color-text-secondary);
   line-height: 1.6;
-  margin: 0 0 3rem 0;
+  margin: 0 0 1rem 0;
 }
 
 .completion-actions {

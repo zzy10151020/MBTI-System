@@ -129,9 +129,8 @@ public class UserServiceImpl implements UserService {
             return false;
         }
         User user = userOpt.get();
-        // 生成新盐和加密密码
-        String newSalt = PasswordUtil.generateSalt();
-        String hashed = PasswordUtil.hashPassword(newPassword, newSalt);
+        // 统一用hashPassword(password)生成“盐:hash”格式
+        String hashed = PasswordUtil.hashPassword(newPassword);
         user.setPasswordHash(hashed);
         return update(user);
     }

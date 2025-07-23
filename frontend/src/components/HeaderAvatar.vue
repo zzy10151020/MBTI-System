@@ -26,6 +26,7 @@
     <!-- 用户简要信息悬停提示 -->
     <div v-if="isAvatarHover && !isAvatarClick && isLoggedIn" class="user-brief-info">
       <span>{{ username }}</span>
+      <span>{{ userStore.user?.email }}</span>
     </div>
 
     <!-- 用户头像菜单 -->
@@ -254,18 +255,25 @@ const goToUserSpace = () => {
 }
 
 /* 悬停信息提示 */
+/* 用户简要信息悬停提示始终居中显示在头像正下方 */
 .user-brief-info {
+  display: flex;
+  flex-direction: column;
   position: absolute;
-  top: 3.5rem;
-  left: 4rem;
-  width: fit-content;
+  top: 4rem;
+  left: 60%;
+  transform: translateX(-50%);
+  min-width: 6rem;
+  max-width: 16rem;
   height: auto;
-  padding: 0 1rem;
+  padding: 0.5rem 1rem;
   background-color: var(--color-background);
   border-radius: 0.4rem;
   box-shadow: 0 0.2rem 0.5rem rgba(0, 0, 0, 0.1);
   border: 1px solid var(--color-border);
   z-index: 1000;
+  text-align: left;
+  pointer-events: none;
 }
 
 .user-brief-info span {

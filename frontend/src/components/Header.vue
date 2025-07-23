@@ -20,6 +20,12 @@
         首页
       </router-link>
       <router-link 
+        :to="{ name: 'mbtiProfiles' }" 
+        class="nav-link"
+        :class="{ active: $route.name === 'mbtiProfiles' }">
+        MBTI 16型
+      </router-link>
+      <router-link 
         :to="questionnaireRoute" 
         class="nav-link"
         :class="{ active: $route.name === 'questionnaires' }"

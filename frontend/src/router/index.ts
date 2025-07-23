@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
 import { ElMessage } from 'element-plus'
 import HomeView from '../views/HomeView.vue'
+import MBTIProfilesView from '../views/MBTIProfilesView.vue'
 import QuestionnaireView from '../views/QuestionnaireView.vue'
 import TestView from '../views/TestView.vue'
 import ResultsView from '../views/ResultsView.vue'
@@ -19,6 +20,11 @@ const router = createRouter({
       path: '/:uid(\\d+)?',
       name: 'home',
       component: HomeView,
+    },
+    {
+      path: '/mbtiProfiles/:uid(\\d+)?',
+      name: 'mbtiProfiles',
+      component: MBTIProfilesView,
     },
     {
       path: '/questionnaires/:uid(\\d+)?',
