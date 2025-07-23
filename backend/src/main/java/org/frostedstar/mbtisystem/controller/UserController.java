@@ -94,7 +94,7 @@ public class UserController extends BaseController {
             UserRequestDTO updateRequest = parseRequestBody(request, UserRequestDTO.class);
 
             // 验证请求参数
-            if (updateRequest == null || !updateRequest.isValidForUpdateById()) {
+            if (updateRequest == null || !updateRequest.isValidForUpdateById(adminUser)) {
                 ApiResponse<Object> apiResponse = ApiResponse.error("缺少或无效的用户ID参数");
                 sendApiResponse(response, apiResponse);
                 return;

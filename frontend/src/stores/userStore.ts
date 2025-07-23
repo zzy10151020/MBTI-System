@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { authApi, userApi, type User, type LoginRequest } from '@/api'
 import { CookieHelper } from '@/utils/cookieHelper'
+import router from '@/router'
 
 export const useUserStore = defineStore('user', () => {
   // 状态
@@ -210,6 +211,7 @@ export const useUserStore = defineStore('user', () => {
       // 更新状态
       user.value = null
       isLoggedIn.value = false
+      router.push({ name: 'home' }) // 跳转到登录页面
     } catch (error) {
       console.error('注销请求失败:', error)
     } finally {

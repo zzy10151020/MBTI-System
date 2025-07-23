@@ -44,13 +44,11 @@ public class UserRequestDTO {
     /**
      * 当前密码
      */
-    @JsonIgnore
     private String currentPassword;
     
     /**
      * 新密码
      */
-    @JsonIgnore
     private String newPassword;
 
     // 要更新的用户ID
@@ -128,8 +126,11 @@ public class UserRequestDTO {
     /**
      * 根据用户ID更新用户信息
      */
-    public boolean isValidForUpdateById() {
-        return updateUserId != null && updateUserId > 0 && isValidForUpdateUser(); // 要更新的用户ID必须大于0
+    public boolean isValidForUpdateById(User adminUser) {
+        return updateUserId != null && updateUserId > 0 
+            && adminUser != null && adminUser.getRole().equals(User.Role.ADMIN)
+            && newPassword != null && !newPassword.trim().isEmpty()
+            && newPassword.length() >= 6; // 确保新密码有效且长度符合要求
     }
 
     /**
