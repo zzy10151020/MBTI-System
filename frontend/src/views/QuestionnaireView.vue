@@ -69,7 +69,7 @@
         </div>
 
         <!-- 填充空白卡片 -->
-        <div 
+        <!-- <div 
           v-for="n in emptySlots" 
           :key="'empty-' + n"
           class="questionnaire-item empty-slot"
@@ -78,7 +78,7 @@
             <el-icon><Plus /></el-icon>
             <p>更多问卷即将推出</p>
           </div>
-        </div>
+        </div> -->
       </div>
 
       <!-- 分页组件 -->
@@ -128,9 +128,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   DocumentChecked, 
   DocumentRemove, 
-  User, 
   Clock, 
-  Plus, 
   Loading,
   CaretTop
 } from '@element-plus/icons-vue'
@@ -311,7 +309,7 @@ const checkCompletedTest = () => {
   background-color: var(--color-background);
   border-radius: 2rem;
   box-shadow: 0 1.2rem 4rem rgba(0, 0, 0, 0.08);
-  padding: 5rem 4rem;
+  padding: 4rem 4rem 1rem 4rem;
   border: 1px solid var(--color-border);
 }
 
@@ -347,9 +345,9 @@ const checkCompletedTest = () => {
 .questionnaire-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: repeat(6, 1fr);
+  /* grid-template-rows: repeat(6, 1fr); */
   gap: 1.2rem;
-  min-height: 72rem;
+  /* min-height: 72rem; */
   margin: 0 auto;
 }
 

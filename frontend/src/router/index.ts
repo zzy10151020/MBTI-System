@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus'
 import HomeView from '../views/HomeView.vue'
 import MBTIProfilesView from '../views/MBTIProfilesView.vue'
 import QuestionnaireView from '../views/QuestionnaireView.vue'
+import QuestionnaireSearchResultView from '../views/QuestionnaireSearchResultView.vue'
 import TestView from '../views/TestView.vue'
 import ResultsView from '../views/ResultsView.vue'
 import UserProfileView from '../views/UserProfileView.vue'
@@ -35,6 +36,11 @@ const router = createRouter({
       path: '/test/:uid(\\d+)?',
       name: 'test',
       component: TestView,
+    },
+    {
+      path: '/questionnaire-search/:uid(\\d+)?',
+      name: 'questionnaire-search',
+      component: QuestionnaireSearchResultView,
     },
     {
       path: '/results/:uid(\\d+)?',

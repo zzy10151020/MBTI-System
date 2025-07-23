@@ -1,8 +1,14 @@
 <template>
-  <el-input v-model="searchText" :placeholder="searchRecommendation"
-    class="search-input" size="large">
+  <el-input
+    v-model="searchText"
+    :placeholder="searchRecommendation"
+    class="search-input"
+    size="large"
+    @keyup.enter="onSearch"
+    @blur="onBlur"
+  >
     <template #suffix>
-      <el-icon class="el-input__icon"><Search/></el-icon>
+      <el-icon class="el-input__icon" @click="onSearch"><Search/></el-icon>
     </template>
   </el-input>
 </template>
@@ -10,9 +16,28 @@
 <script setup lang="ts">
 import { Search } from '@element-plus/icons-vue'
 import { ref } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 
 const searchText = ref('')
 const searchRecommendation = ref('')
+const router = useRouter()
+const route = useRoute()
+
+const onSearch = () => {
+  const keyword = searchText.value.trim()
+  if (!keyword) return
+  // 跳转到搜索结果页，保留uid参数
+  const uid = route.params.uid
+  router.push({
+    name: 'questionnaire-search',
+    params: uid ? { uid } : {},
+    query: { keyword }
+  })
+}
+
+const onBlur = () => {
+  // 可选：失焦时自动搜索
+}
 </script>
 
 <style scoped>
